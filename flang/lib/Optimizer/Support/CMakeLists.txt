@@ -18,6 +18,7 @@ add_flang_library(FIRSupport
   MLIRBuiltinToLLVMIRTranslation
   MLIROpenACCToLLVMIRTranslation
   MLIROpenMPToLLVMIRTranslation
+  MLIRPtrToLLVMIRTranslation
   MLIRLLVMToLLVMIRTranslation
   MLIRTargetLLVMIRExport
 

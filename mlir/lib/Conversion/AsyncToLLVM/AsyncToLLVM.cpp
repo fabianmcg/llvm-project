@@ -76,8 +76,8 @@ namespace {
 /// lowering all async data types become opaque pointers at runtime.
 struct AsyncAPI {
   // All async types are lowered to opaque LLVM pointers at runtime.
-  static LLVM::LLVMPointerType opaquePointerType(MLIRContext *ctx) {
-    return LLVM::LLVMPointerType::get(ctx);
+  static ptr::PtrType opaquePointerType(MLIRContext *ctx) {
+    return ptr::PtrType::get(ctx);
   }
 
   static LLVM::LLVMTokenType tokenType(MLIRContext *ctx) {

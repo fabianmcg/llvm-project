@@ -8,8 +8,8 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @test_func_readonly
-// ROCDL-SAME:  !llvm.ptr {llvm.readonly}
-//  NVVM-SAME:  !llvm.ptr {llvm.readonly}
+// ROCDL-SAME:  !ptr.ptr {llvm.readonly}
+//  NVVM-SAME:  !ptr.ptr {llvm.readonly}
 
 
 // -----
@@ -21,8 +21,8 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @test_func_writeonly
-// ROCDL-SAME:  !llvm.ptr {llvm.writeonly}
-//  NVVM-SAME:  !llvm.ptr {llvm.writeonly}
+// ROCDL-SAME:  !ptr.ptr {llvm.writeonly}
+//  NVVM-SAME:  !ptr.ptr {llvm.writeonly}
 
 
 // -----
@@ -34,8 +34,8 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @test_func_nonnull
-// ROCDL-SAME:  !llvm.ptr {llvm.nonnull}
-//  NVVM-SAME:  !llvm.ptr {llvm.nonnull}
+// ROCDL-SAME:  !ptr.ptr {llvm.nonnull}
+//  NVVM-SAME:  !ptr.ptr {llvm.nonnull}
 
 
 // -----
@@ -47,8 +47,8 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @test_func_dereferenceable
-// ROCDL-SAME:  !llvm.ptr {llvm.dereferenceable = 4 : i64}
-//  NVVM-SAME:  !llvm.ptr {llvm.dereferenceable = 4 : i64}
+// ROCDL-SAME:  !ptr.ptr {llvm.dereferenceable = 4 : i64}
+//  NVVM-SAME:  !ptr.ptr {llvm.dereferenceable = 4 : i64}
 
 
 // -----
@@ -60,5 +60,5 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @test_func_dereferenceable_or_null
-// ROCDL-SAME:  !llvm.ptr {llvm.dereferenceable_or_null = 4 : i64}
-//  NVVM-SAME:  !llvm.ptr {llvm.dereferenceable_or_null = 4 : i64}
+// ROCDL-SAME:  !ptr.ptr {llvm.dereferenceable_or_null = 4 : i64}
+//  NVVM-SAME:  !ptr.ptr {llvm.dereferenceable_or_null = 4 : i64}

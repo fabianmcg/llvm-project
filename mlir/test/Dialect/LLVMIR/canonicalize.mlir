@@ -19,10 +19,10 @@ llvm.func @fold_icmp_ne(%arg0 : vector<2xi32>) -> vector<2xi1> {
 // CHECK-LABEL: @fold_icmp_alloca
 llvm.func @fold_icmp_alloca() -> i1 {
   // CHECK: %[[C0:.*]] = llvm.mlir.constant(true) : i1
-  %c0 = llvm.mlir.zero : !llvm.ptr
+  %c0 = llvm.mlir.zero : !ptr.ptr
   %c1 = arith.constant 1 : i64
-  %0 = llvm.alloca %c1 x i32 : (i64) -> !llvm.ptr
-  %1 = llvm.icmp "ne" %c0, %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i64) -> !ptr.ptr
+  %1 = llvm.icmp "ne" %c0, %0 : !ptr.ptr
   // CHECK: llvm.return %[[C0]]
   llvm.return %1 : i1
 }
@@ -85,9 +85,9 @@ llvm.func @fold_unrelated_extractvalue(%arr: !llvm.array<4 x f32>) -> f32 {
 // CHECK-LABEL: fold_bitcast
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: llvm.return %[[a0]]
-llvm.func @fold_bitcast(%x : !llvm.ptr) -> !llvm.ptr {
-  %c = llvm.bitcast %x : !llvm.ptr to !llvm.ptr
-  llvm.return %c : !llvm.ptr
+llvm.func @fold_bitcast(%x : !ptr.ptr) -> !ptr.ptr {
+  %c = llvm.bitcast %x : !ptr.ptr to !ptr.ptr
+  llvm.return %c : !ptr.ptr
 }
 
 // CHECK-LABEL: fold_bitcast2
@@ -104,18 +104,18 @@ llvm.func @fold_bitcast2(%x : i32) -> i32 {
 // CHECK-LABEL: fold_addrcast
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: llvm.return %[[a0]]
-llvm.func @fold_addrcast(%x : !llvm.ptr) -> !llvm.ptr {
-  %c = llvm.addrspacecast %x : !llvm.ptr to !llvm.ptr
-  llvm.return %c : !llvm.ptr
+llvm.func @fold_addrcast(%x : !ptr.ptr) -> !ptr.ptr {
+  %c = llvm.addrspacecast %x : !ptr.ptr to !ptr.ptr
+  llvm.return %c : !ptr.ptr
 }
 
 // CHECK-LABEL: fold_addrcast2
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: llvm.return %[[a0]]
-llvm.func @fold_addrcast2(%x : !llvm.ptr) -> !llvm.ptr {
-  %c = llvm.addrspacecast %x : !llvm.ptr to !llvm.ptr<5>
-  %d = llvm.addrspacecast %c : !llvm.ptr<5> to !llvm.ptr
-  llvm.return %d : !llvm.ptr
+llvm.func @fold_addrcast2(%x : !ptr.ptr) -> !ptr.ptr {
+  %c = llvm.addrspacecast %x : !ptr.ptr to !ptr.ptr<5>
+  %d = llvm.addrspacecast %c : !ptr.ptr<5> to !ptr.ptr
+  llvm.return %d : !ptr.ptr
 }
 
 // -----
@@ -123,30 +123,30 @@ llvm.func @fold_addrcast2(%x : !llvm.ptr) -> !llvm.ptr {
 // CHECK-LABEL: fold_gep
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: llvm.return %[[a0]]
-llvm.func @fold_gep(%x : !llvm.ptr) -> !llvm.ptr {
+llvm.func @fold_gep(%x : !ptr.ptr) -> !ptr.ptr {
   %c0 = arith.constant 0 : i32
-  %c = llvm.getelementptr %x[%c0] : (!llvm.ptr, i32) -> !llvm.ptr, i8
-  llvm.return %c : !llvm.ptr
+  %c = llvm.getelementptr %x[%c0] : (!ptr.ptr, i32) -> !ptr.ptr, i8
+  llvm.return %c : !ptr.ptr
 }
 
 // CHECK-LABEL: fold_gep_neg
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: %[[RES:.*]] = llvm.getelementptr inbounds %[[a0]][0, 1]
 // CHECK-NEXT: llvm.return %[[RES]]
-llvm.func @fold_gep_neg(%x : !llvm.ptr) -> !llvm.ptr {
+llvm.func @fold_gep_neg(%x : !ptr.ptr) -> !ptr.ptr {
   %c0 = arith.constant 0 : i32
-  %0 = llvm.getelementptr inbounds %x[%c0, 1] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<(i32, i32)>
-  llvm.return %0 : !llvm.ptr
+  %0 = llvm.getelementptr inbounds %x[%c0, 1] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<(i32, i32)>
+  llvm.return %0 : !ptr.ptr
 }
 
 // CHECK-LABEL: fold_gep_canon
 // CHECK-SAME: %[[a0:arg[0-9]+]]
 // CHECK-NEXT: %[[RES:.*]] = llvm.getelementptr %[[a0]][2]
 // CHECK-NEXT: llvm.return %[[RES]]
-llvm.func @fold_gep_canon(%x : !llvm.ptr) -> !llvm.ptr {
+llvm.func @fold_gep_canon(%x : !ptr.ptr) -> !ptr.ptr {
   %c2 = arith.constant 2 : i32
-  %c = llvm.getelementptr %x[%c2] : (!llvm.ptr, i32) -> !llvm.ptr, i8
-  llvm.return %c : !llvm.ptr
+  %c = llvm.getelementptr %x[%c2] : (!ptr.ptr, i32) -> !ptr.ptr, i8
+  llvm.return %c : !ptr.ptr
 }
 
 // -----
@@ -170,17 +170,17 @@ llvm.func @llvm_constant() -> i32 {
 
 // CHECK-LABEL: load_dce
 // CHECK-NEXT: llvm.return
-llvm.func @load_dce(%x : !llvm.ptr) {
-  %0 = llvm.load %x : !llvm.ptr -> i8
+llvm.func @load_dce(%x : !ptr.ptr) {
+  %0 = llvm.load %x : !ptr.ptr -> i8
   llvm.return
 }
 
-llvm.mlir.global external @fp() : !llvm.ptr
+llvm.mlir.global external @fp() : !ptr.ptr
 
 // CHECK-LABEL: addr_dce
 // CHECK-NEXT: llvm.return
-llvm.func @addr_dce(%x : !llvm.ptr) {
-  %0 = llvm.mlir.addressof @fp : !llvm.ptr
+llvm.func @addr_dce(%x : !ptr.ptr) {
+  %0 = llvm.mlir.addressof @fp : !ptr.ptr
   llvm.return
 }
 
@@ -188,23 +188,23 @@ llvm.func @addr_dce(%x : !llvm.ptr) {
 // CHECK-NEXT: llvm.return
 llvm.func @alloca_dce() {
   %c1_i64 = arith.constant 1 : i64
-  %0 = llvm.alloca %c1_i64 x i32 : (i64) -> !llvm.ptr
+  %0 = llvm.alloca %c1_i64 x i32 : (i64) -> !ptr.ptr
   llvm.return
 }
 
 // -----
 
 // CHECK-LABEL: func @volatile_load
-llvm.func @volatile_load(%x : !llvm.ptr) {
+llvm.func @volatile_load(%x : !ptr.ptr) {
   // A volatile load may have side-effects such as a write operation to arbitrary memory.
   // Make sure it is not removed.
   // CHECK: llvm.load volatile
-  %0 = llvm.load volatile %x : !llvm.ptr -> i8
+  %0 = llvm.load volatile %x : !ptr.ptr -> i8
   // Same with monotonic atomics and any stricter modes.
   // CHECK: llvm.load %{{.*}} atomic monotonic
-  %2 = llvm.load %x atomic monotonic { alignment = 1 } : !llvm.ptr -> i8
+  %2 = llvm.load %x atomic monotonic { alignment = 1 } : !ptr.ptr -> i8
   // But not unordered!
   // CHECK-NOT: llvm.load %{{.*}} atomic unordered
-  %3 = llvm.load %x  atomic unordered { alignment = 1 } : !llvm.ptr -> i8
+  %3 = llvm.load %x  atomic unordered { alignment = 1 } : !ptr.ptr -> i8
   llvm.return
 }

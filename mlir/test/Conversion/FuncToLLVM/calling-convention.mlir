@@ -8,8 +8,8 @@
 
 // An external function is transformed into the glue around calling an interface function.
 // CHECK-LABEL: @external
-// CHECK: %[[ALLOC0:.*]]: !llvm.ptr, %[[ALIGN0:.*]]: !llvm.ptr, %[[OFFSET0:.*]]: i64, %[[SIZE00:.*]]: i64, %[[SIZE01:.*]]: i64, %[[STRIDE00:.*]]: i64, %[[STRIDE01:.*]]: i64,
-// CHECK: %[[ALLOC1:.*]]: !llvm.ptr, %[[ALIGN1:.*]]: !llvm.ptr, %[[OFFSET1:.*]]: i64)
+// CHECK: %[[ALLOC0:.*]]: !ptr.ptr, %[[ALIGN0:.*]]: !ptr.ptr, %[[OFFSET0:.*]]: i64, %[[SIZE00:.*]]: i64, %[[SIZE01:.*]]: i64, %[[STRIDE00:.*]]: i64, %[[STRIDE01:.*]]: i64,
+// CHECK: %[[ALLOC1:.*]]: !ptr.ptr, %[[ALIGN1:.*]]: !ptr.ptr, %[[OFFSET1:.*]]: i64)
 func.func private @external(%arg0: memref<?x?xf32>, %arg1: memref<f32>)
   // Populate the descriptor for arg0.
   // CHECK: %[[DESC00:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>
@@ -42,7 +42,7 @@ func.func private @external(%arg0: memref<?x?xf32>, %arg1: memref<f32>)
 
 // Verify that an interface function is emitted.
 // CHECK-LABEL: llvm.func @_mlir_ciface_external
-// CHECK: (!llvm.ptr, !llvm.ptr)
+// CHECK: (!ptr.ptr, !ptr.ptr)
 
 // Verify that the return value is not affected.
 // CHECK-LABEL: @returner
@@ -67,7 +67,7 @@ func.func @caller() {
   // CHECK: %[[OFFSET1:.*]] = llvm.extractvalue %[[DESC1]][2]
 
   // Forward the values to the call.
-  // CHECK: llvm.call @external(%[[ALLOC0]], %[[ALIGN0]], %[[OFFSET0]], %[[SIZE00]], %[[SIZE01]], %[[STRIDE00]], %[[STRIDE01]], %[[ALLOC1]], %[[ALIGN1]], %[[OFFSET1]]) : (!llvm.ptr, !llvm.ptr, i64, i64, i64, i64, i64, !llvm.ptr, !llvm.ptr, i64) -> ()
+  // CHECK: llvm.call @external(%[[ALLOC0]], %[[ALIGN0]], %[[OFFSET0]], %[[SIZE00]], %[[SIZE01]], %[[STRIDE00]], %[[STRIDE01]], %[[ALLOC1]], %[[ALIGN1]], %[[OFFSET1]]) : (!ptr.ptr, !ptr.ptr, i64, i64, i64, i64, i64, !ptr.ptr, !ptr.ptr, i64) -> ()
   call @external(%0#0, %0#1) : (memref<?x?xf32>, memref<f32>) -> ()
   return
 }
@@ -81,9 +81,9 @@ func.func @callee(%arg0: memref<?xf32>, %arg1: index) {
 
 // Verify that an interface function is emitted.
 // CHECK-LABEL: @_mlir_ciface_callee
-// CHECK: %[[ARG0:.*]]: !llvm.ptr
+// CHECK: %[[ARG0:.*]]: !ptr.ptr
   // Load the memref descriptor pointer.
-  // CHECK: %[[DESC:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+  // CHECK: %[[DESC:.*]] = llvm.load %[[ARG0]] : !ptr.ptr -> !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
 
   // Extract individual components of the descriptor.
   // CHECK: %[[ALLOC:.*]] = llvm.extractvalue %[[DESC]][0]
@@ -93,7 +93,7 @@ func.func @callee(%arg0: memref<?xf32>, %arg1: index) {
   // CHECK: %[[STRIDE:.*]] = llvm.extractvalue %[[DESC]][4, 0]
 
   // Forward the descriptor components to the call.
-  // CHECK: llvm.call @callee(%[[ALLOC]], %[[ALIGN]], %[[OFFSET]], %[[SIZE]], %[[STRIDE]], %{{.*}}) : (!llvm.ptr, !llvm.ptr, i64, i64, i64, i64) -> ()
+  // CHECK: llvm.call @callee(%[[ALLOC]], %[[ALIGN]], %[[OFFSET]], %[[SIZE]], %[[STRIDE]], %{{.*}}) : (!ptr.ptr, !ptr.ptr, i64, i64, i64, i64) -> ()
 
 //   EMIT_C_ATTRIBUTE-NOT: @mlir_ciface_callee
 
@@ -174,7 +174,7 @@ func.func @return_var_memref(%arg0: memref<4x3xf32>) -> memref<*xf32> attributes
 
 // Check that the result memref is passed as parameter
 // CHECK-LABEL: @_mlir_ciface_return_var_memref
-// CHECK-SAME: (%{{.*}}: !llvm.ptr, %{{.*}}: !llvm.ptr)
+// CHECK-SAME: (%{{.*}}: !ptr.ptr, %{{.*}}: !ptr.ptr)
 
 // CHECK-LABEL: llvm.func @return_two_var_memref_caller
 func.func @return_two_var_memref_caller(%arg0: memref<4x3xf32>) {
@@ -238,12 +238,12 @@ func.func @return_two_var_memref(%arg0: memref<4x3xf32>) -> (memref<*xf32>, memr
 
 // Check that the result memrefs are passed as parameter
 // CHECK-LABEL: @_mlir_ciface_return_two_var_memref
-// CHECK-SAME: (%{{.*}}: !llvm.ptr,
-// CHECK-SAME: %{{.*}}: !llvm.ptr)
+// CHECK-SAME: (%{{.*}}: !ptr.ptr,
+// CHECK-SAME: %{{.*}}: !ptr.ptr)
 
 // CHECK-LABEL: llvm.func @bare_ptr_calling_conv(
-// CHECK-SAME: %[[ARG0:.*]]: !llvm.ptr
-// CHECK-SAME: -> !llvm.ptr
+// CHECK-SAME: %[[ARG0:.*]]: !ptr.ptr
+// CHECK-SAME: -> !ptr.ptr
 func.func @bare_ptr_calling_conv(%arg0: memref<4x3xf32>, %arg1 : index, %arg2 : index, %arg3 : f32)
      -> (memref<4x3xf32>) attributes { llvm.bareptr } {
   // CHECK: %[[UNDEF_DESC:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>
@@ -270,7 +270,7 @@ func.func @bare_ptr_calling_conv(%arg0: memref<4x3xf32>, %arg1 : index, %arg2 : 
 }
 
 // CHECK-LABEL: llvm.func @bare_ptr_calling_conv_multiresult(
-// CHECK-SAME: %[[ARG0:.*]]: !llvm.ptr
+// CHECK-SAME: %[[ARG0:.*]]: !ptr.ptr
 // CHECK-SAME: -> !llvm.struct<(f32, ptr)>
 func.func @bare_ptr_calling_conv_multiresult(%arg0: memref<4x3xf32>, %arg1 : index, %arg2 : index, %arg3 : f32)
      -> (f32, memref<4x3xf32>) attributes { llvm.bareptr } {

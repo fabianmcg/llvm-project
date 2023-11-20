@@ -66,7 +66,7 @@ static constexpr unsigned kAttrPointer = CFI_attribute_pointer;
 static constexpr unsigned kAttrAllocatable = CFI_attribute_allocatable;
 
 static inline mlir::Type getLlvmPtrType(mlir::MLIRContext *context) {
-  return mlir::LLVM::LLVMPointerType::get(context);
+  return mlir::ptr::PtrType::get(context);
 }
 
 static inline mlir::Type getI8Type(mlir::MLIRContext *context) {
@@ -194,7 +194,7 @@ protected:
                               mlir::Value box, mlir::Type resultTy,
                               mlir::ConversionPatternRewriter &rewriter,
                               int boxValue) const {
-    if (box.getType().isa<mlir::LLVM::LLVMPointerType>()) {
+    if (box.getType().isa<mlir::ptr::PtrType>()) {
       auto pty = ::getLlvmPtrType(resultTy.getContext());
       auto p = rewriter.create<mlir::LLVM::GEPOp>(
           loc, pty, boxTy.llvm, box,
@@ -238,7 +238,7 @@ protected:
   loadDimFieldFromBox(mlir::Location loc, TypePair boxTy, mlir::Value box,
                       mlir::Value dim, int off, mlir::Type ty,
                       mlir::ConversionPatternRewriter &rewriter) const {
-    assert(box.getType().isa<mlir::LLVM::LLVMPointerType>() &&
+    assert(box.getType().isa<mlir::ptr::PtrType>() &&
            "descriptor inquiry with runtime dim can only be done on descriptor "
            "in memory");
     mlir::LLVM::GEPOp p = genGEP(loc, boxTy.llvm, rewriter, box, 0,
@@ -252,7 +252,7 @@ protected:
   getDimFieldFromBox(mlir::Location loc, TypePair boxTy, mlir::Value box,
                      int dim, int off, mlir::Type ty,
                      mlir::ConversionPatternRewriter &rewriter) const {
-    if (box.getType().isa<mlir::LLVM::LLVMPointerType>()) {
+    if (box.getType().isa<mlir::ptr::PtrType>()) {
       mlir::LLVM::GEPOp p = genGEP(loc, boxTy.llvm, rewriter, box, 0,
                                    static_cast<int>(kDimsPosInBox), dim, off);
       auto loadOp = rewriter.create<mlir::LLVM::LoadOp>(loc, ty, p);
@@ -1039,18 +1039,18 @@ struct ConvertOpConversion : public FIROpConversion<fir::ConvertOp> {
         return mlir::success();
       }
       // Integer to pointer conversion.
-      if (toTy.isa<mlir::LLVM::LLVMPointerType>()) {
+      if (toTy.isa<mlir::ptr::PtrType>()) {
         rewriter.replaceOpWithNewOp<mlir::LLVM::IntToPtrOp>(convert, toTy, op0);
         return mlir::success();
       }
-    } else if (fromTy.isa<mlir::LLVM::LLVMPointerType>()) {
+    } else if (fromTy.isa<mlir::ptr::PtrType>()) {
       // Pointer to integer conversion.
       if (toTy.isa<mlir::IntegerType>()) {
         rewriter.replaceOpWithNewOp<mlir::LLVM::PtrToIntOp>(convert, toTy, op0);
         return mlir::success();
       }
       // Pointer to pointer conversion.
-      if (toTy.isa<mlir::LLVM::LLVMPointerType>()) {
+      if (toTy.isa<mlir::ptr::PtrType>()) {
         rewriter.replaceOpWithNewOp<mlir::LLVM::BitcastOp>(convert, toTy, op0);
         return mlir::success();
       }

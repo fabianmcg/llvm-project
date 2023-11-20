@@ -25,6 +25,7 @@
 #include "mlir/Target/LLVMIR/Dialect/NVVM/NVVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/OpenACC/OpenACCToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/Ptr/PtrToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/ROCDL/ROCDLToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/X86Vector/X86VectorToLLVMIRTranslation.h"
 
@@ -45,6 +46,7 @@ static inline void registerAllToLLVMIRTranslations(DialectRegistry &registry) {
   registerOpenACCDialectTranslation(registry);
   registerOpenMPDialectTranslation(registry);
   registerROCDLDialectTranslation(registry);
+  registerPtrDialectTranslation(registry);
   registerX86VectorDialectTranslation(registry);
 
   // Extension required for translating GPU offloading Ops.
@@ -61,6 +63,7 @@ registerAllGPUToLLVMIRTranslations(DialectRegistry &registry) {
   registerLLVMDialectTranslation(registry);
   registerNVVMDialectTranslation(registry);
   registerROCDLDialectTranslation(registry);
+  registerPtrDialectTranslation(registry);
 
   // Extension required for translating GPU offloading Ops.
   gpu::registerOffloadingLLVMTranslationInterfaceExternalModels(registry);

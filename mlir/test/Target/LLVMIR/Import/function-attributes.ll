@@ -27,24 +27,24 @@ attributes #0 = { readnone }
 ; // -----
 
 ; CHECK-LABEL: @func_arg_attrs
-; CHECK-SAME:  !llvm.ptr {llvm.byval = i64}
-; CHECK-SAME:  !llvm.ptr {llvm.byref = i64}
-; CHECK-SAME:  !llvm.ptr {llvm.noalias}
-; CHECK-SAME:  !llvm.ptr {llvm.readonly}
-; CHECK-SAME:  !llvm.ptr {llvm.nest}
+; CHECK-SAME:  !ptr.ptr {llvm.byval = i64}
+; CHECK-SAME:  !ptr.ptr {llvm.byref = i64}
+; CHECK-SAME:  !ptr.ptr {llvm.noalias}
+; CHECK-SAME:  !ptr.ptr {llvm.readonly}
+; CHECK-SAME:  !ptr.ptr {llvm.nest}
 ; CHECK-SAME:  i32 {llvm.signext}
 ; CHECK-SAME:  i64 {llvm.zeroext}
-; CHECK-SAME:  !llvm.ptr {llvm.align = 64 : i64, llvm.noundef}
-; CHECK-SAME:  !llvm.ptr {llvm.dereferenceable = 12 : i64}
-; CHECK-SAME:  !llvm.ptr {llvm.dereferenceable_or_null = 42 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.align = 64 : i64, llvm.noundef}
+; CHECK-SAME:  !ptr.ptr {llvm.dereferenceable = 12 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.dereferenceable_or_null = 42 : i64}
 ; CHECK-SAME:  f64 {llvm.inreg}
-; CHECK-SAME:  !llvm.ptr {llvm.nocapture}
-; CHECK-SAME:  !llvm.ptr {llvm.nofree}
-; CHECK-SAME:  !llvm.ptr {llvm.nonnull}
-; CHECK-SAME:  !llvm.ptr {llvm.preallocated = f64}
-; CHECK-SAME:  !llvm.ptr {llvm.returned}
-; CHECK-SAME:  !llvm.ptr {llvm.alignstack = 32 : i64}
-; CHECK-SAME:  !llvm.ptr {llvm.writeonly}
+; CHECK-SAME:  !ptr.ptr {llvm.nocapture}
+; CHECK-SAME:  !ptr.ptr {llvm.nofree}
+; CHECK-SAME:  !ptr.ptr {llvm.nonnull}
+; CHECK-SAME:  !ptr.ptr {llvm.preallocated = f64}
+; CHECK-SAME:  !ptr.ptr {llvm.returned}
+; CHECK-SAME:  !ptr.ptr {llvm.alignstack = 32 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.writeonly}
 define ptr @func_arg_attrs(
     ptr byval(i64) %arg0,
     ptr byref(i64) %arg1,
@@ -68,13 +68,13 @@ define ptr @func_arg_attrs(
 }
 
 ; CHECK-LABEL: @sret
-; CHECK-SAME:  !llvm.ptr {llvm.sret = i64}
+; CHECK-SAME:  !ptr.ptr {llvm.sret = i64}
 define void @sret(ptr sret(i64) %arg0) {
   ret void
 }
 
 ; CHECK-LABEL: @inalloca
-; CHECK-SAME:  !llvm.ptr {llvm.inalloca = i64}
+; CHECK-SAME:  !ptr.ptr {llvm.inalloca = i64}
 define void @inalloca(ptr inalloca(i64) %arg0) {
   ret void
 }
@@ -87,13 +87,13 @@ declare ptr @allocator(i64 allocalign, ptr allocptr)
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_noalias
-; CHECK-SAME:  !llvm.ptr {llvm.noalias}
+; CHECK-SAME:  !ptr.ptr {llvm.noalias}
 declare noalias ptr @func_res_attr_noalias()
 
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_nonnull
-; CHECK-SAME:  !llvm.ptr {llvm.nonnull}
+; CHECK-SAME:  !ptr.ptr {llvm.nonnull}
 declare nonnull ptr @func_res_attr_nonnull()
 
 ; // -----
@@ -112,31 +112,31 @@ declare zeroext i32 @func_res_attr_zeroext()
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_align
-; CHECK-SAME:  !llvm.ptr {llvm.align = 16 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.align = 16 : i64}
 declare align(16) ptr @func_res_attr_align()
 
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_noundef
-; CHECK-SAME:  !llvm.ptr {llvm.noundef}
+; CHECK-SAME:  !ptr.ptr {llvm.noundef}
 declare noundef ptr @func_res_attr_noundef()
 
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_dereferenceable
-; CHECK-SAME:  !llvm.ptr {llvm.dereferenceable = 42 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.dereferenceable = 42 : i64}
 declare dereferenceable(42) ptr @func_res_attr_dereferenceable()
 
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_dereferenceable_or_null
-; CHECK-SAME:  !llvm.ptr {llvm.dereferenceable_or_null = 42 : i64}
+; CHECK-SAME:  !ptr.ptr {llvm.dereferenceable_or_null = 42 : i64}
 declare dereferenceable_or_null(42) ptr @func_res_attr_dereferenceable_or_null()
 
 ; // -----
 
 ; CHECK-LABEL: @func_res_attr_inreg
-; CHECK-SAME:  !llvm.ptr {llvm.inreg}
+; CHECK-SAME:  !ptr.ptr {llvm.inreg}
 declare inreg ptr @func_res_attr_inreg()
 
 ; // -----

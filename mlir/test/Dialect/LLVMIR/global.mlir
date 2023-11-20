@@ -74,14 +74,14 @@ llvm.mlir.global @any() comdat(@__llvm_comdat::@any) {addr_space = 1 : i32} : i6
 
 // CHECK-LABEL: references
 func.func @references() {
-  // CHECK: llvm.mlir.addressof @".string" : !llvm.ptr
-  %0 = llvm.mlir.addressof @".string" : !llvm.ptr
+  // CHECK: llvm.mlir.addressof @".string" : !ptr.ptr
+  %0 = llvm.mlir.addressof @".string" : !ptr.ptr
 
-  // CHECK: llvm.mlir.addressof @global : !llvm.ptr
-  %1 = llvm.mlir.addressof @global : !llvm.ptr
+  // CHECK: llvm.mlir.addressof @global : !ptr.ptr
+  %1 = llvm.mlir.addressof @global : !ptr.ptr
 
-  // CHECK: llvm.mlir.addressof @has_addr_space : !llvm.ptr<3>
-  %2 = llvm.mlir.addressof @has_addr_space : !llvm.ptr<3>
+  // CHECK: llvm.mlir.addressof @has_addr_space : !ptr.ptr<3>
+  %2 = llvm.mlir.addressof @has_addr_space : !ptr.ptr<3>
 
   llvm.return
 }
@@ -168,7 +168,7 @@ func.func @foo() {
   // The attribute parser will consume the first colon-type, so we put two of
   // them to trigger the attribute type mismatch error.
   // expected-error @+1 {{invalid kind of attribute specified}}
-  llvm.mlir.addressof "foo" : i64 : !llvm.ptr
+  llvm.mlir.addressof "foo" : i64 : !ptr.ptr
   llvm.return
 }
 
@@ -176,7 +176,7 @@ func.func @foo() {
 
 func.func @foo() {
   // expected-error @+1 {{must reference a global defined by 'llvm.mlir.global'}}
-  llvm.mlir.addressof @foo : !llvm.ptr
+  llvm.mlir.addressof @foo : !ptr.ptr
   llvm.return
 }
 
@@ -208,7 +208,7 @@ llvm.mlir.global internal @g(43 : i64) : i64 {
 llvm.mlir.global internal @g(32 : i64) {addr_space = 3: i32} : i64
 func.func @mismatch_addr_space_implicit_global() {
   // expected-error @+1 {{pointer address space must match address space of the referenced global}}
-  llvm.mlir.addressof @g : !llvm.ptr
+  llvm.mlir.addressof @g : !ptr.ptr
   llvm.return
 }
 
@@ -218,7 +218,7 @@ llvm.mlir.global internal @g(32 : i64) {addr_space = 3: i32} : i64
 
 func.func @mismatch_addr_space() {
   // expected-error @+1 {{pointer address space must match address space of the referenced global}}
-  llvm.mlir.addressof @g : !llvm.ptr<4>
+  llvm.mlir.addressof @g : !ptr.ptr<4>
   llvm.return
 }
 

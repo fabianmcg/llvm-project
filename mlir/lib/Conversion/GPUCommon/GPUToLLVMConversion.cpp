@@ -82,7 +82,7 @@ protected:
   MLIRContext *context = &this->getTypeConverter()->getContext();
 
   Type llvmVoidType = LLVM::LLVMVoidType::get(context);
-  LLVM::LLVMPointerType llvmPointerType = LLVM::LLVMPointerType::get(context);
+  ptr::PtrType llvmPointerType = ptr::PtrType::get(context);
   Type llvmInt8Type = IntegerType::get(context, 8);
   Type llvmInt16Type = IntegerType::get(context, 16);
   Type llvmInt32Type = IntegerType::get(context, 32);
@@ -911,7 +911,7 @@ LogicalResult ConvertAsyncYieldToGpuRuntimeCallPattern::matchAndRewrite(
 
 // Returns whether `value` is the result of an LLVM::CallOp to `functionName`.
 static bool isDefinedByCallTo(Value value, StringRef functionName) {
-  assert(isa<LLVM::LLVMPointerType>(value.getType()));
+  assert(isa<ptr::PtrType>(value.getType()));
   if (auto defOp = value.getDefiningOp<LLVM::CallOp>())
     return defOp.getCallee()->equals(functionName);
   return false;
@@ -1216,15 +1216,14 @@ LogicalResult ConvertLaunchFuncOpToGpuRuntimeCallPattern::matchAndRewrite(
 
 static Value bitAndAddrspaceCast(Location loc,
                                  ConversionPatternRewriter &rewriter,
-                                 LLVM::LLVMPointerType destinationType,
-                                 Value sourcePtr,
+                                 ptr::PtrType destinationType, Value sourcePtr,
                                  const LLVMTypeConverter &typeConverter) {
-  auto sourceTy = cast<LLVM::LLVMPointerType>(sourcePtr.getType());
+  auto sourceTy = cast<ptr::PtrType>(sourcePtr.getType());
   if (destinationType.getAddressSpace() != sourceTy.getAddressSpace())
     sourcePtr = rewriter.create<LLVM::AddrSpaceCastOp>(
         loc,
-        LLVM::LLVMPointerType::get(rewriter.getContext(),
-                                   destinationType.getAddressSpace()),
+        ptr::PtrType::get(rewriter.getContext(),
+                          destinationType.getAddressSpace()),
         sourcePtr);
   return sourcePtr;
 }
@@ -1716,7 +1715,7 @@ LogicalResult ConvertSpMMOpToGpuRuntimeCallPattern::matchAndRewrite(
 template <typename T>
 static void addOpaquePointerConversion(LLVMTypeConverter &converter) {
   converter.addConversion([&converter](T) -> Type {
-    return LLVM::LLVMPointerType::get(&converter.getContext());
+    return ptr::PtrType::get(&converter.getContext());
   });
 }
 

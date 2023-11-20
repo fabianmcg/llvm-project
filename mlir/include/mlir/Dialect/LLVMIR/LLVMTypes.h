@@ -14,6 +14,7 @@
 #ifndef MLIR_DIALECT_LLVMIR_LLVMTYPES_H_
 #define MLIR_DIALECT_LLVMIR_LLVMTYPES_H_
 
+#include "mlir/Dialect/Ptr/IR/PtrTypes.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Interfaces/DataLayoutInterfaces.h"
 #include "mlir/Interfaces/MemorySlotInterfaces.h"
@@ -34,7 +35,6 @@ class LLVMDialect;
 
 namespace detail {
 struct LLVMFunctionTypeStorage;
-struct LLVMPointerTypeStorage;
 struct LLVMStructTypeStorage;
 struct LLVMTypeAndSizeStorage;
 } // namespace detail
@@ -279,18 +279,6 @@ Type getScalableVectorType(Type elementType, unsigned numElements);
 /// the size of vector<4xi16> is 64. Returns 0 for non-primitive
 /// (aggregates such as struct) or types that don't have a size (such as void).
 llvm::TypeSize getPrimitiveTypeSizeInBits(Type type);
-
-/// The positions of different values in the data layout entry for pointers.
-enum class PtrDLEntryPos { Size = 0, Abi = 1, Preferred = 2, Index = 3 };
-
-/// Returns the value that corresponds to named position `pos` from the
-/// data layout entry `attr` assuming it's a dense integer elements attribute.
-/// Returns `std::nullopt` if `pos` is not present in the entry.
-/// Currently only `PtrDLEntryPos::Index` is optional, and all other positions
-/// may be assumed to be present.
-std::optional<unsigned> extractPointerSpecValue(Attribute attr,
-                                                PtrDLEntryPos pos);
-
 } // namespace LLVM
 } // namespace mlir
 

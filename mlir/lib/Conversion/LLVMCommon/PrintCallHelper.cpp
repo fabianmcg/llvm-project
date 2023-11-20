@@ -51,7 +51,7 @@ void mlir::LLVM::createPrintStrCall(
       loc, arrayTy, /*constant=*/true, LLVM::Linkage::Private,
       ensureSymbolNameIsUnique(moduleOp, symbolName), dataAttr);
 
-  auto ptrTy = LLVM::LLVMPointerType::get(builder.getContext());
+  auto ptrTy = ptr::PtrType::get(builder.getContext());
   // Emit call to `printStr` in runtime library.
   builder.restoreInsertionPoint(ip);
   auto msgAddr =

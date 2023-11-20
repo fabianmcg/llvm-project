@@ -47,7 +47,7 @@ Type ConvertToLLVMPattern::getVoidType() const {
 }
 
 Type ConvertToLLVMPattern::getVoidPtrType() const {
-  return LLVM::LLVMPointerType::get(&getTypeConverter()->getContext());
+  return ptr::PtrType::get(&getTypeConverter()->getContext());
 }
 
 Value ConvertToLLVMPattern::createIndexAttrConstant(OpBuilder &builder,
@@ -108,7 +108,7 @@ Type ConvertToLLVMPattern::getElementPtrType(MemRefType type) const {
   auto addressSpace = getTypeConverter()->getMemRefAddressSpace(type);
   if (failed(addressSpace))
     return {};
-  return LLVM::LLVMPointerType::get(type.getContext(), *addressSpace);
+  return ptr::PtrType::get(type.getContext(), *addressSpace);
 }
 
 void ConvertToLLVMPattern::getMemRefDescriptorSizes(
@@ -158,7 +158,7 @@ void ConvertToLLVMPattern::getMemRefDescriptorSizes(
   if (sizeInBytes) {
     // Buffer size in bytes.
     Type elementType = typeConverter->convertType(memRefType.getElementType());
-    auto elementPtrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+    auto elementPtrType = ptr::PtrType::get(rewriter.getContext());
     Value nullPtr = rewriter.create<LLVM::ZeroOp>(loc, elementPtrType);
     Value gepPtr = rewriter.create<LLVM::GEPOp>(
         loc, elementPtrType, elementType, nullPtr, runningStride);
@@ -176,7 +176,7 @@ Value ConvertToLLVMPattern::getSizeInBytes(
   //   %1 = ptrtoint %elementType* %0 to %indexType
   // which is a common pattern of getting the size of a type in bytes.
   Type llvmType = typeConverter->convertType(type);
-  auto convertedPtrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+  auto convertedPtrType = ptr::PtrType::get(rewriter.getContext());
   auto nullPtr = rewriter.create<LLVM::ZeroOp>(loc, convertedPtrType);
   auto gep = rewriter.create<LLVM::GEPOp>(loc, convertedPtrType, llvmType,
                                           nullPtr, ArrayRef<LLVM::GEPArg>{1});

@@ -42,7 +42,7 @@ namespace {
 /// Maps each sparse tensor type to an opaque pointer.
 static std::optional<Type> convertSparseTensorTypes(Type type) {
   if (getSparseTensorEncoding(type) != nullptr)
-    return LLVM::LLVMPointerType::get(type.getContext());
+    return ptr::PtrType::get(type.getContext());
   return std::nullopt;
 }
 

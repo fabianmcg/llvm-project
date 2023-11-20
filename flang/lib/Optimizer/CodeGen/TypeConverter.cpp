@@ -209,11 +209,10 @@ mlir::Type LLVMTypeConverter::convertBoxTypeAsStruct(BaseBoxType box,
     ele = removeIndirection;
   auto eleTy = convertType(ele);
   // base_addr*
-  if (ele.isa<SequenceType>() && eleTy.isa<mlir::LLVM::LLVMPointerType>())
+  if (ele.isa<SequenceType>() && eleTy.isa<mlir::ptr::PtrType>())
     dataDescFields.push_back(eleTy);
   else
-    dataDescFields.push_back(
-        mlir::LLVM::LLVMPointerType::get(eleTy.getContext()));
+    dataDescFields.push_back(mlir::ptr::PtrType::get(eleTy.getContext()));
   // elem_len
   dataDescFields.push_back(
       getDescFieldTypeModel<kElemLenPosInBox>()(&getContext()));
@@ -271,13 +270,13 @@ mlir::Type LLVMTypeConverter::convertBoxTypeAsStruct(BaseBoxType box,
 mlir::Type LLVMTypeConverter::convertBoxType(BaseBoxType box, int rank) const {
   // TODO: send the box type and the converted LLVM structure layout
   // to tbaaBuilder for proper creation of TBAATypeDescriptorOp.
-  return mlir::LLVM::LLVMPointerType::get(box.getContext());
+  return mlir::ptr::PtrType::get(box.getContext());
 }
 
 // fir.boxproc<any>  -->  llvm<"{ any*, i8* }">
 mlir::Type LLVMTypeConverter::convertBoxProcType(BoxProcType boxproc) const {
   auto funcTy = convertType(boxproc.getEleTy());
-  auto voidPtrTy = mlir::LLVM::LLVMPointerType::get(boxproc.getContext());
+  auto voidPtrTy = mlir::ptr::PtrType::get(boxproc.getContext());
   llvm::SmallVector<mlir::Type, 2> tuple = {funcTy, voidPtrTy};
   return mlir::LLVM::LLVMStructType::getLiteral(boxproc.getContext(), tuple,
                                                 /*isPacked=*/false);
@@ -328,7 +327,7 @@ mlir::Type LLVMTypeConverter::convertSequenceType(SequenceType seq) const {
 // the f18 object v. class distinction (F2003).
 mlir::Type
 LLVMTypeConverter::convertTypeDescType(mlir::MLIRContext *ctx) const {
-  return mlir::LLVM::LLVMPointerType::get(ctx);
+  return mlir::ptr::PtrType::get(ctx);
 }
 
 // Relay TBAA tag attachment to TBAABuilder.

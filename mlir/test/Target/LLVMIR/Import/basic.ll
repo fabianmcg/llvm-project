@@ -16,14 +16,14 @@ declare float @fe(i32)
 ; CHECK: %[[c42:[0-9]+]] = llvm.mlir.constant(42 : i32) : i32
 define internal dso_local i32 @f1(i64 %a) norecurse {
 entry:
-; CHECK: %{{[0-9]+}} = llvm.inttoptr %arg0 : i64 to !llvm.ptr
+; CHECK: %{{[0-9]+}} = llvm.inttoptr %arg0 : i64 to !ptr.ptr
   %aa = inttoptr i64 %a to ptr
-; CHECK-DBG: llvm.mlir.addressof @global : !llvm.ptr loc(#[[UNKNOWN_LOC]])
-; %[[addrof:[0-9]+]] = llvm.mlir.addressof @global : !llvm.ptr
-; %[[addrof2:[0-9]+]] = llvm.mlir.addressof @global : !llvm.ptr
-; %{{[0-9]+}} = llvm.inttoptr %arg0 : i64 to !llvm.ptr
-; %{{[0-9]+}} = llvm.ptrtoint %[[addrof2]] : !llvm.ptr to i64
-; %{{[0-9]+}} = llvm.getelementptr %[[addrof]][%3] : (!llvm.ptr, i32) -> !llvm.ptr
+; CHECK-DBG: llvm.mlir.addressof @global : !ptr.ptr loc(#[[UNKNOWN_LOC]])
+; %[[addrof:[0-9]+]] = llvm.mlir.addressof @global : !ptr.ptr
+; %[[addrof2:[0-9]+]] = llvm.mlir.addressof @global : !ptr.ptr
+; %{{[0-9]+}} = llvm.inttoptr %arg0 : i64 to !ptr.ptr
+; %{{[0-9]+}} = llvm.ptrtoint %[[addrof2]] : !ptr.ptr to i64
+; %{{[0-9]+}} = llvm.getelementptr %[[addrof]][%3] : (!ptr.ptr, i32) -> !ptr.ptr
   %bb = ptrtoint ptr @global to i64
   %cc = getelementptr double, ptr @global, i32 3
 ; CHECK: %[[b:[0-9]+]] = llvm.trunc %arg0 : i64 to i32
@@ -78,12 +78,12 @@ declare void @llvm.va_end(ptr)
 
 ; CHECK-LABEL: llvm.func @variadic_function
 define void @variadic_function(i32 %X, ...) {
-  ; CHECK: %[[ALLOCA0:.+]] = llvm.alloca %{{.*}} x !llvm.struct<"struct.va_list", (ptr)> {{.*}} : (i32) -> !llvm.ptr
+  ; CHECK: %[[ALLOCA0:.+]] = llvm.alloca %{{.*}} x !llvm.struct<"struct.va_list", (ptr)> {{.*}} : (i32) -> !ptr.ptr
   %ap = alloca %struct.va_list
   ; CHECK: llvm.intr.vastart %[[ALLOCA0]]
   call void @llvm.va_start(ptr %ap)
 
-  ; CHECK: %[[ALLOCA1:.+]] = llvm.alloca %{{.*}} x !llvm.ptr {{.*}} : (i32) -> !llvm.ptr
+  ; CHECK: %[[ALLOCA1:.+]] = llvm.alloca %{{.*}} x !ptr.ptr {{.*}} : (i32) -> !ptr.ptr
   %aq = alloca ptr
   ; CHECK: llvm.intr.vacopy %[[ALLOCA0]] to %[[ALLOCA1]]
   call void @llvm.va_copy(ptr %aq, ptr %ap)

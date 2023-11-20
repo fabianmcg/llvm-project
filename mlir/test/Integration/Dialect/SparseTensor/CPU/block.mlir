@@ -28,7 +28,7 @@
 // REDEFINE: %{sparsifier_opts} = enable-runtime-library=false enable-buffer-initialization=true vl=2 reassociate-fp-reductions=true enable-index-optimizations=true
 // RUN: %{compile} | env %{env} %{run} | FileCheck %s
 
-!Filename = !llvm.ptr
+!Filename = !ptr.ptr
 
 #BSR = #sparse_tensor.encoding<{
   map = (i, j) ->

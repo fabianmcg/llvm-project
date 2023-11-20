@@ -8,8 +8,8 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @func_with_noalias_attr
-// ROCDL-SAME:  !llvm.ptr {llvm.noalias}
-//  NVVM-SAME:  !llvm.ptr {llvm.noalias}
+// ROCDL-SAME:  !ptr.ptr {llvm.noalias}
+//  NVVM-SAME:  !ptr.ptr {llvm.noalias}
 
 
 // -----
@@ -21,5 +21,5 @@ gpu.module @kernel {
 }
 
 // CHECK-LABEL:  llvm.func @func_without_any_attr
-// ROCDL-SAME:  !llvm.ptr
-//  NVVM-SAME:  !llvm.ptr
+// ROCDL-SAME:  !ptr.ptr
+//  NVVM-SAME:  !ptr.ptr

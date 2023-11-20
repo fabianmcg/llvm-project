@@ -9,7 +9,7 @@ func.func @create_token() {
 
 // CHECK-LABEL: @create_value
 func.func @create_value() {
-  // CHECK: %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+  // CHECK: %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
   // CHECK: %[[OFFSET:.*]] = llvm.getelementptr %[[NULL]][1]
   // CHECK: %[[SIZE:.*]] = llvm.ptrtoint %[[OFFSET]]
   // CHECK: %[[VALUE:.*]] = call @mlirAsyncRuntimeCreateValue(%[[SIZE]])
@@ -152,7 +152,7 @@ func.func @store() {
   // CHECK: %[[VALUE:.*]] = call @mlirAsyncRuntimeCreateValue
   %1 = async.runtime.create : !async.value<f32>
   // CHECK: %[[P0:.*]] = call @mlirAsyncRuntimeGetValueStorage(%[[VALUE]])
-  // CHECK: llvm.store %[[CST]], %[[P0]] : f32, !llvm.ptr
+  // CHECK: llvm.store %[[CST]], %[[P0]] : f32, !ptr.ptr
   async.runtime.store %0, %1 : !async.value<f32>
   return
 }
@@ -162,7 +162,7 @@ func.func @load() -> f32 {
   // CHECK: %[[VALUE:.*]] = call @mlirAsyncRuntimeCreateValue
   %0 = async.runtime.create : !async.value<f32>
   // CHECK: %[[P0:.*]] = call @mlirAsyncRuntimeGetValueStorage(%[[VALUE]])
-  // CHECK: %[[VALUE:.*]] = llvm.load %[[P0]] : !llvm.ptr -> f32
+  // CHECK: %[[VALUE:.*]] = llvm.load %[[P0]] : !ptr.ptr -> f32
   %1 = async.runtime.load %0 : !async.value<f32>
   // CHECK: return %[[VALUE]] : f32
   return %1 : f32

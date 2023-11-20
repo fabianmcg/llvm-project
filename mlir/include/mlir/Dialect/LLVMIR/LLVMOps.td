@@ -1047,7 +1047,7 @@ def LLVM_AddressOfOp : LLVM_Op<"mlir.addressof",
       CArg<"ArrayRef<NamedAttribute>", "{}">:$attrs),
     [{
       build($_builder, $_state,
-            LLVM::LLVMPointerType::get($_builder.getContext(), global.getAddrSpace()),
+            ptr::PtrType::get($_builder.getContext(), global.getAddrSpace()),
             global.getSymName());
       $_state.addAttributes(attrs);
     }]>,
@@ -1055,7 +1055,7 @@ def LLVM_AddressOfOp : LLVM_Op<"mlir.addressof",
       CArg<"ArrayRef<NamedAttribute>", "{}">:$attrs),
     [{
       build($_builder, $_state,
-            LLVM::LLVMPointerType::get($_builder.getContext()), func.getName());
+            ptr::PtrType::get($_builder.getContext()), func.getName());
       $_state.addAttributes(attrs);
     }]>
   ];

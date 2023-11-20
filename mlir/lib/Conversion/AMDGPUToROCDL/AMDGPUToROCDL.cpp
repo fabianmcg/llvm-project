@@ -205,7 +205,7 @@ struct RawBufferOpLowering : public ConvertOpToLLVMPattern<GpuOp> {
       flags |= (oob << 28);
     }
     Value flagsConst = createI32Constant(rewriter, loc, flags);
-    Type rsrcType = LLVM::LLVMPointerType::get(rewriter.getContext(), 8);
+    Type rsrcType = ptr::PtrType::get(rewriter.getContext(), 8);
     Value resource = rewriter.createOrFold<ROCDL::MakeBufferRsrcOp>(
         loc, rsrcType, ptr, stride, numRecords, flagsConst);
     args.push_back(resource);

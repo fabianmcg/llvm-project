@@ -681,13 +681,13 @@ func.func @collapse_static_shape_with_non_identity_layout(%arg: memref<1x1x8x8xf
 // CHECK: %[[DESC:.*]] = builtin.unrealized_conversion_cast %[[ARG0]] : memref<?x?xf32, strided<[?, ?], offset: ?>> to !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>
 // CHECK: %[[ALIGNED_PTR:.*]] = llvm.extractvalue %[[DESC]][1] : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>
 // CHECK: %[[OFFSET:.*]] = llvm.extractvalue %[[DESC]][2] : !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)>
-// CHECK: %[[BUFF_ADDR:.*]] = llvm.getelementptr %[[ALIGNED_PTR]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: %[[INT_TO_PTR:.*]] = llvm.ptrtoint %[[BUFF_ADDR]] : !llvm.ptr to i64
+// CHECK: %[[BUFF_ADDR:.*]] = llvm.getelementptr %[[ALIGNED_PTR]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+// CHECK: %[[INT_TO_PTR:.*]] = llvm.ptrtoint %[[BUFF_ADDR]] : !ptr.ptr to i64
 // CHECK: %[[AND:.*]] = llvm.and %[[INT_TO_PTR]], {{.*}}  : i64
 // CHECK: %[[CMP:.*]] = llvm.icmp "eq" %[[AND]], {{.*}} : i64
 // CHECK: "llvm.intr.assume"(%[[CMP]]) : (i1) -> ()
-// CHECK: %[[LD_ADDR:.*]] = llvm.getelementptr %[[BUFF_ADDR]][%{{.*}}] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: %[[VAL:.*]] = llvm.load %[[LD_ADDR]] : !llvm.ptr -> f32
+// CHECK: %[[LD_ADDR:.*]] = llvm.getelementptr %[[BUFF_ADDR]][%{{.*}}] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+// CHECK: %[[VAL:.*]] = llvm.load %[[LD_ADDR]] : !ptr.ptr -> f32
 // CHECK: return %[[VAL]] : f32
 func.func @load_and_assume(
     %arg0: memref<?x?xf32, strided<[?, ?], offset: ?>>,

@@ -132,6 +132,14 @@ add_mlir_upstream_c_api_library(MLIRCAPIROCDL
   MLIRROCDLDialect
 )
 
+add_mlir_upstream_c_api_library(MLIRCAPIPtr
+  Ptr.cpp
+
+  PARTIAL_SOURCES_INTENDED
+  LINK_LIBS PUBLIC
+  MLIRCAPIIR
+  MLIRPtrDialect
+)
 
 add_mlir_upstream_c_api_library(MLIRCAPISCF
   SCF.cpp

@@ -9,16 +9,16 @@
 #tbaa_type_desc_6 = #llvm.tbaa_type_desc<id = "agg1_t", members = {<#tbaa_type_desc_5, 0>, <#tbaa_type_desc_5, 4>}>
 #tbaa_tag_7 = #llvm.tbaa_tag<access_type = #tbaa_type_desc_5, base_type = #tbaa_type_desc_6, offset = 0, constant = true>
 
-llvm.func @tbaa2(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
+llvm.func @tbaa2(%arg0: !ptr.ptr, %arg1: !ptr.ptr) {
   %0 = llvm.mlir.constant(0 : i32) : i32
   %1 = llvm.mlir.constant(1 : i32) : i32
-  %2 = llvm.getelementptr inbounds %arg1[%0, 1] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<"struct.agg2_t", (i64, i64)>
+  %2 = llvm.getelementptr inbounds %arg1[%0, 1] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<"struct.agg2_t", (i64, i64)>
   // CHECK: load i64, ptr %{{.*}},{{.*}}!tbaa ![[LTAG:[0-9]*]]
-  %3 = llvm.load %2 {tbaa = [#tbaa_tag_4]} : !llvm.ptr -> i64
+  %3 = llvm.load %2 {tbaa = [#tbaa_tag_4]} : !ptr.ptr -> i64
   %4 = llvm.trunc %3 : i64 to i32
-  %5 = llvm.getelementptr inbounds %arg0[%0, 0] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<"struct.agg1_t", (i32, i32)>
+  %5 = llvm.getelementptr inbounds %arg0[%0, 0] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<"struct.agg1_t", (i32, i32)>
   // CHECK: store i32 %{{.*}}, ptr %{{.*}},{{.*}}!tbaa ![[STAG:[0-9]*]]
-  llvm.store %4, %5 {tbaa = [#tbaa_tag_7]} : i32, !llvm.ptr
+  llvm.store %4, %5 {tbaa = [#tbaa_tag_7]} : i32, !ptr.ptr
   llvm.return
 }
 
@@ -52,28 +52,28 @@ llvm.func @tbaa2(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
 #tbaa_tag_7 = #llvm.tbaa_tag<access_type = #tbaa_type_desc_5, base_type = #tbaa_type_desc_6, offset = 0>
 
 
-llvm.func @foo(%arg0: !llvm.ptr)
-llvm.func @tbaa2(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
+llvm.func @foo(%arg0: !ptr.ptr)
+llvm.func @tbaa2(%arg0: !ptr.ptr, %arg1: !ptr.ptr) {
   %0 = llvm.mlir.constant(0 : i32) : i32
   %1 = llvm.mlir.constant(1 : i32) : i32
-  %2 = llvm.getelementptr inbounds %arg1[%0, 0] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<"struct.agg2_t", (f32, f32)>
+  %2 = llvm.getelementptr inbounds %arg1[%0, 0] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<"struct.agg2_t", (f32, f32)>
   // CHECK: load float, ptr %{{.*}},{{.*}}!tbaa ![[LTAG:[0-9]*]]
-  %3 = llvm.load %2 {tbaa = [#tbaa_tag_4]} : !llvm.ptr -> f32
+  %3 = llvm.load %2 {tbaa = [#tbaa_tag_4]} : !ptr.ptr -> f32
   %4 = llvm.fptosi %3 : f32 to i32
-  %5 = llvm.getelementptr inbounds %arg0[%0, 0] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<"struct.agg1_t", (i32, i32)>
+  %5 = llvm.getelementptr inbounds %arg0[%0, 0] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<"struct.agg1_t", (i32, i32)>
   // CHECK: store i32 %{{.*}}, ptr %{{.*}},{{.*}}!tbaa ![[STAG:[0-9]*]]
-  llvm.store %4, %5 {tbaa = [#tbaa_tag_7]} : i32, !llvm.ptr
+  llvm.store %4, %5 {tbaa = [#tbaa_tag_7]} : i32, !ptr.ptr
   // CHECK: atomicrmw add ptr %{{.*}}, i32 %{{.*}} !tbaa ![[STAG]]
-  %6 = llvm.atomicrmw add %5, %4 monotonic {tbaa = [#tbaa_tag_7]} : !llvm.ptr, i32
+  %6 = llvm.atomicrmw add %5, %4 monotonic {tbaa = [#tbaa_tag_7]} : !ptr.ptr, i32
   // CHECK: cmpxchg ptr %{{.*}}, i32 %{{.*}}, i32 %{{.*}} !tbaa ![[STAG]]
-  %7 = llvm.cmpxchg %5, %6, %4 acq_rel monotonic {tbaa = [#tbaa_tag_7]} : !llvm.ptr, i32
+  %7 = llvm.cmpxchg %5, %6, %4 acq_rel monotonic {tbaa = [#tbaa_tag_7]} : !ptr.ptr, i32
   %9 = llvm.mlir.constant(42 : i8) : i8
   // CHECK: llvm.memcpy{{.*}} !tbaa ![[STAG]]
-  "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {tbaa = [#tbaa_tag_7]} : (!llvm.ptr, !llvm.ptr, i32) -> ()
+  "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {tbaa = [#tbaa_tag_7]} : (!ptr.ptr, !ptr.ptr, i32) -> ()
   // CHECK: llvm.memset{{.*}} !tbaa ![[STAG]]
-  "llvm.intr.memset"(%arg1, %9, %0) <{isVolatile = false}> {tbaa = [#tbaa_tag_7]} : (!llvm.ptr, i8, i32) -> ()
+  "llvm.intr.memset"(%arg1, %9, %0) <{isVolatile = false}> {tbaa = [#tbaa_tag_7]} : (!ptr.ptr, i8, i32) -> ()
   // CHECK: call void @foo({{.*}} !tbaa ![[STAG]]
-  llvm.call @foo(%arg1) {tbaa = [#tbaa_tag_7]} : (!llvm.ptr) -> ()
+  llvm.call @foo(%arg1) {tbaa = [#tbaa_tag_7]} : (!ptr.ptr) -> ()
   llvm.return
 }
 

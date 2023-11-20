@@ -22,9 +22,12 @@ namespace mlir {
 class DataLayoutAnalysis;
 class LowerToLLVMOptions;
 
+namespace ptr {
+class PtrType;
+} // namespace ptr
+
 namespace LLVM {
 class LLVMDialect;
-class LLVMPointerType;
 class LLVMFunctionType;
 class LLVMStructType;
 } // namespace LLVM

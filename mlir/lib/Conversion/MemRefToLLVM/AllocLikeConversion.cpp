@@ -54,7 +54,7 @@ static Value castAllocFuncResult(ConversionPatternRewriter &rewriter,
                                  Location loc, Value allocatedPtr,
                                  MemRefType memRefType, Type elementPtrType,
                                  const LLVMTypeConverter &typeConverter) {
-  auto allocatedPtrTy = cast<LLVM::LLVMPointerType>(allocatedPtr.getType());
+  auto allocatedPtrTy = cast<ptr::PtrType>(allocatedPtr.getType());
   FailureOr<unsigned> maybeMemrefAddrSpace =
       typeConverter.getMemRefAddressSpace(memRefType);
   if (failed(maybeMemrefAddrSpace))
@@ -62,7 +62,7 @@ static Value castAllocFuncResult(ConversionPatternRewriter &rewriter,
   unsigned memrefAddrSpace = *maybeMemrefAddrSpace;
   if (allocatedPtrTy.getAddressSpace() != memrefAddrSpace)
     allocatedPtr = rewriter.create<LLVM::AddrSpaceCastOp>(
-        loc, LLVM::LLVMPointerType::get(rewriter.getContext(), memrefAddrSpace),
+        loc, ptr::PtrType::get(rewriter.getContext(), memrefAddrSpace),
         allocatedPtr);
   return allocatedPtr;
 }

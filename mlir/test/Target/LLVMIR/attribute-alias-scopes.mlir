@@ -1,6 +1,6 @@
 // RUN: mlir-translate -mlir-to-llvmir -split-input-file %s | FileCheck %s
 
-llvm.func @foo(%arg0: !llvm.ptr)
+llvm.func @foo(%arg0: !ptr.ptr)
 
 #alias_scope_domain = #llvm.alias_scope_domain<id = distinct[0]<>, description = "The domain">
 #alias_scope1 = #llvm.alias_scope<id = distinct[1]<>, domain = #alias_scope_domain, description = "The first scope">
@@ -8,27 +8,27 @@ llvm.func @foo(%arg0: !llvm.ptr)
 #alias_scope3 = #llvm.alias_scope<id = distinct[3]<>, domain = #alias_scope_domain>
 
 // CHECK-LABEL: @alias_scopes
-llvm.func @alias_scopes(%arg1 : !llvm.ptr) {
+llvm.func @alias_scopes(%arg1 : !ptr.ptr) {
   %0 = llvm.mlir.constant(0 : i32) : i32
   // CHECK:  call void @llvm.experimental.noalias.scope.decl(metadata ![[SCOPES1:[0-9]+]])
   llvm.intr.experimental.noalias.scope.decl #alias_scope1
   // CHECK:  store {{.*}}, !alias.scope ![[SCOPES1]], !noalias ![[SCOPES23:[0-9]+]]
-  llvm.store %0, %arg1 {alias_scopes = [#alias_scope1], noalias_scopes = [#alias_scope2, #alias_scope3]} : i32, !llvm.ptr
+  llvm.store %0, %arg1 {alias_scopes = [#alias_scope1], noalias_scopes = [#alias_scope2, #alias_scope3]} : i32, !ptr.ptr
   // CHECK:  load {{.*}}, !alias.scope ![[SCOPES2:[0-9]+]], !noalias ![[SCOPES13:[0-9]+]]
-  %1 = llvm.load %arg1 {alias_scopes = [#alias_scope2], noalias_scopes = [#alias_scope1, #alias_scope3]} : !llvm.ptr -> i32
+  %1 = llvm.load %arg1 {alias_scopes = [#alias_scope2], noalias_scopes = [#alias_scope1, #alias_scope3]} : !ptr.ptr -> i32
   // CHECK:  atomicrmw {{.*}}, !alias.scope ![[SCOPES3:[0-9]+]], !noalias ![[SCOPES12:[0-9]+]]
-  %2 = llvm.atomicrmw add %arg1, %0 monotonic {alias_scopes = [#alias_scope3], noalias_scopes = [#alias_scope1, #alias_scope2]} : !llvm.ptr, i32
+  %2 = llvm.atomicrmw add %arg1, %0 monotonic {alias_scopes = [#alias_scope3], noalias_scopes = [#alias_scope1, #alias_scope2]} : !ptr.ptr, i32
   // CHECK:  cmpxchg {{.*}}, !alias.scope ![[SCOPES3]]
-  %3 = llvm.cmpxchg %arg1, %1, %2 acq_rel monotonic {alias_scopes = [#alias_scope3]} : !llvm.ptr, i32
+  %3 = llvm.cmpxchg %arg1, %1, %2 acq_rel monotonic {alias_scopes = [#alias_scope3]} : !ptr.ptr, i32
   %5 = llvm.mlir.constant(42 : i8) : i8
   // CHECK:  llvm.memcpy{{.*}}, !alias.scope ![[SCOPES3]]
-  "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {alias_scopes = [#alias_scope3]} : (!llvm.ptr, !llvm.ptr, i32) -> ()
+  "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {alias_scopes = [#alias_scope3]} : (!ptr.ptr, !ptr.ptr, i32) -> ()
   // CHECK:  llvm.memset{{.*}}, !noalias ![[SCOPES3]]
-  "llvm.intr.memset"(%arg1, %5, %0) <{isVolatile = false}> {noalias_scopes = [#alias_scope3]} : (!llvm.ptr, i8, i32) -> ()
+  "llvm.intr.memset"(%arg1, %5, %0) <{isVolatile = false}> {noalias_scopes = [#alias_scope3]} : (!ptr.ptr, i8, i32) -> ()
   // CHECK: call void @foo({{.*}} !alias.scope ![[SCOPES3]]
-  llvm.call @foo(%arg1) {alias_scopes = [#alias_scope3]} : (!llvm.ptr) -> ()
+  llvm.call @foo(%arg1) {alias_scopes = [#alias_scope3]} : (!ptr.ptr) -> ()
   // CHECK: call void @foo({{.*}} !noalias ![[SCOPES3]]
-  llvm.call @foo(%arg1) {noalias_scopes = [#alias_scope3]} : (!llvm.ptr) -> ()
+  llvm.call @foo(%arg1) {noalias_scopes = [#alias_scope3]} : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -59,7 +59,7 @@ llvm.func @alias_scopes(%arg1 : !llvm.ptr) {
 #alias_scope1 = #llvm.alias_scope<id = distinct[1]<>, domain = #alias_scope_domain>
 
 // CHECK-LABEL: @noalias_intr_only
-llvm.func @noalias_intr_only(%arg1 : !llvm.ptr) {
+llvm.func @noalias_intr_only(%arg1 : !ptr.ptr) {
   %0 = llvm.mlir.constant(0 : i32) : i32
   // CHECK:  call void @llvm.experimental.noalias.scope.decl(metadata ![[SCOPES1:[0-9]+]])
   llvm.intr.experimental.noalias.scope.decl #alias_scope1

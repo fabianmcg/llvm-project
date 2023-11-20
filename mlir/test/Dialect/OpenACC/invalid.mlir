@@ -262,29 +262,29 @@ acc.kernels dataOperands(%value : memref<10xf32>) {
 // -----
 
 // expected-error@+1 {{expects non-empty init region}}
-acc.private.recipe @privatization_i32 : !llvm.ptr init {
+acc.private.recipe @privatization_i32 : !ptr.ptr init {
 }
 
 // -----
 
 // expected-error@+1 {{expects init region first argument of the privatization type}}
-acc.private.recipe @privatization_i32 : !llvm.ptr init {
+acc.private.recipe @privatization_i32 : !ptr.ptr init {
 ^bb0(%arg0 : i32):
   %c1 = arith.constant 1 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 }
 
 // -----
 
 // expected-error@+1 {{expects destroy region first argument of the privatization type}}
-acc.private.recipe @privatization_i32 : !llvm.ptr init {
-^bb0(%arg0 : !llvm.ptr):
+acc.private.recipe @privatization_i32 : !ptr.ptr init {
+^bb0(%arg0 : !ptr.ptr):
   %c1 = arith.constant 1 : i32
   %c0 = arith.constant 0 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  llvm.store %c0, %0 : i32, !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  llvm.store %c0, %0 : i32, !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 } destroy {
 ^bb0(%arg0 : f32):
   "test.openacc_dummy_op"(%arg0) : (f32) -> ()
@@ -293,42 +293,42 @@ acc.private.recipe @privatization_i32 : !llvm.ptr init {
 // -----
 
 // expected-error@+1 {{expects non-empty init region}}
-acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
+acc.firstprivate.recipe @privatization_i32 : !ptr.ptr init {
 } copy {}
 
 // -----
 
 // expected-error@+1 {{expects init region first argument of the privatization type}}
-acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
+acc.firstprivate.recipe @privatization_i32 : !ptr.ptr init {
 ^bb0(%arg0 : i32):
   %c1 = arith.constant 1 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 } copy {}
 
 // -----
 
 // expected-error@+1 {{expects non-empty copy region}}
-acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
-^bb0(%arg0 : !llvm.ptr):
+acc.firstprivate.recipe @privatization_i32 : !ptr.ptr init {
+^bb0(%arg0 : !ptr.ptr):
   %c1 = arith.constant 1 : i32
   %c0 = arith.constant 0 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  llvm.store %c0, %0 : i32, !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  llvm.store %c0, %0 : i32, !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 } copy {
 }
 
 // -----
 
 // expected-error@+1 {{expects copy region with two arguments of the privatization type}}
-acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
-^bb0(%arg0 : !llvm.ptr):
+acc.firstprivate.recipe @privatization_i32 : !ptr.ptr init {
+^bb0(%arg0 : !ptr.ptr):
   %c1 = arith.constant 1 : i32
   %c0 = arith.constant 0 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  llvm.store %c0, %0 : i32, !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  llvm.store %c0, %0 : i32, !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 } copy {
 ^bb0(%arg0 : f32):
   "test.openacc_dummy_op"(%arg0) : (f32) -> ()
@@ -337,13 +337,13 @@ acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
 // -----
 
 // expected-error@+1 {{expects copy region with two arguments of the privatization type}}
-acc.firstprivate.recipe @privatization_i32 : !llvm.ptr init {
-^bb0(%arg0 : !llvm.ptr):
+acc.firstprivate.recipe @privatization_i32 : !ptr.ptr init {
+^bb0(%arg0 : !ptr.ptr):
   %c1 = arith.constant 1 : i32
   %c0 = arith.constant 0 : i32
-  %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  llvm.store %c0, %0 : i32, !llvm.ptr
-  acc.yield %0 : !llvm.ptr
+  %0 = llvm.alloca %c1 x i32 : (i32) -> !ptr.ptr
+  llvm.store %c0, %0 : i32, !ptr.ptr
+  acc.yield %0 : !ptr.ptr
 } copy {
 ^bb0(%arg0 : f32, %arg1 : i32):
   "test.openacc_dummy_op"(%arg0) : (f32) -> ()
@@ -357,8 +357,8 @@ acc.firstprivate.recipe @privatization_i32 : i32 init {
   %0 = arith.constant 1 : i32
   acc.yield %0 : i32
 } copy {
-^bb0(%arg0 : i32, %arg1 : !llvm.ptr):
-  llvm.store %arg0, %arg1 : i32, !llvm.ptr
+^bb0(%arg0 : i32, %arg1 : !ptr.ptr):
+  llvm.store %arg0, %arg1 : i32, !ptr.ptr
   acc.yield
 } destroy {
 ^bb0(%arg0 : f32):
@@ -444,9 +444,9 @@ acc.loop gang(static=%i64Value: i64, ) {
 
 // -----
 
-func.func @fct1(%0 : !llvm.ptr) -> () {
+func.func @fct1(%0 : !ptr.ptr) -> () {
   // expected-error@+1 {{expected symbol reference @privatization_i32 to point to a private declaration}}
-  acc.serial private(@privatization_i32 -> %0 : !llvm.ptr) {
+  acc.serial private(@privatization_i32 -> %0 : !ptr.ptr) {
   }
   return
 }

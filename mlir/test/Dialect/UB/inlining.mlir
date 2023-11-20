@@ -6,7 +6,7 @@ func.func @func() -> i32 {
 }
 
 // CHECK-LABEL: func @test_inline
-func.func @test_inline(%ptr : !llvm.ptr) -> i32 {
+func.func @test_inline(%ptr : !ptr.ptr) -> i32 {
 // CHECK-NOT: call
   %0 = call @func() : () -> i32
   return %0 : i32

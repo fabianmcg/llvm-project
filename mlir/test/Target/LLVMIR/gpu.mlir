@@ -65,13 +65,13 @@ module attributes {gpu.container_module} {
     // CHECK-NEXT: call void @mgpuModuleUnload(ptr [[MODULE]])
     // CHECK-NEXT: call void @mgpuStreamSynchronize(ptr %{{.*}})
     // CHECK-NEXT: call void @mgpuStreamDestroy(ptr %{{.*}})
-    %1 = llvm.call @mgpuStreamCreate() : () -> !llvm.ptr
-    gpu.launch_func <%1 : !llvm.ptr> @kernel_module::@kernel blocks in (%0, %0, %0) threads in (%0, %0, %0) : i64
-    llvm.call @mgpuStreamSynchronize(%1) : (!llvm.ptr) -> ()
-    llvm.call @mgpuStreamDestroy(%1) : (!llvm.ptr) -> ()
+    %1 = llvm.call @mgpuStreamCreate() : () -> !ptr.ptr
+    gpu.launch_func <%1 : !ptr.ptr> @kernel_module::@kernel blocks in (%0, %0, %0) threads in (%0, %0, %0) : i64
+    llvm.call @mgpuStreamSynchronize(%1) : (!ptr.ptr) -> ()
+    llvm.call @mgpuStreamDestroy(%1) : (!ptr.ptr) -> ()
     llvm.return
   }
-  llvm.func @mgpuStreamCreate() -> !llvm.ptr
-  llvm.func @mgpuStreamSynchronize(!llvm.ptr)
-  llvm.func @mgpuStreamDestroy(!llvm.ptr)
+  llvm.func @mgpuStreamCreate() -> !ptr.ptr
+  llvm.func @mgpuStreamSynchronize(!ptr.ptr)
+  llvm.func @mgpuStreamDestroy(!ptr.ptr)
 }

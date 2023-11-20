@@ -52,18 +52,18 @@ def LLVM_AnyFloat : Type<
   "floating point LLVM type">;
 
 // Type constraint accepting any LLVM pointer type.
-def LLVM_AnyPointer : Type<CPred<"::llvm::isa<::mlir::LLVM::LLVMPointerType>($_self)">,
-                          "LLVM pointer type", "::mlir::LLVM::LLVMPointerType">;
+def LLVM_AnyPointer : Type<CPred<"::llvm::isa<::mlir::ptr::PtrType>($_self)">,
+                          "LLVM pointer type", "::mlir::ptr::PtrType">;
 
 // Pointer in a given address space.
 class LLVM_PointerInAddressSpace<int addressSpace> : Type<
   And<[LLVM_AnyPointer.predicate,
       CPred<
-        "::llvm::cast<::mlir::LLVM::LLVMPointerType>($_self).getAddressSpace() == "
+        "::llvm::cast<::mlir::ptr::PtrType>($_self).getAddressSpace() == "
         # addressSpace>]>,
   "LLVM pointer in address space " # addressSpace,
-  "::mlir::LLVM::LLVMPointerType"> {
-  let builderCall = "$_builder.getType<::mlir::LLVM::LLVMPointerType>("
+  "::mlir::ptr::PtrType"> {
+  let builderCall = "$_builder.getType<::mlir::ptr::PtrType>("
     # addressSpace # ")";
 }
 

@@ -11,6 +11,7 @@
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/OpenACC/OpenACCToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/Ptr/PtrToLLVMIRTranslation.h"
 
 void fir::support::registerLLVMTranslation(mlir::MLIRContext &context) {
   mlir::DialectRegistry registry;
@@ -20,6 +21,7 @@ void fir::support::registerLLVMTranslation(mlir::MLIRContext &context) {
   registerOpenMPDialectTranslation(registry);
   // Register LLVM-IR dialect interface.
   registerLLVMDialectTranslation(registry);
+  registerPtrDialectTranslation(registry);
   // Register builtin dialect interface.
   registerBuiltinDialectTranslation(registry);
   context.appendDialectRegistry(registry);

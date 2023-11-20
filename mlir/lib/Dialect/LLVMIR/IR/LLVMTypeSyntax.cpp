@@ -40,7 +40,7 @@ static StringRef getTypeKeyword(Type type) {
       .Case<LLVMLabelType>([&](Type) { return "label"; })
       .Case<LLVMMetadataType>([&](Type) { return "metadata"; })
       .Case<LLVMFunctionType>([&](Type) { return "func"; })
-      .Case<LLVMPointerType>([&](Type) { return "ptr"; })
+      .Case<ptr::PtrType>([&](Type) { return "ptr"; })
       .Case<LLVMFixedVectorType, LLVMScalableVectorType>(
           [&](Type) { return "vec"; })
       .Case<LLVMArrayType>([&](Type) { return "array"; })
@@ -104,8 +104,8 @@ void mlir::LLVM::detail::printType(Type type, AsmPrinter &printer) {
   printer << getTypeKeyword(type);
 
   llvm::TypeSwitch<Type>(type)
-      .Case<LLVMPointerType, LLVMArrayType, LLVMFixedVectorType,
-            LLVMScalableVectorType, LLVMFunctionType, LLVMTargetExtType>(
+      .Case<LLVMArrayType, LLVMFixedVectorType, LLVMScalableVectorType,
+            LLVMFunctionType, LLVMTargetExtType, ptr::PtrType>(
           [&](auto type) { type.print(printer); })
       .Case([&](LLVMStructType structType) {
         printStructType(printer, structType);
@@ -314,7 +314,7 @@ static Type dispatchParse(AsmParser &parser, bool allowAny = true) {
       .Case("label", [&] { return LLVMLabelType::get(ctx); })
       .Case("metadata", [&] { return LLVMMetadataType::get(ctx); })
       .Case("func", [&] { return LLVMFunctionType::parse(parser); })
-      .Case("ptr", [&] { return LLVMPointerType::parse(parser); })
+      .Case("ptr", [&] { return ptr::PtrType::parse(parser); })
       .Case("vec", [&] { return parseVectorType(parser); })
       .Case("array", [&] { return LLVMArrayType::parse(parser); })
       .Case("struct", [&] { return parseStructType(parser); })

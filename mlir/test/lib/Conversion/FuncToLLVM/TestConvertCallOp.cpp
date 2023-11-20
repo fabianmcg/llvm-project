@@ -52,9 +52,8 @@ struct TestConvertCallOp
 
     // Populate type conversions.
     LLVMTypeConverter typeConverter(m.getContext(), options);
-    typeConverter.addConversion([&](test::TestType type) {
-      return LLVM::LLVMPointerType::get(m.getContext());
-    });
+    typeConverter.addConversion(
+        [&](test::TestType type) { return ptr::PtrType::get(m.getContext()); });
     typeConverter.addConversion([&](test::SimpleAType type) {
       return IntegerType::get(type.getContext(), 42);
     });

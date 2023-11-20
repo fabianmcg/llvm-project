@@ -91,7 +91,7 @@ handleInlinedAllocas(Operation *call,
     // invalid IR, but LLVM cleans these up in InstCombineCalls.cpp, along with
     // other cases where the stacksave/stackrestore is redundant.
     stackPtr = builder.create<LLVM::StackSaveOp>(
-        call->getLoc(), LLVM::LLVMPointerType::get(call->getContext()));
+        call->getLoc(), ptr::PtrType::get(call->getContext()));
   }
   builder.setInsertionPoint(callerEntryBlock, callerEntryBlock->begin());
   for (auto &[allocaOp, arraySize, shouldInsertLifetime] : allocasToMove) {

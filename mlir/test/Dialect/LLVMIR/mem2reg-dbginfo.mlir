@@ -1,7 +1,7 @@
 // RUN: mlir-opt %s --pass-pipeline='builtin.module(llvm.func(mem2reg{region-simplify=false}))' | FileCheck %s
 
 llvm.func @use(i64)
-llvm.func @use_ptr(!llvm.ptr)
+llvm.func @use_ptr(!ptr.ptr)
 
 #di_basic_type = #llvm.di_basic_type<tag = DW_TAG_base_type, name = "ptr sized type", sizeInBits = 64>
 #di_file = #llvm.di_file<"test.ll" in "">
@@ -15,16 +15,16 @@ llvm.func @use_ptr(!llvm.ptr)
 llvm.func @basic_store_load(%arg0: i64) -> i64 {
   %0 = llvm.mlir.constant(1 : i32) : i32
   // CHECK-NOT: = llvm.alloca
-  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK-NOT: llvm.store
-  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !llvm.ptr
+  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !ptr.ptr
   // CHECK-NOT: llvm.intr.dbg.declare
-  llvm.intr.dbg.declare #di_local_variable = %1 : !llvm.ptr
+  llvm.intr.dbg.declare #di_local_variable = %1 : !ptr.ptr
   // CHECK: llvm.intr.dbg.value #[[$VAR]] = %[[LOADED:.*]] : i64
   // CHECK-NOT: llvm.intr.dbg.value
   // CHECK-NOT: llvm.intr.dbg.declare
   // CHECK-NOT: llvm.store
-  %2 = llvm.load %1 {alignment = 4 : i64} : !llvm.ptr -> i64
+  %2 = llvm.load %1 {alignment = 4 : i64} : !ptr.ptr -> i64
   // CHECK: llvm.return %[[LOADED]] : i64
   llvm.return %2 : i64
 }
@@ -34,20 +34,20 @@ llvm.func @basic_store_load(%arg0: i64) -> i64 {
 llvm.func @block_argument_value(%arg0: i64, %arg1: i1) -> i64 {
   %0 = llvm.mlir.constant(1 : i32) : i32
   // CHECK-NOT: = llvm.alloca
-  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK-NOT: llvm.intr.dbg.declare
-  llvm.intr.dbg.declare #di_local_variable = %1 : !llvm.ptr
+  llvm.intr.dbg.declare #di_local_variable = %1 : !ptr.ptr
   llvm.cond_br %arg1, ^bb1, ^bb2
 // CHECK: ^{{.*}}:
 ^bb1:
   // CHECK: llvm.intr.dbg.value #[[$VAR]] = %[[ARG0]]
   // CHECK-NOT: llvm.intr.dbg.value
-  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !llvm.ptr
+  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !ptr.ptr
   llvm.br ^bb2
 // CHECK: ^{{.*}}(%[[BLOCKARG:.*]]: i64):
 ^bb2:
   // CHECK: llvm.intr.dbg.value #[[$VAR]] = %[[BLOCKARG]]
-  %2 = llvm.load %1 {alignment = 4 : i64} : !llvm.ptr -> i64
+  %2 = llvm.load %1 {alignment = 4 : i64} : !ptr.ptr -> i64
   llvm.return %2 : i64
 }
 
@@ -56,17 +56,17 @@ llvm.func @block_argument_value(%arg0: i64, %arg1: i1) -> i64 {
 llvm.func @double_block_argument_value(%arg0: i64, %arg1: i1) -> i64 {
   %0 = llvm.mlir.constant(1 : i32) : i32
   // CHECK-NOT: = llvm.alloca
-  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK-NOT: llvm.intr.dbg.declare
-  llvm.intr.dbg.declare #di_local_variable = %1 : !llvm.ptr
+  llvm.intr.dbg.declare #di_local_variable = %1 : !ptr.ptr
   llvm.cond_br %arg1, ^bb1, ^bb2
 // CHECK: ^{{.*}}(%[[BLOCKARG1:.*]]: i64):
 ^bb1:
   // CHECK: llvm.intr.dbg.value #[[$VAR]] = %[[BLOCKARG1]]
-  %2 = llvm.load %1 {alignment = 4 : i64} : !llvm.ptr -> i64
+  %2 = llvm.load %1 {alignment = 4 : i64} : !ptr.ptr -> i64
   llvm.call @use(%2) : (i64) -> ()
   // CHECK: llvm.intr.dbg.value #[[$VAR]] = %[[ARG0]]
-  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !llvm.ptr
+  llvm.store %arg0, %1 {alignment = 4 : i64} : i64, !ptr.ptr
   llvm.br ^bb2
   // CHECK-NOT: llvm.intr.dbg.value
 // CHECK: ^{{.*}}(%[[BLOCKARG2:.*]]: i64):
@@ -82,9 +82,9 @@ llvm.func @double_block_argument_value(%arg0: i64, %arg1: i1) -> i64 {
 // CHECK: llvm.intr.dbg.value #{{.*}} = %[[UNDEF]]
 llvm.func @always_drop_promoted_declare() {
   %0 = llvm.mlir.constant(1 : i32) : i32
-  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
-  llvm.intr.dbg.declare #di_local_variable = %1 : !llvm.ptr
-  llvm.intr.dbg.value #di_local_variable = %1 : !llvm.ptr
+  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
+  llvm.intr.dbg.declare #di_local_variable = %1 : !ptr.ptr
+  llvm.intr.dbg.value #di_local_variable = %1 : !ptr.ptr
   llvm.return
 }
 
@@ -92,16 +92,16 @@ llvm.func @always_drop_promoted_declare() {
 llvm.func @keep_dbg_if_not_promoted() {
   %0 = llvm.mlir.constant(1 : i32) : i32
   // CHECK: %[[ALLOCA:.*]] = llvm.alloca
-  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %1 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK-NOT: = llvm.alloca
   // CHECK-NOT: llvm.intr.dbg.declare
   // CHECK: llvm.intr.dbg.declare #[[$VAR]] = %[[ALLOCA]]
   // CHECK-NOT: = llvm.alloca
   // CHECK-NOT: llvm.intr.dbg.declare
   // CHECK: llvm.call @use_ptr(%[[ALLOCA]])
-  llvm.intr.dbg.declare #di_local_variable = %1 : !llvm.ptr
-  %2 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !llvm.ptr
-  llvm.intr.dbg.declare #di_local_variable_2 = %2 : !llvm.ptr
-  llvm.call @use_ptr(%1) : (!llvm.ptr) -> ()
+  llvm.intr.dbg.declare #di_local_variable = %1 : !ptr.ptr
+  %2 = llvm.alloca %0 x i64 {alignment = 8 : i64} : (i32) -> !ptr.ptr
+  llvm.intr.dbg.declare #di_local_variable_2 = %2 : !ptr.ptr
+  llvm.call @use_ptr(%1) : (!ptr.ptr) -> ()
   llvm.return
 }

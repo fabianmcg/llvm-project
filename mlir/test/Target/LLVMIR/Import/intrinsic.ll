@@ -10,7 +10,7 @@ define void @fmuladd_test(float %0, float %1, <8 x float> %2, ptr %3) {
   %7 = call float @llvm.fma.f32(float %0, float %1, float %0)
   ; CHECK: llvm.intr.fma(%{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xf32>, vector<8xf32>, vector<8xf32>) -> vector<8xf32>
   %8 = call <8 x float> @llvm.fma.v8f32(<8 x float> %2, <8 x float> %2, <8 x float> %2)
-  ; CHECK: "llvm.intr.prefetch"(%{{.*}}) <{cache = 1 : i32, hint = 3 : i32, rw = 0 : i32}> : (!llvm.ptr) -> ()
+  ; CHECK: "llvm.intr.prefetch"(%{{.*}}) <{cache = 1 : i32, hint = 3 : i32, rw = 0 : i32}> : (!ptr.ptr) -> ()
   call void @llvm.prefetch.p0(ptr %3, i32 0, i32 3, i32 1)
   ret void
 }
@@ -405,12 +405,12 @@ define <7 x i1> @get_active_lane_mask(i64 %0, i64 %1) {
 define void @masked_load_store_intrinsics(ptr %vec, <7 x i1> %mask) {
   ; CHECK:  %[[UNDEF:.+]] = llvm.mlir.undef
   ; CHECK:  %[[VAL1:.+]] = llvm.intr.masked.load %[[VEC]], %[[MASK]], %[[UNDEF]] {alignment = 1 : i32}
-  ; CHECK-SAME:  (!llvm.ptr, vector<7xi1>, vector<7xf32>) -> vector<7xf32>
+  ; CHECK-SAME:  (!ptr.ptr, vector<7xi1>, vector<7xf32>) -> vector<7xf32>
   %1 = call <7 x float> @llvm.masked.load.v7f32.p0(ptr %vec, i32 1, <7 x i1> %mask, <7 x float> undef)
   ; CHECK:  %[[VAL2:.+]] = llvm.intr.masked.load %[[VEC]], %[[MASK]], %[[VAL1]] {alignment = 4 : i32}
   %2 = call <7 x float> @llvm.masked.load.v7f32.p0(ptr %vec, i32 4, <7 x i1> %mask, <7 x float> %1)
   ; CHECK:  llvm.intr.masked.store %[[VAL2]], %[[VEC]], %[[MASK]] {alignment = 8 : i32}
-  ; CHECK-SAME:  vector<7xf32>, vector<7xi1> into !llvm.ptr
+  ; CHECK-SAME:  vector<7xf32>, vector<7xi1> into !ptr.ptr
   call void @llvm.masked.store.v7f32.p0(<7 x float> %2, ptr %vec, i32 8, <7 x i1> %mask)
   ret void
 }
@@ -433,20 +433,20 @@ define void @masked_gather_scatter_intrinsics(<7 x ptr> %vec, <7 x i1> %mask) {
 
 ; CHECK-LABEL:  llvm.func @masked_expand_compress_intrinsics
 define void @masked_expand_compress_intrinsics(ptr %0, <7 x i1> %1, <7 x float> %2) {
-  ; CHECK: %[[val1:.+]] = "llvm.intr.masked.expandload"(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, vector<7xi1>, vector<7xf32>) -> vector<7xf32>
+  ; CHECK: %[[val1:.+]] = "llvm.intr.masked.expandload"(%{{.*}}, %{{.*}}, %{{.*}}) : (!ptr.ptr, vector<7xi1>, vector<7xf32>) -> vector<7xf32>
   %4 = call <7 x float> @llvm.masked.expandload.v7f32(ptr %0, <7 x i1> %1, <7 x float> %2)
-  ; CHECK: "llvm.intr.masked.compressstore"(%[[val1]], %{{.*}}, %{{.*}}) : (vector<7xf32>, !llvm.ptr, vector<7xi1>) -> ()
+  ; CHECK: "llvm.intr.masked.compressstore"(%[[val1]], %{{.*}}, %{{.*}}) : (vector<7xf32>, !ptr.ptr, vector<7xi1>) -> ()
   call void @llvm.masked.compressstore.v7f32(<7 x float> %4, ptr %0, <7 x i1> %1)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @annotate_intrinsics
 define void @annotate_intrinsics(ptr %var, ptr %ptr, i16 %int, ptr %annotation, ptr %fileName, i32 %line, ptr %args) {
-  ; CHECK: "llvm.intr.var.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !llvm.ptr, !llvm.ptr, i32, !llvm.ptr) -> ()
+  ; CHECK: "llvm.intr.var.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!ptr.ptr, !ptr.ptr, !ptr.ptr, i32, !ptr.ptr) -> ()
   call void @llvm.var.annotation.p0.p0(ptr %var, ptr %annotation, ptr %fileName, i32 %line, ptr %args)
-  ; CHECK: %{{.*}} = "llvm.intr.ptr.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, !llvm.ptr, !llvm.ptr, i32, !llvm.ptr) -> !llvm.ptr
+  ; CHECK: %{{.*}} = "llvm.intr.ptr.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!ptr.ptr, !ptr.ptr, !ptr.ptr, i32, !ptr.ptr) -> !ptr.ptr
   %1 = call ptr @llvm.ptr.annotation.p0.p0(ptr %ptr, ptr %annotation, ptr %fileName, i32 %line, ptr %args)
-  ; CHECK: %{{.*}} = "llvm.intr.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (i16, !llvm.ptr, !llvm.ptr, i32) -> i16
+  ; CHECK: %{{.*}} = "llvm.intr.annotation"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (i16, !ptr.ptr, !ptr.ptr, i32) -> i16
   %2 = call i16 @llvm.annotation.i16.p0(i16 %int, ptr %annotation, ptr %fileName, i32 %line)
   ret void
 }
@@ -466,25 +466,25 @@ define void @trap_intrinsics() {
 ; CHECK-LABEL:  llvm.func @memcpy_test
 define void @memcpy_test(i32 %0, ptr %1, ptr %2) {
   ; CHECK: %[[CST:.+]] = llvm.mlir.constant(10 : i64) : i64
-  ; CHECK: "llvm.intr.memcpy"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!llvm.ptr, !llvm.ptr, i32) -> ()
+  ; CHECK: "llvm.intr.memcpy"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!ptr.ptr, !ptr.ptr, i32) -> ()
   call void @llvm.memcpy.p0.p0.i32(ptr %1, ptr %2, i32 %0, i1 false)
-  ; CHECK: "llvm.intr.memcpy.inline"(%{{.*}}, %{{.*}}) <{isVolatile = false, len = 10 : i64}> : (!llvm.ptr, !llvm.ptr) -> ()
+  ; CHECK: "llvm.intr.memcpy.inline"(%{{.*}}, %{{.*}}) <{isVolatile = false, len = 10 : i64}> : (!ptr.ptr, !ptr.ptr) -> ()
   call void @llvm.memcpy.inline.p0.p0.i64(ptr %1, ptr %2, i64 10, i1 false)
-  ; CHECK: "llvm.intr.memcpy.inline"(%{{.*}}, %{{.*}}) <{isVolatile = false, len = 10 : i32}> : (!llvm.ptr, !llvm.ptr) -> ()
+  ; CHECK: "llvm.intr.memcpy.inline"(%{{.*}}, %{{.*}}) <{isVolatile = false, len = 10 : i32}> : (!ptr.ptr, !ptr.ptr) -> ()
   call void @llvm.memcpy.inline.p0.p0.i32(ptr %1, ptr %2, i32 10, i1 false)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @memmove_test
 define void @memmove_test(i32 %0, ptr %1, ptr %2) {
-  ; CHECK: "llvm.intr.memmove"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!llvm.ptr, !llvm.ptr, i32) -> ()
+  ; CHECK: "llvm.intr.memmove"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!ptr.ptr, !ptr.ptr, i32) -> ()
   call void @llvm.memmove.p0.p0.i32(ptr %1, ptr %2, i32 %0, i1 false)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @memset_test
 define void @memset_test(i32 %0, ptr %1, i8 %2) {
-  ; CHECK: "llvm.intr.memset"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!llvm.ptr, i8, i32) -> ()
+  ; CHECK: "llvm.intr.memset"(%{{.*}}, %{{.*}}, %{{.*}}) <{isVolatile = false}> : (!ptr.ptr, i8, i32) -> ()
   call void @llvm.memset.p0.i32(ptr %1, i8 %2, i32 %0, i1 false)
   ret void
 }
@@ -644,23 +644,23 @@ define void @expect_with_probability(i16 %0) {
 
 ; CHECK-LABEL: llvm.func @threadlocal_test
 define void @threadlocal_test(ptr %0) {
-  ; CHECK: "llvm.intr.threadlocal.address"(%{{.*}}) : (!llvm.ptr) -> !llvm.ptr
+  ; CHECK: "llvm.intr.threadlocal.address"(%{{.*}}) : (!ptr.ptr) -> !ptr.ptr
   %local = call ptr @llvm.threadlocal.address.p0(ptr %0)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @coro_id
 define void @coro_id(i32 %0, ptr %1) {
-  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !llvm.ptr, !llvm.ptr, !llvm.ptr) -> !llvm.token
+  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !ptr.ptr, !ptr.ptr, !ptr.ptr) -> !llvm.token
   %3 = call token @llvm.coro.id(i32 %0, ptr %1, ptr %1, ptr null)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @coro_begin
 define void @coro_begin(i32 %0, ptr %1) {
-  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !llvm.ptr, !llvm.ptr, !llvm.ptr) -> !llvm.token
+  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !ptr.ptr, !ptr.ptr, !ptr.ptr) -> !llvm.token
   %3 = call token @llvm.coro.id(i32 %0, ptr %1, ptr %1, ptr null)
-  ; CHECK: llvm.intr.coro.begin %{{.*}}, %{{.*}} : (!llvm.token, !llvm.ptr) -> !llvm.ptr
+  ; CHECK: llvm.intr.coro.begin %{{.*}}, %{{.*}} : (!llvm.token, !ptr.ptr) -> !ptr.ptr
   %4 = call ptr @llvm.coro.begin(token %3, ptr %1)
   ret void
 }
@@ -684,14 +684,14 @@ define void @coro_align() {
 
 ; CHECK-LABEL:  llvm.func @coro_save
 define void @coro_save(ptr %0) {
-  ; CHECK: llvm.intr.coro.save %{{.*}} : (!llvm.ptr) -> !llvm.token
+  ; CHECK: llvm.intr.coro.save %{{.*}} : (!ptr.ptr) -> !llvm.token
   %2 = call token @llvm.coro.save(ptr %0)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @coro_suspend
 define void @coro_suspend(i32 %0, i1 %1, ptr %2) {
-  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !llvm.ptr, !llvm.ptr, !llvm.ptr) -> !llvm.token
+  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !ptr.ptr, !ptr.ptr, !ptr.ptr) -> !llvm.token
   %4 = call token @llvm.coro.id(i32 %0, ptr %2, ptr %2, ptr null)
   ; CHECK: llvm.intr.coro.suspend %{{.*}}, %{{.*}} : i8
   %5 = call i8 @llvm.coro.suspend(token %4, i1 %1)
@@ -707,9 +707,9 @@ define void @coro_end(ptr %0, i1 %1) {
 
 ; CHECK-LABEL:  llvm.func @coro_free
 define void @coro_free(i32 %0, ptr %1) {
-  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !llvm.ptr, !llvm.ptr, !llvm.ptr) -> !llvm.token
+  ; CHECK: llvm.intr.coro.id %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}} : (i32, !ptr.ptr, !ptr.ptr, !ptr.ptr) -> !llvm.token
   %3 = call token @llvm.coro.id(i32 %0, ptr %1, ptr %1, ptr null)
-  ; CHECK: llvm.intr.coro.free %{{.*}}, %{{.*}} : (!llvm.token, !llvm.ptr) -> !llvm.ptr
+  ; CHECK: llvm.intr.coro.free %{{.*}}, %{{.*}} : (!llvm.token, !ptr.ptr) -> !ptr.ptr
   %4 = call ptr @llvm.coro.free(token %3, ptr %1)
   ret void
 }
@@ -723,34 +723,34 @@ define void @coro_resume(ptr %0) {
 
 ; CHECK-LABEL:  llvm.func @eh_typeid_for
 define void @eh_typeid_for(ptr %0) {
-  ; CHECK: llvm.intr.eh.typeid.for %{{.*}} : (!llvm.ptr) -> i32
+  ; CHECK: llvm.intr.eh.typeid.for %{{.*}} : (!ptr.ptr) -> i32
   %2 = call i32 @llvm.eh.typeid.for(ptr %0)
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @stack_save() {
 define void @stack_save() {
-  ; CHECK: llvm.intr.stacksave : !llvm.ptr
+  ; CHECK: llvm.intr.stacksave : !ptr.ptr
   %1 = call ptr @llvm.stacksave.p0()
-  ; CHECK: llvm.intr.stacksave : !llvm.ptr<1>
+  ; CHECK: llvm.intr.stacksave : !ptr.ptr<1>
   %2 = call ptr addrspace(1) @llvm.stacksave.p1()
   ret void
 }
 
 ; CHECK-LABEL:  llvm.func @stack_restore
 define void @stack_restore(ptr %0, ptr addrspace(1) %1) {
-  ; CHECK: llvm.intr.stackrestore %{{.*}} : !llvm.ptr
+  ; CHECK: llvm.intr.stackrestore %{{.*}} : !ptr.ptr
   call void @llvm.stackrestore.p0(ptr %0)
-  ; CHECK: llvm.intr.stackrestore %{{.*}} : !llvm.ptr<1>
+  ; CHECK: llvm.intr.stackrestore %{{.*}} : !ptr.ptr<1>
   call void @llvm.stackrestore.p1(ptr addrspace(1) %1)
   ret void
 }
 
 ; CHECK-LABEL: llvm.func @lifetime
 define void @lifetime(ptr %0) {
-  ; CHECK: llvm.intr.lifetime.start 16, %{{.*}} : !llvm.ptr
+  ; CHECK: llvm.intr.lifetime.start 16, %{{.*}} : !ptr.ptr
   call void @llvm.lifetime.start.p0(i64 16, ptr %0)
-  ; CHECK: llvm.intr.lifetime.end 32, %{{.*}} : !llvm.ptr
+  ; CHECK: llvm.intr.lifetime.end 32, %{{.*}} : !ptr.ptr
   call void @llvm.lifetime.end.p0(i64 32, ptr %0)
   ret void
 }
@@ -827,13 +827,13 @@ define void @vector_predication_intrinsics(<8 x i32> %0, <8 x i32> %1, <8 x floa
   %47 = call <8 x i32> @llvm.vp.select.v8i32(<8 x i1> %11, <8 x i32> %0, <8 x i32> %1, i32 %12)
   ; CHECK: "llvm.intr.vp.merge"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi1>, vector<8xi32>, vector<8xi32>, i32) -> vector<8xi32>
   %48 = call <8 x i32> @llvm.vp.merge.v8i32(<8 x i1> %11, <8 x i32> %0, <8 x i32> %1, i32 %12)
-  ; CHECK: "llvm.intr.vp.store"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi32>, !llvm.ptr, vector<8xi1>, i32) -> ()
+  ; CHECK: "llvm.intr.vp.store"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi32>, !ptr.ptr, vector<8xi1>, i32) -> ()
   call void @llvm.vp.store.v8i32.p0(<8 x i32> %0, ptr %9, <8 x i1> %11, i32 %12)
-  ; CHECK: "llvm.intr.vp.load"(%{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, vector<8xi1>, i32) -> vector<8xi32>
+  ; CHECK: "llvm.intr.vp.load"(%{{.*}}, %{{.*}}, %{{.*}}) : (!ptr.ptr, vector<8xi1>, i32) -> vector<8xi32>
   %49 = call <8 x i32> @llvm.vp.load.v8i32.p0(ptr %9, <8 x i1> %11, i32 %12)
-  ; CHECK: "llvm.intr.experimental.vp.strided.store"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi32>, !llvm.ptr, i32, vector<8xi1>, i32) -> ()
+  ; CHECK: "llvm.intr.experimental.vp.strided.store"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi32>, !ptr.ptr, i32, vector<8xi1>, i32) -> ()
   call void @llvm.experimental.vp.strided.store.v8i32.p0.i32(<8 x i32> %0, ptr %9, i32 %7, <8 x i1> %11, i32 %12)
-  ; CHECK: "llvm.intr.experimental.vp.strided.load"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!llvm.ptr, i32, vector<8xi1>, i32) -> vector<8xi32>
+  ; CHECK: "llvm.intr.experimental.vp.strided.load"(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}}) : (!ptr.ptr, i32, vector<8xi1>, i32) -> vector<8xi32>
   %50 = call <8 x i32> @llvm.experimental.vp.strided.load.v8i32.p0.i32(ptr %9, i32 %7, <8 x i1> %11, i32 %12)
   ; CHECK: "llvm.intr.vp.trunc"(%{{.*}}, %{{.*}}, %{{.*}}) : (vector<8xi64>, vector<8xi1>, i32) -> vector<8xi32>
   %51 = call <8 x i32> @llvm.vp.trunc.v8i32.v8i64(<8 x i64> %4, <8 x i1> %11, i32 %12)

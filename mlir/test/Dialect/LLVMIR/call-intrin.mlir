@@ -33,8 +33,8 @@ llvm.func @round_overloaded() -> f32 {
 llvm.func @lifetime_start() {
   %0 = llvm.mlir.constant(4 : i64) : i64
   %1 = llvm.mlir.constant(1 : i8) : i8
-  %2 = llvm.alloca %1 x f32 : (i8) -> !llvm.ptr
-  llvm.call_intrinsic "llvm.lifetime.start"(%0, %2) : (i64, !llvm.ptr) -> () {}
+  %2 = llvm.alloca %1 x f32 : (i8) -> !ptr.ptr
+  llvm.call_intrinsic "llvm.lifetime.start"(%0, %2) : (i64, !ptr.ptr) -> () {}
   llvm.return
 }
 
@@ -43,9 +43,9 @@ llvm.func @lifetime_start() {
 // CHECK-LABEL: define void @variadic()
 llvm.func @variadic() {
   %0 = llvm.mlir.constant(1 : i8) : i8
-  %1 = llvm.alloca %0 x f32 : (i8) -> !llvm.ptr
+  %1 = llvm.alloca %0 x f32 : (i8) -> !ptr.ptr
   // CHECK: call void (...) @llvm.localescape(ptr %1, ptr %1)
-  llvm.call_intrinsic "llvm.localescape"(%1, %1) : (!llvm.ptr, !llvm.ptr) -> ()
+  llvm.call_intrinsic "llvm.localescape"(%1, %1) : (!ptr.ptr, !ptr.ptr) -> ()
   llvm.return
 }
 

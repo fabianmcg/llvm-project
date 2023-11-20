@@ -2,14 +2,14 @@
 
 module attributes {omp.is_target_device = false} {
   llvm.func @_QQmain() attributes {fir.bindc_name = "main"} {
-    %0 = llvm.mlir.addressof @_QFEi : !llvm.ptr
-    %1 = llvm.mlir.addressof @_QFEsp : !llvm.ptr
-    %2 = omp.map_info var_ptr(%1 : !llvm.ptr, i32) map_clauses(tofrom) capture(ByRef) -> !llvm.ptr {name = "sp"}
-    %3 = omp.map_info var_ptr(%0 : !llvm.ptr, i32) map_clauses(to) capture(ByCopy) -> !llvm.ptr {name = "i"}
-    omp.target map_entries(%2 -> %arg0, %3 -> %arg1 : !llvm.ptr, !llvm.ptr) {
-      ^bb0(%arg0: !llvm.ptr, %arg1: !llvm.ptr):
-      %4 = llvm.load %arg1 : !llvm.ptr -> i32
-      llvm.store %4, %arg0 : i32, !llvm.ptr
+    %0 = llvm.mlir.addressof @_QFEi : !ptr.ptr
+    %1 = llvm.mlir.addressof @_QFEsp : !ptr.ptr
+    %2 = omp.map_info var_ptr(%1 : !ptr.ptr, i32) map_clauses(tofrom) capture(ByRef) -> !ptr.ptr {name = "sp"}
+    %3 = omp.map_info var_ptr(%0 : !ptr.ptr, i32) map_clauses(to) capture(ByCopy) -> !ptr.ptr {name = "i"}
+    omp.target map_entries(%2 -> %arg0, %3 -> %arg1 : !ptr.ptr, !ptr.ptr) {
+      ^bb0(%arg0: !ptr.ptr, %arg1: !ptr.ptr):
+      %4 = llvm.load %arg1 : !ptr.ptr -> i32
+      llvm.store %4, %arg0 : i32, !ptr.ptr
       omp.terminator
     }
     llvm.return

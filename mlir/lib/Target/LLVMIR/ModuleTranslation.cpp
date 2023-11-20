@@ -140,15 +140,15 @@ translateDataLayout(DataLayoutSpecInterface attribute,
                 layoutStream << ":" << preferred;
               return success();
             })
-            .Case([&](LLVMPointerType ptrType) {
+            .Case([&](ptr::PtrType ptrType) {
               layoutStream << "p" << ptrType.getAddressSpace() << ":";
               unsigned size = dataLayout.getTypeSizeInBits(type);
               unsigned abi = dataLayout.getTypeABIAlignment(type) * 8u;
               unsigned preferred =
                   dataLayout.getTypePreferredAlignment(type) * 8u;
               layoutStream << size << ":" << abi << ":" << preferred;
-              if (std::optional<unsigned> index = extractPointerSpecValue(
-                      entry.getValue(), PtrDLEntryPos::Index))
+              if (std::optional<unsigned> index = ptr::extractPointerSpecValue(
+                      entry.getValue(), ptr::PtrDLEntryPos::Index))
                 layoutStream << ":" << *index;
               return success();
             })

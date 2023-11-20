@@ -50,11 +50,11 @@ MLIR_END */
 // The function takes two 2D memref, the signature in MLIR LLVM dialect will be:
 // llvm.func @add_memref(
 //   // First Memref (%arg0)
-//      %allocated_ptr0: !llvm.ptr<f64>, %aligned_ptr0: !llvm.ptr<f64>,
+//      %allocated_ptr0: !ptr.ptr<f64>, %aligned_ptr0: !ptr.ptr<f64>,
 //      %offset0: i64, %size0_d0: i64, %size0_d1: i64, %stride0_d0: i64,
 //      %stride0_d1: i64,
 //   // Second Memref (%arg1)
-//      %allocated_ptr1: !llvm.ptr<f64>, %aligned_ptr1: !llvm.ptr<f64>,
+//      %allocated_ptr1: !ptr.ptr<f64>, %aligned_ptr1: !ptr.ptr<f64>,
 //      %offset1: i64, %size1_d0: i64, %size1_d1: i64, %stride1_d0: i64,
 //      %stride1_d1: i64,
 //
@@ -68,9 +68,9 @@ long long add_memref(double *allocated_ptr0, double *aligned_ptr0,
 
 // The llvm.emit_c_interface will also trigger emission of another wrapper:
 // llvm.func @_mlir_ciface_add_memref(
-//   %arg0: !llvm.ptr<struct<(ptr<f64>, ptr<f64>, i64,
+//   %arg0: !ptr.ptr<struct<(ptr<f64>, ptr<f64>, i64,
 //                            array<2 x i64>, array<2 x i64>)>>,
-//   %arg1: !llvm.ptr<struct<(ptr<f64>, ptr<f64>, i64,
+//   %arg1: !ptr.ptr<struct<(ptr<f64>, ptr<f64>, i64,
 //                            array<2 x i64>, array<2 x i64>)>>)
 // -> i64
 typedef struct {

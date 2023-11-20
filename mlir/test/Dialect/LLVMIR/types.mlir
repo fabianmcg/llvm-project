@@ -57,14 +57,14 @@ func.func @integer() {
 
 // CHECK-LABEL: @ptr
 func.func @ptr() {
-  // CHECK: !llvm.ptr
-  "some.op"() : () -> !llvm.ptr
-  // CHECK: !llvm.ptr
-  "some.op"() : () -> !llvm.ptr<0>
-  // CHECK: !llvm.ptr<42>
-  "some.op"() : () -> !llvm.ptr<42>
-  // CHECK: !llvm.ptr<9>
-  "some.op"() : () -> !llvm.ptr<9>
+  // CHECK: !ptr.ptr
+  "some.op"() : () -> !ptr.ptr
+  // CHECK: !ptr.ptr
+  "some.op"() : () -> !ptr.ptr<0>
+  // CHECK: !ptr.ptr<42>
+  "some.op"() : () -> !ptr.ptr<42>
+  // CHECK: !ptr.ptr<9>
+  "some.op"() : () -> !ptr.ptr<9>
   return
 }
 

@@ -13,9 +13,9 @@ module {
   llvm.func @entry() -> i32 {
     %c0 = llvm.mlir.constant(0 : index) : i64
 
-    %1 = llvm.mlir.addressof @const16 : !llvm.ptr
+    %1 = llvm.mlir.addressof @const16 : !ptr.ptr
     %ptr = llvm.getelementptr %1[%c0, %c0]
-      : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<16 x i32>
+      : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.array<16 x i32>
 
     // operand_attrs of *m operands need to be piped through to LLVM for
     // verification to pass.
@@ -23,7 +23,7 @@ module {
         asm_dialect = intel
         operand_attrs = [{ elementtype = vector<16xi32> }]
         "vmovdqu32 $0, $1", "=x,*m" %ptr
-      : (!llvm.ptr) -> vector<16xi32>
+      : (!ptr.ptr) -> vector<16xi32>
 
     // CHECK: 0
     %v0 = vector.extract %v[0]: i32 from vector<16xi32>

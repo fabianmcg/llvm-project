@@ -6,10 +6,10 @@ gpu.module @kernel {
   gpu.func @private(%arg0: f32) private(%arg1: memref<4xf32, #gpu.address_space<private>>) {
     // Allocate private memory inside the function.
     // NVVM: %[[size:.*]] = llvm.mlir.constant(4 : i64) : i64
-    // NVVM: %[[raw:.*]] = llvm.alloca %[[size]] x f32 : (i64) -> !llvm.ptr
+    // NVVM: %[[raw:.*]] = llvm.alloca %[[size]] x f32 : (i64) -> !ptr.ptr
 
     // ROCDL: %[[size:.*]] = llvm.mlir.constant(4 : i64) : i64
-    // ROCDL: %[[raw:.*]] = llvm.alloca %[[size]] x f32 : (i64) -> !llvm.ptr<5>
+    // ROCDL: %[[raw:.*]] = llvm.alloca %[[size]] x f32 : (i64) -> !ptr.ptr<5>
 
     // Populate the memref descriptor.
     // NVVM: %[[descr1:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
@@ -67,13 +67,13 @@ gpu.module @kernel {
   // ROCDL-SAME: {
   gpu.func @workgroup(%arg0: f32) workgroup(%arg1: memref<4xf32, #gpu.address_space<workgroup>>) {
     // Get the address of the first element in the global array.
-    // NVVM: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !llvm.ptr<3>
+    // NVVM: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !ptr.ptr<3>
     // NVVM: %[[raw:.*]] = llvm.getelementptr %[[addr]][0, 0]
-    // NVVM-SAME: !llvm.ptr<3>
+    // NVVM-SAME: !ptr.ptr<3>
 
-    // ROCDL: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !llvm.ptr<3>
+    // ROCDL: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !ptr.ptr<3>
     // ROCDL: %[[raw:.*]] = llvm.getelementptr %[[addr]][0, 0]
-    // ROCDL-SAME: !llvm.ptr<3>
+    // ROCDL-SAME: !ptr.ptr<3>
 
     // Populate the memref descriptor.
     // NVVM: %[[descr1:.*]] = llvm.mlir.undef : !llvm.struct<(ptr<3>, ptr<3>, i64, array<1 x i64>, array<1 x i64>)>
@@ -128,13 +128,13 @@ gpu.module @kernel {
   // ROCDL-LABEL: llvm.func @workgroup3d
   gpu.func @workgroup3d(%arg0: f32) workgroup(%arg1: memref<4x2x6xf32, #gpu.address_space<workgroup>>) {
     // Get the address of the first element in the global array.
-    // NVVM: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !llvm.ptr<3>
+    // NVVM: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !ptr.ptr<3>
     // NVVM: %[[raw:.*]] = llvm.getelementptr %[[addr]][0, 0]
-    // NVVM-SAME: !llvm.ptr<3>
+    // NVVM-SAME: !ptr.ptr<3>
 
-    // ROCDL: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !llvm.ptr<3>
+    // ROCDL: %[[addr:.*]] = llvm.mlir.addressof @[[$buffer]] : !ptr.ptr<3>
     // ROCDL: %[[raw:.*]] = llvm.getelementptr %[[addr]][0, 0]
-    // ROCDL-SAME: !llvm.ptr<3>
+    // ROCDL-SAME: !ptr.ptr<3>
 
     // Populate the memref descriptor.
     // NVVM: %[[descr1:.*]] = llvm.mlir.undef : !llvm.struct<(ptr<3>, ptr<3>, i64, array<3 x i64>, array<3 x i64>)>
@@ -208,14 +208,14 @@ gpu.module @kernel {
 
     // Private buffers.
     // NVVM: %[[c3:.*]] = llvm.mlir.constant(3 : i64)
-    // NVVM: llvm.alloca %[[c3]] x f32 : (i64) -> !llvm.ptr
+    // NVVM: llvm.alloca %[[c3]] x f32 : (i64) -> !ptr.ptr
     // NVVM: %[[c4:.*]] = llvm.mlir.constant(4 : i64)
-    // NVVM: llvm.alloca %[[c4]] x f32 : (i64) -> !llvm.ptr
+    // NVVM: llvm.alloca %[[c4]] x f32 : (i64) -> !ptr.ptr
 
     // ROCDL: %[[c3:.*]] = llvm.mlir.constant(3 : i64)
-    // ROCDL: llvm.alloca %[[c3]] x f32 : (i64) -> !llvm.ptr<5>
+    // ROCDL: llvm.alloca %[[c3]] x f32 : (i64) -> !ptr.ptr<5>
     // ROCDL: %[[c4:.*]] = llvm.mlir.constant(4 : i64)
-    // ROCDL: llvm.alloca %[[c4]] x f32 : (i64) -> !llvm.ptr<5>
+    // ROCDL: llvm.alloca %[[c4]] x f32 : (i64) -> !ptr.ptr<5>
 
     %c0 = arith.constant 0 : index
     memref.store %arg0, %arg1[%c0] : memref<1xf32, #gpu.address_space<workgroup>>
@@ -246,10 +246,10 @@ gpu.module @kernel {
     workgroup(%arg1: memref<48xf32, #gpu.address_space<workgroup>> {llvm.align = 8 : i64})
     private(%arg2: memref<48xf32, #gpu.address_space<private>> {llvm.align = 4 : i64}) {
     // NVVM: %[[size:.*]] = llvm.mlir.constant(48 : i64) : i64
-    // NVVM: %[[raw:.*]] = llvm.alloca %[[size]] x f32 {alignment = 4 : i64} : (i64) -> !llvm.ptr
+    // NVVM: %[[raw:.*]] = llvm.alloca %[[size]] x f32 {alignment = 4 : i64} : (i64) -> !ptr.ptr
 
     // ROCDL: %[[size:.*]] = llvm.mlir.constant(48 : i64) : i64
-    // ROCDL: %[[raw:.*]] = llvm.alloca %[[size]] x f32 {alignment = 4 : i64} : (i64) -> !llvm.ptr<5>
+    // ROCDL: %[[raw:.*]] = llvm.alloca %[[size]] x f32 {alignment = 4 : i64} : (i64) -> !ptr.ptr<5>
 
     %val = memref.load %arg1[%arg0] : memref<48xf32, #gpu.address_space<workgroup>>
     memref.store %val, %arg2[%arg0] : memref<48xf32, #gpu.address_space<private>>

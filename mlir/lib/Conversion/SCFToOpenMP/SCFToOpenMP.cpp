@@ -218,7 +218,7 @@ static omp::ReductionDeclareOp addAtomicRMW(OpBuilder &builder,
                                             omp::ReductionDeclareOp decl,
                                             scf::ReduceOp reduce) {
   OpBuilder::InsertionGuard guard(builder);
-  auto ptrType = LLVM::LLVMPointerType::get(builder.getContext());
+  auto ptrType = ptr::PtrType::get(builder.getContext());
   Location reduceOperandLoc = reduce.getOperand().getLoc();
   builder.createBlock(&decl.getAtomicReductionRegion(),
                       decl.getAtomicReductionRegion().end(), {ptrType, ptrType},
@@ -364,7 +364,7 @@ struct ParallelOpLowering : public OpRewritePattern<scf::ParallelOp> {
         loc, rewriter.getIntegerType(64), rewriter.getI64IntegerAttr(1));
     SmallVector<Value> reductionVariables;
     reductionVariables.reserve(parallelOp.getNumReductions());
-    auto ptrType = LLVM::LLVMPointerType::get(parallelOp.getContext());
+    auto ptrType = ptr::PtrType::get(parallelOp.getContext());
     for (Value init : parallelOp.getInitVals()) {
       assert((LLVM::isCompatibleType(init.getType()) ||
               isa<LLVM::PointerElementTypeInterface>(init.getType())) &&

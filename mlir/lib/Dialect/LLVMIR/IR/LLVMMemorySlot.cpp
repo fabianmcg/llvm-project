@@ -73,7 +73,7 @@ SmallVector<DestructurableMemorySlot> LLVM::AllocaOp::getDestructurableSlots() {
 
   DenseMap<Attribute, Type> allocaTypeMap;
   for (Attribute index : llvm::make_first_range(destructuredType.value()))
-    allocaTypeMap.insert({index, LLVM::LLVMPointerType::get(getContext())});
+    allocaTypeMap.insert({index, ptr::PtrType::get(getContext())});
 
   return {
       DestructurableMemorySlot{{getResult(), getElemType()}, {allocaTypeMap}}};
@@ -92,8 +92,7 @@ LLVM::AllocaOp::destructure(const DestructurableMemorySlot &slot,
     Type elemType = destructurableType.getTypeAtIndex(index);
     assert(elemType && "used index must exist");
     auto subAlloca = rewriter.create<LLVM::AllocaOp>(
-        getLoc(), LLVM::LLVMPointerType::get(getContext()), elemType,
-        getArraySize());
+        getLoc(), ptr::PtrType::get(getContext()), elemType, getArraySize());
     slotMap.try_emplace<MemorySlot>(index, {subAlloca.getResult(), elemType});
   }
 
@@ -332,7 +331,7 @@ LogicalResult LLVM::GEPOp::ensureOnlySafeAccesses(
 bool LLVM::GEPOp::canRewire(const DestructurableMemorySlot &slot,
                             SmallPtrSetImpl<Attribute> &usedIndices,
                             SmallVectorImpl<MemorySlot> &mustBeSafelyUsed) {
-  auto basePtrType = llvm::dyn_cast<LLVM::LLVMPointerType>(getBase().getType());
+  auto basePtrType = llvm::dyn_cast<ptr::PtrType>(getBase().getType());
   if (!basePtrType)
     return false;
 
@@ -347,7 +346,7 @@ bool LLVM::GEPOp::canRewire(const DestructurableMemorySlot &slot,
   if (!firstLevelIndex)
     return false;
   assert(slot.elementPtrs.contains(firstLevelIndex));
-  if (!llvm::isa<LLVM::LLVMPointerType>(slot.elementPtrs.at(firstLevelIndex)))
+  if (!llvm::isa<ptr::PtrType>(slot.elementPtrs.at(firstLevelIndex)))
     return false;
   mustBeSafelyUsed.emplace_back<MemorySlot>({getResult(), reachedType});
   usedIndices.insert(firstLevelIndex);
@@ -426,8 +425,7 @@ std::optional<uint64_t> getStaticMemIntrLen(LLVM::MemcpyInlineOp op) {
 template <class MemIntr>
 static bool definitelyWritesOnlyWithinSlot(MemIntr op, const MemorySlot &slot,
                                            DataLayout &dataLayout) {
-  if (!isa<LLVM::LLVMPointerType>(slot.ptr.getType()) ||
-      op.getDst() != slot.ptr)
+  if (!isa<ptr::PtrType>(slot.ptr.getType()) || op.getDst() != slot.ptr)
     return false;
 
   std::optional<uint64_t> memIntrLen = getStaticMemIntrLen(op);
@@ -746,7 +744,7 @@ static DeletionKind memcpyRewire(MemcpyLike op,
         0, static_cast<int32_t>(
                cast<IntegerAttr>(index).getValue().getZExtValue())};
     Value subslotPtrInOther = rewriter.create<LLVM::GEPOp>(
-        op.getLoc(), LLVM::LLVMPointerType::get(op.getContext()), slot.elemType,
+        op.getLoc(), ptr::PtrType::get(op.getContext()), slot.elemType,
         isDst ? op.getSrc() : op.getDst(), gepIndices);
 
     // Then create a new memcpy out of this source pointer.

@@ -10,8 +10,8 @@ module attributes {gpu.container_module} {
   gpu.module @kernel_module attributes {
       nvvm.cubin = "CUBIN", rocdl.hsaco = "HSACO"
   } {
-    llvm.func @kernel(%arg0: i32, %arg1: !llvm.ptr,
-        %arg2: !llvm.ptr, %arg3: i64, %arg4: i64,
+    llvm.func @kernel(%arg0: i32, %arg1: !ptr.ptr,
+        %arg2: !ptr.ptr, %arg3: i64, %arg4: i64,
         %arg5: i64) attributes {gpu.kernel} {
       llvm.return
     }
@@ -33,7 +33,7 @@ module attributes {gpu.container_module} {
   // CHECK-DAG: [[C8:%.*]] = llvm.mlir.constant(8 : index) : i64
   // CHECK: [[ADDRESSOF:%.*]] = llvm.mlir.addressof @[[GLOBAL]]
   // CHECK: [[BINARY:%.*]] = llvm.getelementptr [[ADDRESSOF]]{{\[}}0, 0]
-  // CHECK-SAME: -> !llvm.ptr
+  // CHECK-SAME: -> !ptr.ptr
   // CHECK: [[BINARYSIZE:%.*]] = llvm.mlir.constant
   // CHECK: [[MODULE:%.*]] = llvm.call @mgpuModuleLoad([[BINARY]], [[BINARYSIZE]])
   // CHECK: [[PARAMSCOUNT:%.*]] = llvm.mlir.constant
@@ -44,16 +44,16 @@ module attributes {gpu.container_module} {
   // CHECK: %[[ONE:.*]] = llvm.mlir.constant(1 : i32)
   // CHECK: %[[MEMREF:.*]] = llvm.alloca %[[ONE]] x !llvm.struct[[STRUCT_BODY:<.*>]]
   // CHECK: [[NUM_PARAMS:%.*]] = llvm.mlir.constant(6 : i32) : i32
-  // CHECK-NEXT: [[PARAMS:%.*]] = llvm.alloca [[NUM_PARAMS]] x !llvm.ptr
+  // CHECK-NEXT: [[PARAMS:%.*]] = llvm.alloca [[NUM_PARAMS]] x !ptr.ptr
 
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 3] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 4] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
-  // CHECK: llvm.getelementptr %[[MEMREF]][0, 5] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 3] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 4] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
+  // CHECK: llvm.getelementptr %[[MEMREF]][0, 5] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct[[STRUCT_BODY:<.*>]]
 
-  // CHECK: [[EXTRA_PARAMS:%.*]] = llvm.mlir.zero : !llvm.ptr
+  // CHECK: [[EXTRA_PARAMS:%.*]] = llvm.mlir.zero : !ptr.ptr
 
   // CHECK: llvm.call @mgpuLaunchKernel([[FUNC]], [[C8]], [[C8]], [[C8]],
   // CHECK-SAME: [[C8]], [[C8]], [[C8]], [[C256]], [[STREAM]],
@@ -69,8 +69,8 @@ module attributes {gpu.container_module} {
   // CHECK: gpu.module
   // ROCDL: gpu.module
   gpu.module @kernel_module [#nvvm.target] {
-    llvm.func @kernel(%arg0: i32, %arg1: !llvm.ptr,
-        %arg2: !llvm.ptr, %arg3: i64, %arg4: i64,
+    llvm.func @kernel(%arg0: i32, %arg1: !ptr.ptr,
+        %arg2: !ptr.ptr, %arg3: i64, %arg4: i64,
         %arg5: i64) attributes {gpu.kernel} {
       llvm.return
     }
@@ -87,7 +87,7 @@ module attributes {gpu.container_module} {
   // CHECK: gpu.launch_func @kernel_module::@kernel
   // CHECK: blocks in ([[C8]], [[C8]], [[C8]]) threads in ([[C8]], [[C8]], [[C8]]) : i64
   // CHECK: dynamic_shared_memory_size [[C256]]
-  // CHECK: args([[C32]] : i32, %{{.*}} : !llvm.ptr, %{{.*}} : !llvm.ptr, %{{.*}} : i64, %{{.*}} : i64, %{{.*}} : i64)
+  // CHECK: args([[C32]] : i32, %{{.*}} : !ptr.ptr, %{{.*}} : !ptr.ptr, %{{.*}} : i64, %{{.*}} : i64, %{{.*}} : i64)
     gpu.launch_func @kernel_module::@kernel
         blocks in (%c8, %c8, %c8)
         threads in (%c8, %c8, %c8)

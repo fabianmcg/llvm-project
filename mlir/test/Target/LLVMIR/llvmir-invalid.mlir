@@ -114,17 +114,17 @@ llvm.func @memcpy_intr_wrong_type(%src : i64, %dst : i64, %len : i64) {
 
 // -----
 
-llvm.func @memmove_intr_wrong_type(%src : !llvm.ptr, %dst : i64, %len : i64) {
+llvm.func @memmove_intr_wrong_type(%src : !ptr.ptr, %dst : i64, %len : i64) {
   // expected-error @below{{op operand #1 must be LLVM pointer type, but got 'i64'}}
-  "llvm.intr.memmove"(%src, %dst, %len) <{isVolatile = false}> : (!llvm.ptr, i64, i64) -> ()
+  "llvm.intr.memmove"(%src, %dst, %len) <{isVolatile = false}> : (!ptr.ptr, i64, i64) -> ()
   llvm.return
 }
 
 // -----
 
-llvm.func @memset_intr_wrong_type(%dst : !llvm.ptr, %val : i32, %len : i64) {
+llvm.func @memset_intr_wrong_type(%dst : !ptr.ptr, %val : i32, %len : i64) {
   // expected-error @below{{op operand #1 must be 8-bit signless integer, but got 'i32'}}
-  "llvm.intr.memset"(%dst, %val, %len) <{isVolatile = false}> : (!llvm.ptr, i32, i64) -> ()
+  "llvm.intr.memset"(%dst, %val, %len) <{isVolatile = false}> : (!ptr.ptr, i32, i64) -> ()
   llvm.return
 }
 
@@ -162,10 +162,10 @@ llvm.func @vec_reduce_fmax_intr_wrong_type(%arg0 : vector<4xi32>) -> i32 {
 
 // -----
 
-llvm.func @matrix_load_intr_wrong_type(%ptr : !llvm.ptr, %stride : i32) -> f32 {
+llvm.func @matrix_load_intr_wrong_type(%ptr : !ptr.ptr, %stride : i32) -> f32 {
   // expected-error @below{{op result #0 must be LLVM dialect-compatible vector type, but got 'f32'}}
   %0 = llvm.intr.matrix.column.major.load %ptr, <stride=%stride>
-    { isVolatile = 0: i1, rows = 3: i32, columns = 16: i32} : f32 from !llvm.ptr stride i32
+    { isVolatile = 0: i1, rows = 3: i32, columns = 16: i32} : f32 from !ptr.ptr stride i32
   llvm.return %0 : f32
 }
 
@@ -213,9 +213,9 @@ llvm.func @masked_load_intr_wrong_type(%ptr : i64, %mask : vector<7xi1>) -> vect
 
 // -----
 
-llvm.func @masked_store_intr_wrong_type(%vec : vector<7xf32>, %ptr : !llvm.ptr, %mask : vector<7xi32>) {
+llvm.func @masked_store_intr_wrong_type(%vec : vector<7xf32>, %ptr : !ptr.ptr, %mask : vector<7xi32>) {
   // expected-error @below{{op operand #2 must be LLVM dialect-compatible vector of 1-bit signless integer, but got 'vector<7xi32>}}
-  llvm.intr.masked.store %vec, %ptr, %mask { alignment = 1: i32} : vector<7xf32>, vector<7xi32> into !llvm.ptr
+  llvm.intr.masked.store %vec, %ptr, %mask { alignment = 1: i32} : vector<7xf32>, vector<7xi32> into !ptr.ptr
   llvm.return
 }
 

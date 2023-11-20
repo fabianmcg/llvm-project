@@ -17,6 +17,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
 #include "mlir/Dialect/LLVMIR/LLVMInterfaces.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Dialect/Ptr/IR/PtrDialect.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -319,7 +320,7 @@ ParseResult AllocaOp::parse(OpAsmParser &parser, OperationState &result) {
     return failure();
 
   Type resultType = funcType.getResult(0);
-  if (auto ptrResultType = llvm::dyn_cast<LLVMPointerType>(resultType))
+  if (auto ptrResultType = llvm::dyn_cast<ptr::PtrType>(resultType))
     result.addAttribute(kElemTypeAttrName, TypeAttr::get(elemType));
 
   result.addTypes({funcType.getResult(0)});
@@ -768,7 +769,7 @@ void LoadOp::getEffects(
 /// integer and float types with limited bit width are supported. Additionally,
 /// depending on the operation pointers may be supported as well.
 static bool isTypeCompatibleWithAtomicOp(Type type, bool isPointerTypeAllowed) {
-  if (llvm::isa<LLVMPointerType>(type))
+  if (llvm::isa<ptr::PtrType>(type))
     return isPointerTypeAllowed;
 
   std::optional<unsigned> bitWidth;
@@ -1022,7 +1023,7 @@ LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
     if (!getNumOperands())
       return emitOpError(
           "must have either a `callee` attribute or at least an operand");
-    auto ptrType = llvm::dyn_cast<LLVMPointerType>(getOperand(0).getType());
+    auto ptrType = llvm::dyn_cast<ptr::PtrType>(getOperand(0).getType());
     if (!ptrType)
       return emitOpError("indirect call expects a pointer as callee: ")
              << getOperand(0).getType();
@@ -1743,7 +1744,7 @@ AddressOfOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
     return emitOpError(
         "must reference a global defined by 'llvm.mlir.global' or 'llvm.func'");
 
-  LLVMPointerType type = getType();
+  ptr::PtrType type = getType();
   if (global && global.getAddrSpace() != type.getAddressSpace())
     return emitOpError("pointer address space must match address space of the "
                        "referenced global");
@@ -2629,7 +2630,7 @@ void AtomicCmpXchgOp::build(OpBuilder &builder, OperationState &state,
 }
 
 LogicalResult AtomicCmpXchgOp::verify() {
-  auto ptrType = llvm::cast<LLVM::LLVMPointerType>(getPtr().getType());
+  auto ptrType = llvm::cast<ptr::PtrType>(getPtr().getType());
   if (!ptrType)
     return emitOpError("expected LLVM IR pointer type for operand #0");
   auto valType = getVal().getType();
@@ -2738,9 +2739,9 @@ OpFoldResult LLVM::BitcastOp::fold(FoldAdaptor adaptor) {
 }
 
 LogicalResult LLVM::BitcastOp::verify() {
-  auto resultType = llvm::dyn_cast<LLVMPointerType>(
+  auto resultType = llvm::dyn_cast<ptr::PtrType>(
       extractVectorElementType(getResult().getType()));
-  auto sourceType = llvm::dyn_cast<LLVMPointerType>(
+  auto sourceType = llvm::dyn_cast<ptr::PtrType>(
       extractVectorElementType(getArg().getType()));
 
   // If one of the types is a pointer (or vector of pointers), then
@@ -3022,7 +3023,7 @@ LogicalResult LLVMDialect::verifyParameterAttribute(Operation *op,
     return success();
   };
   auto checkPointerType = [&]() -> LogicalResult {
-    if (!llvm::isa<LLVMPointerType>(paramType))
+    if (!llvm::isa<ptr::PtrType>(paramType))
       return op->emitError()
              << name << " attribute attached to non-pointer LLVM type";
     return success();
@@ -3177,7 +3178,7 @@ Value mlir::LLVM::createGlobalString(Location loc, OpBuilder &builder,
       loc, type, /*isConstant=*/true, linkage, name,
       builder.getStringAttr(value), /*alignment=*/0);
 
-  LLVMPointerType ptrType = LLVMPointerType::get(ctx);
+  ptr::PtrType ptrType = ptr::PtrType::get(ctx);
   // Get the pointer to the first character in the global string.
   Value globalPtr =
       builder.create<LLVM::AddressOfOp>(loc, ptrType, global.getSymNameAttr());

@@ -315,7 +315,7 @@ static Type convertPointerType(spirv::PointerType type,
                                LLVMTypeConverter &converter,
                                spirv::ClientAPI clientAPI) {
   unsigned addressSpace = mapToAddressSpace(clientAPI, type.getStorageClass());
-  return LLVM::LLVMPointerType::get(type.getContext(), addressSpace);
+  return ptr::PtrType::get(type.getContext(), addressSpace);
 }
 
 /// Converts SPIR-V runtime array to LLVM array. Since LLVM allows indexing over
@@ -1376,7 +1376,7 @@ public:
       return failure();
 
     // LLVM's opaque pointers do not require bitcasts.
-    if (isa<LLVM::LLVMPointerType>(dstType)) {
+    if (isa<ptr::PtrType>(dstType)) {
       rewriter.replaceOp(bitcastOp, adaptor.getOperand());
       return success();
     }

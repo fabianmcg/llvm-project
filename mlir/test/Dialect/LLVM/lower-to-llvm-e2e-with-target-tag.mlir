@@ -15,8 +15,8 @@ module attributes {transform.target_tag="payload"} {
 func.func @subview(%0 : memref<64x4xf32, strided<[4, 1], offset: 0>>, %arg0 : index, %arg1 : index, %arg2 : index)
 -> memref<?x?xf32, strided<[?, ?], offset: ?>> {
   // CHECK-LABEL: @subview
-  // CHECK-SAME: %[[BASE:[^:]*]]: !llvm.ptr
-  // CHECK-SAME: %[[BASE_ALIGNED:[^:]*]]: !llvm.ptr,
+  // CHECK-SAME: %[[BASE:[^:]*]]: !ptr.ptr
+  // CHECK-SAME: %[[BASE_ALIGNED:[^:]*]]: !ptr.ptr,
   // CHECK-SAME: %[[BASE_OFFSET:[^:]*]]: i64,
   // CHECK-SAME: %[[BASE_STRIDE0:[^:]*]]: i64,
   // CHECK-SAME: %[[BASE_STRIDE1:[^:]*]]: i64,

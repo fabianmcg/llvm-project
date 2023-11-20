@@ -134,7 +134,7 @@ LogicalResult DataLayoutImporter::tryToEmplaceAlignmentEntry(Type type,
 }
 
 LogicalResult
-DataLayoutImporter::tryToEmplacePointerAlignmentEntry(LLVMPointerType type,
+DataLayoutImporter::tryToEmplacePointerAlignmentEntry(ptr::PtrType type,
                                                       StringRef token) {
   auto key = TypeAttr::get(type);
   if (typeEntries.count(key))
@@ -285,7 +285,7 @@ void DataLayoutImporter::translateDataLayout(
       if (failed(space))
         return;
 
-      auto type = LLVMPointerType::get(context, *space);
+      auto type = ptr::PtrType::get(context, *space);
       if (failed(tryToEmplacePointerAlignmentEntry(type, token)))
         return;
       continue;

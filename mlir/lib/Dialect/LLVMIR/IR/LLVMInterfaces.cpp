@@ -97,7 +97,7 @@ SmallVector<Value> mlir::LLVM::MemsetOp::getAccessedOperands() {
 SmallVector<Value> mlir::LLVM::CallOp::getAccessedOperands() {
   return llvm::to_vector(
       llvm::make_filter_range(getArgOperands(), [](Value arg) {
-        return isa<LLVMPointerType>(arg.getType());
+        return isa<ptr::PtrType>(arg.getType());
       }));
 }
 

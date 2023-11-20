@@ -1,9 +1,9 @@
 // RUN: mlir-translate -mlir-to-llvmir -split-input-file %s | FileCheck %s
 
-llvm.func @testenterdataop(%arg0: !llvm.ptr, %arg1 : !llvm.ptr) {
-  %0 = acc.create varPtr(%arg0 : !llvm.ptr) -> !llvm.ptr
-  %1 = acc.copyin varPtr(%arg1 : !llvm.ptr) -> !llvm.ptr
-  acc.enter_data dataOperands(%0, %1 : !llvm.ptr, !llvm.ptr)
+llvm.func @testenterdataop(%arg0: !ptr.ptr, %arg1 : !ptr.ptr) {
+  %0 = acc.create varPtr(%arg0 : !ptr.ptr) -> !ptr.ptr
+  %1 = acc.copyin varPtr(%arg1 : !ptr.ptr) -> !ptr.ptr
+  acc.enter_data dataOperands(%0, %1 : !ptr.ptr, !ptr.ptr)
   llvm.return
 }
 
@@ -47,12 +47,12 @@ llvm.func @testenterdataop(%arg0: !llvm.ptr, %arg1 : !llvm.ptr) {
 // -----
 
 
-llvm.func @testexitdataop(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
-  %arg0_devptr = acc.getdeviceptr varPtr(%arg0 : !llvm.ptr) -> !llvm.ptr
-  %1 = acc.getdeviceptr varPtr(%arg1 : !llvm.ptr) -> !llvm.ptr
-  acc.exit_data dataOperands(%arg0_devptr, %1 : !llvm.ptr, !llvm.ptr)
-  acc.delete accPtr(%arg0_devptr : !llvm.ptr)
-  acc.copyout accPtr(%1 : !llvm.ptr) to varPtr(%arg1 : !llvm.ptr)
+llvm.func @testexitdataop(%arg0: !ptr.ptr, %arg1: !ptr.ptr) {
+  %arg0_devptr = acc.getdeviceptr varPtr(%arg0 : !ptr.ptr) -> !ptr.ptr
+  %1 = acc.getdeviceptr varPtr(%arg1 : !ptr.ptr) -> !ptr.ptr
+  acc.exit_data dataOperands(%arg0_devptr, %1 : !ptr.ptr, !ptr.ptr)
+  acc.delete accPtr(%arg0_devptr : !ptr.ptr)
+  acc.copyout accPtr(%1 : !ptr.ptr) to varPtr(%arg1 : !ptr.ptr)
   llvm.return
 }
 
@@ -94,9 +94,9 @@ llvm.func @testexitdataop(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
 
 // -----
 
-llvm.func @testupdateop(%arg1: !llvm.ptr) {
-  %0 = acc.update_device varPtr(%arg1 : !llvm.ptr) -> !llvm.ptr
-  acc.update dataOperands(%0 : !llvm.ptr)
+llvm.func @testupdateop(%arg1: !ptr.ptr) {
+  %0 = acc.update_device varPtr(%arg1 : !ptr.ptr) -> !ptr.ptr
+  acc.update dataOperands(%0 : !ptr.ptr)
   llvm.return
 }
 
@@ -130,17 +130,17 @@ llvm.func @testupdateop(%arg1: !llvm.ptr) {
 
 // -----
 
-llvm.func @testdataop(%arg0: !llvm.ptr, %arg1: !llvm.ptr, %arg2: !llvm.ptr) {
+llvm.func @testdataop(%arg0: !ptr.ptr, %arg1: !ptr.ptr, %arg2: !ptr.ptr) {
   
-  %0 = acc.copyin varPtr(%arg0 : !llvm.ptr) -> !llvm.ptr
-  %1 = acc.create varPtr(%arg1 : !llvm.ptr) -> !llvm.ptr
-  acc.data dataOperands(%0, %1 : !llvm.ptr, !llvm.ptr) {
+  %0 = acc.copyin varPtr(%arg0 : !ptr.ptr) -> !ptr.ptr
+  %1 = acc.create varPtr(%arg1 : !ptr.ptr) -> !ptr.ptr
+  acc.data dataOperands(%0, %1 : !ptr.ptr, !ptr.ptr) {
     %9 = llvm.mlir.constant(2 : i32) : i32
-    llvm.store %9, %arg2 : i32, !llvm.ptr
+    llvm.store %9, %arg2 : i32, !ptr.ptr
     acc.terminator
   }
-  acc.copyout accPtr(%0 : !llvm.ptr) to varPtr(%arg0 : !llvm.ptr)
-  acc.copyout accPtr(%1 : !llvm.ptr) to varPtr(%arg1 : !llvm.ptr)
+  acc.copyout accPtr(%0 : !ptr.ptr) to varPtr(%arg0 : !ptr.ptr)
+  acc.copyout accPtr(%1 : !ptr.ptr) to varPtr(%arg1 : !ptr.ptr)
   llvm.return
 }
 

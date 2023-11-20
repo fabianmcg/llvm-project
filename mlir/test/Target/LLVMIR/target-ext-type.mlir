@@ -13,8 +13,8 @@ llvm.mlir.global external @global() {addr_space = 0 : i32} : !llvm.target<"spirv
 llvm.func @func2() -> !llvm.target<"spirv.Event"> {
   %0 = llvm.mlir.constant(1 : i32) : i32
   %1 = llvm.mlir.poison : !llvm.target<"spirv.Event">
-  %2 = llvm.alloca %0 x !llvm.target<"spirv.Event"> {alignment = 8 : i64} : (i32) -> !llvm.ptr
-  %3 = llvm.load %2 {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"spirv.Event">
+  %2 = llvm.alloca %0 x !llvm.target<"spirv.Event"> {alignment = 8 : i64} : (i32) -> !ptr.ptr
+  %3 = llvm.load %2 {alignment = 8 : i64} : !ptr.ptr -> !llvm.target<"spirv.Event">
   llvm.return %1 : !llvm.target<"spirv.Event">
 }
 

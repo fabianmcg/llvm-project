@@ -68,7 +68,7 @@ fir.global @symbol : i64 {
   fir.has_value %0 : i64
 }
 
-// CHECK: %{{.*}} = llvm.mlir.addressof @[[SYMBOL:.*]] : !llvm.ptr
+// CHECK: %{{.*}} = llvm.mlir.addressof @[[SYMBOL:.*]] : !ptr.ptr
 
 // CHECK: llvm.mlir.global external @[[SYMBOL]]() {addr_space = 0 : i32} : i64 {
 // CHECK:   %{{.*}} = llvm.mlir.constant(1 : i64) : i64
@@ -141,11 +141,11 @@ fir.global internal @_QFEx : !fir.box<!fir.ptr<i32>> {
 // Test fir.zero_bits operation with LLVM ptr type
 
 func.func @zero_test_ptr() {
-  %z = fir.zero_bits !llvm.ptr
+  %z = fir.zero_bits !ptr.ptr
   return
 }
 
-// CHECK: %{{.*}} = llvm.mlir.zero : !llvm.ptr
+// CHECK: %{{.*}} = llvm.mlir.zero : !ptr.ptr
 // CHECK-NOT: fir.zero_bits
 
 // -----
@@ -215,9 +215,9 @@ func.func @test_alloc_and_freemem_one() {
 }
 
 // CHECK-LABEL:  llvm.func @test_alloc_and_freemem_one() {
-// CHECK-NEXT:    %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK-NEXT:    %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK-NEXT:    %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK-NEXT:    %[[N:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK-NEXT:    %[[N:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK-NEXT:    llvm.call @malloc(%[[N]])
 // CHECK:         llvm.call @free(%{{.*}})
 // CHECK-NEXT:    llvm.return
@@ -234,9 +234,9 @@ func.func @test_alloc_and_freemem_several() {
 }
 
 // CHECK-LABEL:  llvm.func @test_alloc_and_freemem_several() {
-// CHECK: [[NULL:%.*]]  = llvm.mlir.zero : !llvm.ptr
-// CHECK: [[PTR:%.*]]  = llvm.getelementptr [[NULL]][{{.*}}] : (!llvm.ptr) -> !llvm.ptr, !llvm.array<100 x f32>
-// CHECK: [[N:%.*]]  = llvm.ptrtoint [[PTR]] : !llvm.ptr to i64
+// CHECK: [[NULL:%.*]]  = llvm.mlir.zero : !ptr.ptr
+// CHECK: [[PTR:%.*]]  = llvm.getelementptr [[NULL]][{{.*}}] : (!ptr.ptr) -> !ptr.ptr, !llvm.array<100 x f32>
+// CHECK: [[N:%.*]]  = llvm.ptrtoint [[PTR]] : !ptr.ptr to i64
 // CHECK: [[MALLOC:%.*]] = llvm.call @malloc([[N]])
 // CHECK:              llvm.call @free([[MALLOC]])
 // CHECK:              llvm.return
@@ -250,13 +250,13 @@ func.func @test_with_shape(%ncols: index, %nrows: index) {
 
 // CHECK-LABEL: llvm.func @test_with_shape
 // CHECK-SAME: %[[NCOLS:.*]]: i64, %[[NROWS:.*]]: i64
-// CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:   %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:   %[[FOUR:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:   %[[FOUR:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:   %[[DIM1_SIZE:.*]] = llvm.mul %[[FOUR]], %[[NCOLS]]  : i64
 // CHECK:   %[[TOTAL_SIZE:.*]] = llvm.mul %[[DIM1_SIZE]], %[[NROWS]]  : i64
 // CHECK:   %[[MEM:.*]] = llvm.call @malloc(%[[TOTAL_SIZE]])
-// CHECK:   llvm.call @free(%[[MEM]]) : (!llvm.ptr) -> ()
+// CHECK:   llvm.call @free(%[[MEM]]) : (!ptr.ptr) -> ()
 // CHECK:   llvm.return
 // CHECK: }
 
@@ -268,13 +268,13 @@ func.func @test_string_with_shape(%len: index, %nelems: index) {
 
 // CHECK-LABEL: llvm.func @test_string_with_shape
 // CHECK-SAME: %[[LEN:.*]]: i64, %[[NELEMS:.*]]: i64)
-// CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:   %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:   %[[ONE:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:   %[[ONE:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:   %[[LEN_SIZE:.*]] = llvm.mul %[[ONE]], %[[LEN]]  : i64
 // CHECK:   %[[TOTAL_SIZE:.*]] = llvm.mul %[[LEN_SIZE]], %[[NELEMS]]  : i64
 // CHECK:   %[[MEM:.*]] = llvm.call @malloc(%[[TOTAL_SIZE]])
-// CHECK:   llvm.call @free(%[[MEM]]) : (!llvm.ptr) -> ()
+// CHECK:   llvm.call @free(%[[MEM]]) : (!ptr.ptr) -> ()
 // CHECK:   llvm.return
 // CHECK: }
 
@@ -748,7 +748,7 @@ func.func @convert_from_int(%arg0 : i32) {
 // CHECK:         %{{.*}} = llvm.trunc %[[ARG0]] : i32 to i16
 // CHECK-NOT:     %{{.*}} = llvm.trunc %[[ARG0]] : i32 to i32
 // CHECK:         %{{.*}} = llvm.sext %[[ARG0]] : i32 to i64
-// CHECK:         %{{.*}} = llvm.inttoptr %{{.*}} : i64 to !llvm.ptr
+// CHECK:         %{{.*}} = llvm.inttoptr %{{.*}} : i64 to !ptr.ptr
 
 
 func.func @convert_from_i1(%arg0 : i1) {
@@ -771,9 +771,9 @@ func.func @convert_from_ref(%arg0 : !fir.ref<i32>) {
 }
 
 // CHECK-LABEL: convert_from_ref(
-// CHECK-SAME:                   %[[ARG0:.*]]: !llvm.ptr
-// CHECK-NOT:         %{{.*}} = llvm.bitcast %[[ARG0]] : !llvm.ptr to !llvm.ptr
-// CHECK:         %{{.*}} = llvm.ptrtoint %[[ARG0]] : !llvm.ptr to i32
+// CHECK-SAME:                   %[[ARG0:.*]]: !ptr.ptr
+// CHECK-NOT:         %{{.*}} = llvm.bitcast %[[ARG0]] : !ptr.ptr to !ptr.ptr
+// CHECK:         %{{.*}} = llvm.ptrtoint %[[ARG0]] : !ptr.ptr to i32
 
 // -----
 
@@ -855,8 +855,8 @@ func.func @test_store_index(%val_to_store : index, %addr : !fir.ref<index>) {
 }
 
 // CHECK-LABEL:   llvm.func @test_store_index
-// CHECK-SAME:    (%[[arg0:.*]]: i64, %[[arg1:.*]]: !llvm.ptr) {
-// CHECK-NEXT:    llvm.store %[[arg0]], %[[arg1]] : i64, !llvm.ptr
+// CHECK-SAME:    (%[[arg0:.*]]: i64, %[[arg1:.*]]: !ptr.ptr) {
+// CHECK-NEXT:    llvm.store %[[arg0]], %[[arg1]] : i64, !ptr.ptr
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 
@@ -866,10 +866,10 @@ func.func @test_store_box(%array : !fir.ref<!fir.box<!fir.array<?x?xf32>>>, %box
 }
 
 // CHECK-LABEL:  llvm.func @test_store_box
-// CHECK-SAME:  (%[[arg0:.*]]: !llvm.ptr,
-// CHECK-SAME:  %[[arg1:.*]]: !llvm.ptr) {
-// CHECK-NEXT:  %[[box_to_store:.*]] = llvm.load %arg1 : !llvm.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i{{.*}}>>)>
-// CHECK-NEXT:  llvm.store %[[box_to_store]], %[[arg0]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i{{.*}}>>)>, !llvm.ptr
+// CHECK-SAME:  (%[[arg0:.*]]: !ptr.ptr,
+// CHECK-SAME:  %[[arg1:.*]]: !ptr.ptr) {
+// CHECK-NEXT:  %[[box_to_store:.*]] = llvm.load %arg1 : !ptr.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i{{.*}}>>)>
+// CHECK-NEXT:  llvm.store %[[box_to_store]], %[[arg0]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i{{.*}}>>)>, !ptr.ptr
 // CHECK-NEXT:  llvm.return
 // CHECK-NEXT:  }
 
@@ -882,14 +882,14 @@ func.func @store_unlimited_polymorphic_box(%arg0 : !fir.class<none>, %arg1 : !fi
   return
 }
 // CHECK-LABEL:   llvm.func @store_unlimited_polymorphic_box(
-// CHECK:  %[[VAL_8:.*]] = llvm.load %{{.*}} : !llvm.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
-// CHECK:  llvm.store %[[VAL_8]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>, !llvm.ptr
-// CHECK:  %[[VAL_9:.*]] = llvm.load %{{.*}} : !llvm.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>
-// CHECK:  llvm.store %[[VAL_9]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>, !llvm.ptr
-// CHECK:  %[[VAL_10:.*]] = llvm.load %{{.*}} : !llvm.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
-// CHECK:  llvm.store %[[VAL_10]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>, !llvm.ptr
-// CHECK:  %[[VAL_11:.*]] = llvm.load %{{.*}}: !llvm.ptr
-// CHECK:  llvm.store %[[VAL_11]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>, !llvm.ptr
+// CHECK:  %[[VAL_8:.*]] = llvm.load %{{.*}} : !ptr.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
+// CHECK:  llvm.store %[[VAL_8]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>, !ptr.ptr
+// CHECK:  %[[VAL_9:.*]] = llvm.load %{{.*}} : !ptr.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>
+// CHECK:  llvm.store %[[VAL_9]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>, !ptr.ptr
+// CHECK:  %[[VAL_10:.*]] = llvm.load %{{.*}} : !ptr.ptr -> !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
+// CHECK:  llvm.store %[[VAL_10]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>, !ptr.ptr
+// CHECK:  %[[VAL_11:.*]] = llvm.load %{{.*}}: !ptr.ptr
+// CHECK:  llvm.store %[[VAL_11]], %{{.*}} : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i{{.*}}>>, ptr, array<1 x i{{.*}}>)>, !ptr.ptr
 
 
 // -----
@@ -902,8 +902,8 @@ func.func @test_load_index(%addr : !fir.ref<index>) {
 }
 
 // CHECK-LABEL: llvm.func @test_load_index(
-// CHECK-SAME:  %[[arg1:.*]]: !llvm.ptr) {
-// CHECK-NEXT:    %0 = llvm.load %[[arg1]] : !llvm.ptr -> i64
+// CHECK-SAME:  %[[arg1:.*]]: !ptr.ptr) {
+// CHECK-NEXT:    %0 = llvm.load %[[arg1]] : !ptr.ptr -> i64
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 
@@ -917,12 +917,12 @@ func.func @test_load_box(%addr : !fir.ref<!fir.box<!fir.array<10xf32>>>) {
 
 // Loading a `fir.ref<!fir.box>> is creating a descriptor copy
 // CHECK-LABEL: llvm.func @test_load_box(
-// CHECK-SAME:      %[[arg0:.*]]: !llvm.ptr) {
+// CHECK-SAME:      %[[arg0:.*]]: !ptr.ptr) {
 // CHECK-NEXT:    %[[c1:.*]] = llvm.mlir.constant(1 : i32) : i32
 // CHECK-NEXT:    %[[box_copy:.*]] = llvm.alloca %[[c1]] x !llvm.struct<([[DESC_TYPE:.*]])>
-// CHECK-NEXT:    %[[box_val:.*]] = llvm.load %[[arg0]] : !llvm.ptr -> !llvm.struct<([[DESC_TYPE]])>
-// CHECK-NEXT:    llvm.store %[[box_val]], %[[box_copy]] : !llvm.struct<([[DESC_TYPE]])>, !llvm.ptr
-// CHECK-NEXT:    llvm.call @takes_box(%[[box_copy]]) : (!llvm.ptr) -> ()
+// CHECK-NEXT:    %[[box_val:.*]] = llvm.load %[[arg0]] : !ptr.ptr -> !llvm.struct<([[DESC_TYPE]])>
+// CHECK-NEXT:    llvm.store %[[box_val]], %[[box_copy]] : !llvm.struct<([[DESC_TYPE]])>, !ptr.ptr
+// CHECK-NEXT:    llvm.call @takes_box(%[[box_copy]]) : (!ptr.ptr) -> ()
 // CHECK-NEXT:    llvm.return
 // CHECK-NEXT:  }
 
@@ -936,9 +936,9 @@ func.func @extract_rank(%arg0: !fir.box<!fir.array<*:f64>>) -> i32 {
 }
 
 // CHECK-LABEL: llvm.func @extract_rank(
-// CHECK-SAME:                          %[[ARG0:.*]]: !llvm.ptr) -> i32
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 3] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[RANK:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> i32
+// CHECK-SAME:                          %[[ARG0:.*]]: !ptr.ptr) -> i32
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 3] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[RANK:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> i32
 // CHECK:         llvm.return %[[RANK]] : i32
 
 // -----
@@ -951,10 +951,10 @@ func.func @extract_addr(%arg0: !fir.box<!fir.array<*:f64>>) -> !fir.ref<f64> {
 }
 
 // CHECK-LABEL: llvm.func @extract_addr(
-// CHECK-SAME:                          %[[ARG0:.*]]: !llvm.ptr) -> !llvm.ptr
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[ADDR:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> !llvm.ptr
-// CHECK:         llvm.return %[[ADDR]] : !llvm.ptr
+// CHECK-SAME:                          %[[ARG0:.*]]: !ptr.ptr) -> !ptr.ptr
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[ADDR:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> !ptr.ptr
+// CHECK:         llvm.return %[[ADDR]] : !ptr.ptr
 
 // -----
 
@@ -968,14 +968,14 @@ func.func @extract_dims(%arg0: !fir.box<!fir.array<*:f64>>) -> index {
 }
 
 // CHECK-LABEL: llvm.func @extract_dims(
-// CHECK-SAME:                          %[[ARG0:.*]]: !llvm.ptr) -> i64
+// CHECK-SAME:                          %[[ARG0:.*]]: !ptr.ptr) -> i64
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i32) : i32
-// CHECK:         %[[GEP0:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 0] :  (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[LOAD0:.*]] = llvm.load %[[GEP0]] : !llvm.ptr -> i64
-// CHECK:         %[[GEP1:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 1] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[LOAD1:.*]] = llvm.load %[[GEP1]] : !llvm.ptr -> i64
-// CHECK:         %[[GEP2:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 2] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[LOAD2:.*]] = llvm.load %[[GEP2]] : !llvm.ptr -> i64
+// CHECK:         %[[GEP0:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 0] :  (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[LOAD0:.*]] = llvm.load %[[GEP0]] : !ptr.ptr -> i64
+// CHECK:         %[[GEP1:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 1] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[LOAD1:.*]] = llvm.load %[[GEP1]] : !ptr.ptr -> i64
+// CHECK:         %[[GEP2:.*]] = llvm.getelementptr %[[ARG0]][0, 7, %[[C0]], 2] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[LOAD2:.*]] = llvm.load %[[GEP2]] : !ptr.ptr -> i64
 // CHECK:         llvm.return %[[LOAD0]] : i64
 
 // -----
@@ -988,9 +988,9 @@ func.func @extract_elesize(%arg0: !fir.box<f32>) -> i32 {
 }
 
 // CHECK-LABEL: llvm.func @extract_elesize(
-// CHECK-SAME:                             %[[ARG0:.*]]: !llvm.ptr) -> i32
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[ELE_SIZE:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> i32
+// CHECK-SAME:                             %[[ARG0:.*]]: !ptr.ptr) -> i32
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[ELE_SIZE:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> i32
 // CHECK:         llvm.return %[[ELE_SIZE]] : i32
 
 // -----
@@ -1004,9 +1004,9 @@ func.func @box_isarray(%arg0: !fir.box<!fir.array<*:f64>>) -> i1 {
 }
 
 // CHECK-LABEL: llvm.func @box_isarray(
-// CHECK-SAME:                         %[[ARG0:.*]]: !llvm.ptr) -> i1
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 3] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[RANK:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> i32
+// CHECK-SAME:                         %[[ARG0:.*]]: !ptr.ptr) -> i1
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 3] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[RANK:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> i32
 // CHECK:         %[[C0_ISARRAY:.*]] = llvm.mlir.constant(0 : i32) : i32
 // CHECK:         %[[IS_ARRAY:.*]] = llvm.icmp "ne" %[[RANK]], %[[C0_ISARRAY]] : i32
 // CHECK:         llvm.return %[[IS_ARRAY]] : i1
@@ -1023,9 +1023,9 @@ func.func @box_isalloc(%arg0: !fir.box<!fir.array<*:f64>>) -> i1 {
 }
 
 // CHECK-LABEL: llvm.func @box_isalloc(
-// CHECK-SAME:                         %[[ARG0:.*]]: !llvm.ptr) -> i1
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 5] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[ATTR:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> i32
+// CHECK-SAME:                         %[[ARG0:.*]]: !ptr.ptr) -> i1
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 5] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[ATTR:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> i32
 // CHECK:         %[[ATTR_ISALLOC:.*]] = llvm.mlir.constant(2 : i32) : i32
 // CHECK:         %[[AND:.*]] = llvm.and %[[ATTR]], %[[ATTR_ISALLOC]]  : i32
 // CHECK:         %[[CMP_C0:.*]] = llvm.mlir.constant(0 : i32) : i32
@@ -1044,9 +1044,9 @@ func.func @box_isptr(%arg0: !fir.box<!fir.array<*:f64>>) -> i1 {
 }
 
 // CHECK-LABEL: llvm.func @box_isptr(
-// CHECK-SAME:                         %[[ARG0:.*]]: !llvm.ptr) -> i1
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 5] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         %[[ATTR:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> i32
+// CHECK-SAME:                         %[[ARG0:.*]]: !ptr.ptr) -> i1
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 5] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
+// CHECK:         %[[ATTR:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> i32
 // CHECK:         %[[ATTR_ISALLOC:.*]] = llvm.mlir.constant(1 : i32) : i32
 // CHECK:         %[[AND:.*]] = llvm.and %[[ATTR]], %[[ATTR_ISALLOC]]  : i32
 // CHECK:         %[[CMP_C0:.*]] = llvm.mlir.constant(0 : i32) : i32
@@ -1062,10 +1062,10 @@ func.func @alloca_one() -> !fir.ref<i32> {
   return %1 : !fir.ref<i32>
 }
 
-// CHECK-LABEL: llvm.func @alloca_one() -> !llvm.ptr
+// CHECK-LABEL: llvm.func @alloca_one() -> !ptr.ptr
 // CHECK: [[N:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[N]] x i32
-// CHECK: llvm.return [[A]] : !llvm.ptr
+// CHECK: llvm.return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1077,12 +1077,12 @@ func.func @alloca_several() -> !fir.ref<i32> {
   return %1 : !fir.ref<i32>
 }
 
-// CHECK-LABEL: llvm.func @alloca_several() -> !llvm.ptr
+// CHECK-LABEL: llvm.func @alloca_several() -> !ptr.ptr
 // CHECK: [[N:%.*]] = llvm.mlir.constant(100 : index) : i64
 // CHECK: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK: [[TOTAL:%.*]] = llvm.mul [[ONE]], [[N]] : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[TOTAL]] x i32
-// CHECK: llvm.return [[A]] : !llvm.ptr
+// CHECK: llvm.return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1093,10 +1093,10 @@ func.func @alloca_ptr_to_array() -> !fir.ref<!fir.ptr<!fir.array<?xi32>>> {
   return %1 : !fir.ref<!fir.ptr<!fir.array<?xi32>>>
 }
 
-// CHECK-LABEL: llvm.func @alloca_ptr_to_array() -> !llvm.ptr
+// CHECK-LABEL: llvm.func @alloca_ptr_to_array() -> !ptr.ptr
 // CHECK: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
-// CHECK: [[A:%.*]] = llvm.alloca [[ONE]] x !llvm.ptr
-// CHECK: llvm.return [[A]] : !llvm.ptr
+// CHECK: [[A:%.*]] = llvm.alloca [[ONE]] x !ptr.ptr
+// CHECK: llvm.return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1108,13 +1108,13 @@ func.func @alloca_char_array(%l: i32, %e : index) -> !fir.ref<!fir.array<?x?x!fi
 }
 
 // CHECK-LABEL: llvm.func @alloca_char_array
-// CHECK-SAME: ([[L:%.*]]: i32, [[E:%.*]]: i64) -> !llvm.ptr
+// CHECK-SAME: ([[L:%.*]]: i32, [[E:%.*]]: i64) -> !ptr.ptr
 // CHECK-DAG: [[UNUSEDONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK-DAG: [[LCAST:%.*]] = llvm.sext [[L]] : i32 to i64
 // CHECK: [[PROD1:%.*]] = llvm.mul [[LCAST]], [[E]] : i64
 // CHECK: [[PROD2:%.*]] = llvm.mul [[PROD1]], [[E]] : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[PROD2]] x i8
-// CHECK: return [[A]] : !llvm.ptr
+// CHECK: return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1126,12 +1126,12 @@ func.func @alloca_fixed_char_array(%e : index) -> !fir.ref<!fir.array<?x?x!fir.c
 }
 
 // CHECK-LABEL: llvm.func @alloca_fixed_char_array
-// CHECK-SAME: ([[E:%.*]]: i64) -> !llvm.ptr
+// CHECK-SAME: ([[E:%.*]]: i64) -> !ptr.ptr
 // CHECK-DAG: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK: [[PROD1:%.*]] = llvm.mul [[ONE]], [[E]] : i64
 // CHECK: [[PROD2:%.*]] = llvm.mul [[PROD1]], [[E]] : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[PROD2]] x !llvm.array<8 x i8>
-// CHECK: return [[A]] : !llvm.ptr
+// CHECK: return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1152,10 +1152,10 @@ func.func @alloca_record(%arg0 : i32, %arg1 : i16) -> !fir.ref<!fir.type<_QTt(p1
 
 // CHECK-LABEL: llvm.func @alloca_record
 // CHECK-SAME: ([[ARG0:%.*]]: i32, [[ARG1:%.*]]: i16)
-// CHECK-SAME: -> !llvm.ptr
+// CHECK-SAME: -> !ptr.ptr
 // CHECK: [[SIZE:%.*]] = llvm.call @_QTtP.mem.size([[ARG0]], [[ARG1]]) : (i32, i16) -> i64
 // CHECK: [[ALLOC:%.*]] = llvm.alloca [[SIZE]] x i8
-// CHECK: llvm.return [[ALLOC]] : !llvm.ptr
+// CHECK: llvm.return [[ALLOC]] : !ptr.ptr
 
 // -----
 
@@ -1168,13 +1168,13 @@ func.func @alloca_multidim_array(%0 : index) -> !fir.ref<!fir.array<8x16x32xf32>
 }
 
 // CHECK-LABEL: llvm.func @alloca_multidim_array
-// CHECK-SAME: ([[OP1:%.*]]: i64) -> !llvm.ptr
+// CHECK-SAME: ([[OP1:%.*]]: i64) -> !ptr.ptr
 // CHECK: [[OP2:%.*]] = llvm.mlir.constant(24 : index) : i64
 // CHECK: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK: [[MUL1:%.*]] = llvm.mul [[ONE]], [[OP1]] : i64
 // CHECK: [[TOTAL:%.*]] = llvm.mul [[MUL1]], [[OP2]] : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[TOTAL]] x !llvm.array<32 x array<16 x array<8 x f32>
-// CHECK: llvm.return [[A]] : !llvm.ptr
+// CHECK: llvm.return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1187,13 +1187,13 @@ func.func @alloca_const_interior_array(%0 : index) -> !fir.ref<!fir.array<8x9x?x
 }
 
 // CHECK-LABEL: llvm.func @alloca_const_interior_array
-// CHECK-SAME: ([[OP1:%.*]]: i64) -> !llvm.ptr
+// CHECK-SAME: ([[OP1:%.*]]: i64) -> !ptr.ptr
 // CHECK: [[OP2:%.*]] = llvm.mlir.constant(64 : index) : i64
 // CHECK: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK: [[MUL1:%.*]] = llvm.mul [[ONE]], [[OP1]] : i64
 // CHECK: [[TOTAL:%.*]] = llvm.mul [[MUL1]], [[OP2]] : i64
 // CHECK: [[A:%.*]] = llvm.alloca [[TOTAL]] x !llvm.array<9 x array<8 x f32>
-// CHECK: llvm.return [[A]] : !llvm.ptr
+// CHECK: llvm.return [[A]] : !ptr.ptr
 
 // -----
 
@@ -1206,14 +1206,14 @@ func.func @alloca_array_with_holes(%0 : index, %1 : index) -> !fir.ref<!fir.arra
 }
 
 // CHECK-LABEL: llvm.func @alloca_array_with_holes
-// CHECK-SAME: ([[A:%.*]]: i64, [[B:%.*]]: i64) -> !llvm.ptr
+// CHECK-SAME: ([[A:%.*]]: i64, [[B:%.*]]: i64) -> !ptr.ptr
 // CHECK-DAG: [[ONE:%.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK-DAG: [[FIXED:%.*]] = llvm.mlir.constant(15 : i64) : i64
 // CHECK: [[PROD1:%.*]] = llvm.mul [[ONE]], [[FIXED]] : i64
 // CHECK: [[PROD2:%.*]] = llvm.mul [[PROD1]], [[A]] : i64
 // CHECK: [[PROD3:%.*]] = llvm.mul [[PROD2]], [[B]] : i64
 // CHECK: [[RES:%.*]] = llvm.alloca [[PROD3]] x !llvm.array<4 x i32>
-// CHECK: llvm.return [[RES]] : !llvm.ptr
+// CHECK: llvm.return [[RES]] : !ptr.ptr
 
 // -----
 
@@ -1262,8 +1262,8 @@ func.func @select_case_integer(%arg0: !fir.ref<i32>) -> i32 {
 }
 
 // CHECK-LABEL: llvm.func @select_case_integer(
-// CHECK-SAME:                         %[[ARG0:.*]]: !llvm.ptr) -> i32 {
-// CHECK:         %[[SELECT_VALUE:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> i32
+// CHECK-SAME:                         %[[ARG0:.*]]: !ptr.ptr) -> i32 {
+// CHECK:         %[[SELECT_VALUE:.*]] = llvm.load %[[ARG0]] : !ptr.ptr -> i32
 // CHECK:         %[[CST1:.*]] = llvm.mlir.constant(1 : i32) : i32
 // CHECK:         %[[CST2:.*]] = llvm.mlir.constant(2 : i32) : i32
 // CHECK:         %[[CST4:.*]] = llvm.mlir.constant(4 : i32) : i32
@@ -1322,7 +1322,7 @@ func.func @select_case_integer(%arg0: !fir.ref<i32>) -> i32 {
 // CHECK:        llvm.br ^bb14
 // Block ^bb6 in original FIR code.
 // CHECK-LABEL: ^bb14:
-// CHECK:        %[[RET:.*]] = llvm.load %[[ARG0:.*]] : !llvm.ptr -> i32
+// CHECK:        %[[RET:.*]] = llvm.load %[[ARG0:.*]] : !ptr.ptr -> i32
 // CHECK:        llvm.return %[[RET]] : i32
 
 // -----
@@ -1348,8 +1348,8 @@ func.func @select_case_logical(%arg0: !fir.ref<!fir.logical<4>>) {
 }
 
 // CHECK-LABEL: llvm.func @select_case_logical(
-// CHECK-SAME:                                 %[[ARG0:.*]]: !llvm.ptr
-// CHECK:         %[[LOAD_ARG0:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> i32
+// CHECK-SAME:                                 %[[ARG0:.*]]: !ptr.ptr
+// CHECK:         %[[LOAD_ARG0:.*]] = llvm.load %[[ARG0]] : !ptr.ptr -> i32
 // CHECK:         %[[CST_ZERO:.*]] = llvm.mlir.constant(0 : i64) : i32
 // CHECK:         %[[SELECT_VALUE:.*]] = llvm.icmp "ne" %[[LOAD_ARG0]], %[[CST_ZERO]] : i32
 // CHECK:         %[[CST_FALSE:.*]] = llvm.mlir.constant(false) : i1
@@ -1378,9 +1378,9 @@ func.func @test_is_present_i64(%arg0: !fir.ref<i64>) -> () {
 }
 
 // CHECK-LABEL: @test_is_present_i64
-// CHECK-SAME: (%[[arg:.*]]: !llvm.ptr)
+// CHECK-SAME: (%[[arg:.*]]: !ptr.ptr)
 // CHECK-NEXT:  %[[constant:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK-NEXT:  %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !llvm.ptr to i64
+// CHECK-NEXT:  %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !ptr.ptr to i64
 // CHECK-NEXT:  %{{.*}} = llvm.icmp "ne" %[[ptr]], %[[constant]] : i64
 // CHECK-NEXT:  llvm.return
 // CHECK-NEXT: }
@@ -1391,9 +1391,9 @@ func.func @test_is_present_box(%arg0: !fir.box<!fir.ref<i64>>) -> () {
 }
 
 // CHECK-LABEL: @test_is_present_box
-// CHECK-SAME: (%[[arg:.*]]: !llvm.ptr)
+// CHECK-SAME: (%[[arg:.*]]: !ptr.ptr)
 // CHECK-NEXT: %[[constant:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK-NEXT: %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !llvm.ptr to i64
+// CHECK-NEXT: %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !ptr.ptr to i64
 // CHECK-NEXT: %{{.*}} = llvm.icmp "ne" %[[ptr]], %[[constant]] : i64
 // CHECK-NEXT: llvm.return
 // CHECK-NEXT: }
@@ -1409,7 +1409,7 @@ func.func @test_absent_i64() -> () {
 }
 
 // CHECK-LABEL: @test_absent_i64
-// CHECK-NEXT:  %{{.*}} = llvm.mlir.zero : !llvm.ptr
+// CHECK-NEXT:  %{{.*}} = llvm.mlir.zero : !ptr.ptr
 // CHECK-NEXT:  llvm.return
 // CHECK-NEXT:  }
 
@@ -1418,7 +1418,7 @@ func.func @test_absent_box() -> () {
   return
 }
 // CHECK-LABEL: @test_absent_box
-// CHECK-NEXT:  %{{.*}} = llvm.mlir.zero : !llvm.ptr
+// CHECK-NEXT:  %{{.*}} = llvm.mlir.zero : !ptr.ptr
 // CHECK-NEXT:  llvm.return
 // CHECK-NEXT:  }
 
@@ -1433,9 +1433,9 @@ func.func @is_present(%arg0: !fir.ref<i64>) -> i1 {
 }
 
 // CHECK-LABEL: @is_present
-// CHECK-SAME: (%[[arg:.*]]: !llvm.ptr) -> i1
+// CHECK-SAME: (%[[arg:.*]]: !ptr.ptr) -> i1
 // CHECK-NEXT:  %[[constant:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK-NEXT:  %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !llvm.ptr to i64
+// CHECK-NEXT:  %[[ptr:.*]] = llvm.ptrtoint %[[arg]] : !ptr.ptr to i64
 // CHECK-NEXT:  %[[ret_val:.*]] = llvm.icmp "ne" %[[ptr]], %[[constant]] : i64
 // CHECK-NEXT:  llvm.return %[[ret_val]] : i1
 // CHECK-NEXT: }
@@ -1448,8 +1448,8 @@ func.func @absent() -> i1 {
 
 // CHECK-LABEL: @absent
 // CHECK-SAME:  () -> i1
-// CHECK-NEXT:  %[[ptr:.*]] = llvm.mlir.zero : !llvm.ptr
-// CHECK-NEXT:  %[[ret_val:.*]] = llvm.call @is_present(%[[ptr]]) : (!llvm.ptr) -> i1
+// CHECK-NEXT:  %[[ptr:.*]] = llvm.mlir.zero : !ptr.ptr
+// CHECK-NEXT:  %[[ret_val:.*]] = llvm.call @is_present(%[[ptr]]) : (!ptr.ptr) -> i1
 // CHECK-NEXT:  llvm.return %[[ret_val]] : i1
 
 // -----
@@ -1530,9 +1530,9 @@ func.func @box_tdesc(%arg0: !fir.box<!fir.type<dtdesc{a:i32}>>) {
 }
 
 // CHECK-LABEL: llvm.func @box_tdesc(
-// CHECK-SAME:                       %[[ARG0:.*]]: !llvm.ptr) {
-// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 7] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
-// CHECK:         %[[LOAD:.*]] = llvm.load %[[GEP]] : !llvm.ptr -> !llvm.ptr
+// CHECK-SAME:                       %[[ARG0:.*]]: !ptr.ptr) {
+// CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[ARG0]][0, 7] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
+// CHECK:         %[[LOAD:.*]] = llvm.load %[[GEP]] : !ptr.ptr -> !ptr.ptr
 
 // -----
 
@@ -1549,13 +1549,13 @@ func.func @embox0(%arg0: !fir.ref<!fir.array<100xi32>>) {
 }
 
 // CHECK-LABEL: func @embox0(
-// CHECK-SAME:               %[[ARG0:.*]]: !llvm.ptr
+// CHECK-SAME:               %[[ARG0:.*]]: !ptr.ptr
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[C1]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[C1]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 // CHECK:         %[[TYPE_CODE:.*]] = llvm.mlir.constant(9 : i32) : i32
-// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:         %[[I64_ELEM_SIZE:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:         %[[I64_ELEM_SIZE:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:         %[[DESC:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
 // CHECK:         %[[DESC0:.*]] = llvm.insertvalue %[[I64_ELEM_SIZE]], %[[DESC]][1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
 // CHECK:         %[[CFI_VERSION:.*]] = llvm.mlir.constant(20180515 : i32) : i32
@@ -1572,7 +1572,7 @@ func.func @embox0(%arg0: !fir.ref<!fir.array<100xi32>>) {
 // CHECK:         %[[F18ADDENDUM_I8:.*]] = llvm.trunc %[[F18ADDENDUM]] : i32 to i8
 // CHECK:         %[[DESC5:.*]] = llvm.insertvalue %[[F18ADDENDUM_I8]], %[[DESC4]][6] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
 // CHECK:         %[[DESC6:.*]] = llvm.insertvalue %[[ARG0]], %[[DESC5]][0] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>
-// CHECK:         llvm.store %[[DESC6]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>, !llvm.ptr
+// CHECK:         llvm.store %[[DESC6]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}})>, !ptr.ptr
 
 // Check `fir.embox` in a `fir.global`. Descriptors created by `fir.embox`
 // conversion are not generating `alloca` instructions. This test make sure of
@@ -1695,7 +1695,7 @@ func.func @embox1(%arg0: !fir.ref<!fir.type<_QMtest_dinitTtseq{i:i32}>>) {
 // CHECK:         %[[F18ADDENDUM:.*]] = llvm.mlir.constant(1 : i32) : i32
 // CHECK:         %[[F18ADDENDUM_I8:.*]] = llvm.trunc %[[F18ADDENDUM]] : i32 to i8
 // CHECK:         %{{.*}} = llvm.insertvalue %[[F18ADDENDUM_I8]], %17[6] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
-// CHECK:         %[[TDESC:.*]] = llvm.mlir.addressof @_QMtest_dinitE.dt.tseq : !llvm.ptr
+// CHECK:         %[[TDESC:.*]] = llvm.mlir.addressof @_QMtest_dinitE.dt.tseq : !ptr.ptr
 // CHECK:         %{{.*}} = llvm.insertvalue %[[TDESC]], %{{.*}}[7] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i{{.*}}>)>
 
 // -----
@@ -1750,11 +1750,11 @@ func.func @no_reassoc(%arg0: !fir.ref<i32>) {
 }
 
 // CHECK-LABEL: llvm.func @no_reassoc(
-// CHECK-SAME:                        %[[ARG0:.*]]: !llvm.ptr) {
+// CHECK-SAME:                        %[[ARG0:.*]]: !ptr.ptr) {
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
-// CHECK:         %[[ALLOC:.*]] = llvm.alloca %[[C1]] x i32 : (i64) -> !llvm.ptr
-// CHECK:         %[[LOAD:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> i32
-// CHECK:         llvm.store %[[LOAD]], %[[ALLOC]] : i32, !llvm.ptr
+// CHECK:         %[[ALLOC:.*]] = llvm.alloca %[[C1]] x i32 : (i64) -> !ptr.ptr
+// CHECK:         %[[LOAD:.*]] = llvm.load %[[ARG0]] : !ptr.ptr -> i32
+// CHECK:         llvm.store %[[LOAD]], %[[ALLOC]] : i32, !ptr.ptr
 // CHECK:         llvm.return
 
 // -----
@@ -1770,14 +1770,14 @@ func.func @xembox0(%arg0: !fir.ref<!fir.array<?xi32>>) {
 }
 
 // CHECK-LABEL: llvm.func @xembox0(
-// CHECK-SAME:                     %[[ARG0:.*]]: !llvm.ptr
+// CHECK-SAME:                     %[[ARG0:.*]]: !ptr.ptr
 // CHECK:         %[[ALLOCA_SIZE:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[TYPE:.*]] = llvm.mlir.constant(9 : i32) : i32
-// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:         %[[BOX0:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[BOX1:.*]] = llvm.insertvalue %[[ELEM_LEN_I64]], %[[BOX0]][1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[VERSION:.*]] = llvm.mlir.constant(20180515 : i32) : i32
@@ -1809,9 +1809,9 @@ func.func @xembox0(%arg0: !fir.ref<!fir.array<?xi32>>) {
 // CHECK:         %[[BOX9:.*]] = llvm.insertvalue %[[STRIDE]], %[[BOX8]][7, 0, 2] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[PREV_DIM:.*]] = llvm.mul %[[ELEM_LEN_I64]], %[[C0]]  : i64
 // CHECK:         %[[PREV_PTROFF:.*]] = llvm.mul %[[ONE]], %[[C0]]  : i64
-// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[ARG0]][%[[PTR_OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[ARG0]][%[[PTR_OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 // CHECK:         %[[BOX10:.*]] = llvm.insertvalue %[[BASE_PTR]], %[[BOX9]][0] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK:         llvm.store %[[BOX10]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>, !llvm.ptr
+// CHECK:         llvm.store %[[BOX10]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>, !ptr.ptr
 
 // Check adjustment of element scaling factor.
 
@@ -1821,11 +1821,11 @@ func.func @xembox1(%arg0: !fir.ref<!fir.array<?x!fir.char<1, 10>>>) {
   return
 }
 
-// CHECK-LABEL: llvm.func @xembox1(%{{.*}}: !llvm.ptr) {
+// CHECK-LABEL: llvm.func @xembox1(%{{.*}}: !ptr.ptr) {
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:         %{{.*}} = llvm.insertvalue %[[ELEM_LEN_I64]], %{{.*}}[1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[PREV_PTROFF:.*]] = llvm.mul %[[ELEM_LEN_I64]], %[[C0]]  : i64
 
@@ -1860,7 +1860,7 @@ func.func private @_QPxb(!fir.box<!fir.array<?x?xf64>>)
 // CHECK-LABEL: llvm.func @_QPsb(
 // CHECK-SAME:                   %[[N:.*]]: i64, %[[SH1:.*]]: i64, %[[SH2:.*]]: i64) {
 // CHECK:         %[[ALLOCA_SIZE:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 // CHECK:         %[[C4:.*]] = llvm.mlir.constant(4 : index) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : index) : i64
 // CHECK:         %[[C2:.*]] = llvm.mlir.constant(2 : index) : i64
@@ -1871,11 +1871,11 @@ func.func private @_QPxb(!fir.box<!fir.array<?x?xf64>>)
 // CHECK:         %[[C1_0:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[ARR_SIZE_TMP1:.*]] = llvm.mul %[[C1_0]], %[[N1]]  : i64
 // CHECK:         %[[ARR_SIZE:.*]] = llvm.mul %[[ARR_SIZE_TMP1]], %[[N2]]  : i64
-// CHECK:         %[[ARR:.*]] = llvm.alloca %[[ARR_SIZE]] x f64 {bindc_name = "arr"} : (i64) -> !llvm.ptr
+// CHECK:         %[[ARR:.*]] = llvm.alloca %[[ARR_SIZE]] x f64 {bindc_name = "arr"} : (i64) -> !ptr.ptr
 // CHECK:         %[[TYPE_CODE:.*]] = llvm.mlir.constant(28 : i32) : i32
-// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:         %[[BOX0:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
 // CHECK:         %[[BOX1:.*]] = llvm.insertvalue %[[ELEM_LEN_I64]], %[[BOX0]][1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
 // CHECK:         %[[VERSION:.*]] = llvm.mlir.constant(20180515 : i32) : i32
@@ -1919,9 +1919,9 @@ func.func private @_QPxb(!fir.box<!fir.array<?x?xf64>>)
 // CHECK:         %[[BOX11:.*]] = llvm.insertvalue %[[EXT_SELECT]], %[[BOX10]][7, 1, 1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
 // CHECK:         %[[STRIDE_MUL:.*]] = llvm.mul %[[PREV_DIM]], %[[C1]]  : i64
 // CHECK:         %[[BOX12:.*]] = llvm.insertvalue %[[STRIDE_MUL]], %[[BOX11]][7, 1, 2] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
-// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[ARR]][%[[PTR_OFFSET0]]] : (!llvm.ptr, i64) -> !llvm.ptr, f64
+// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[ARR]][%[[PTR_OFFSET0]]] : (!ptr.ptr, i64) -> !ptr.ptr, f64
 // CHECK:         %[[BOX13:.*]] = llvm.insertvalue %[[BASE_PTR]], %[[BOX12]][0] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
-// CHECK:         llvm.store %[[BOX13]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>, !llvm.ptr
+// CHECK:         llvm.store %[[BOX13]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>, !ptr.ptr
 
 // Conversion with a subcomponent.
 
@@ -1941,19 +1941,19 @@ func.func private @_QPtest_dt_callee(%arg0: !fir.box<!fir.array<?xi32>>)
 
 // CHECK-LABEL: llvm.func @_QPtest_dt_slice
 // CHECK:         %[[ALLOCA_SIZE:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+// CHECK:         %[[ALLOCA:.*]] = llvm.alloca %[[ALLOCA_SIZE]] x !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 // CHECK:         %[[C20:.*]] = llvm.mlir.constant(20 : index) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[C10:.*]] = llvm.mlir.constant(10 : i64) : i64
 // CHECK:         %[[C2:.*]] = llvm.mlir.constant(2 : i64) : i64
 // CHECK:         %[[ALLOCA_SIZE_V:.*]] = llvm.mlir.constant(1 : i64) : i64
-// CHECK:         %[[V:.*]] = llvm.alloca %[[ALLOCA_SIZE_V]] x i32 {bindc_name = "v"} : (i64) -> !llvm.ptr
+// CHECK:         %[[V:.*]] = llvm.alloca %[[ALLOCA_SIZE_V]] x i32 {bindc_name = "v"} : (i64) -> !ptr.ptr
 // CHECK:         %[[ALLOCA_SIZE_X:.*]] = llvm.mlir.constant(1 : i64) : i64
-// CHECK:         %[[X:.*]] = llvm.alloca %[[ALLOCA_SIZE_X]] x !llvm.array<20 x struct<"_QFtest_dt_sliceTt", (i32, i32)>> {bindc_name = "x"} : (i64) -> !llvm.ptr
+// CHECK:         %[[X:.*]] = llvm.alloca %[[ALLOCA_SIZE_X]] x !llvm.array<20 x struct<"_QFtest_dt_sliceTt", (i32, i32)>> {bindc_name = "x"} : (i64) -> !ptr.ptr
 // CHECK:         %[[TYPE_CODE:.*]] = llvm.mlir.constant(9 : i32) : i32
-// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+// CHECK:         %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 // CHECK:         %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+// CHECK:         %[[ELEM_LEN_I64:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 // CHECK:         %[[BOX0:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[BOX1:.*]] = llvm.insertvalue %[[ELEM_LEN_I64]], %[[BOX0]][1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[VERSION:.*]] = llvm.mlir.constant(20180515 : i32) : i32
@@ -1971,9 +1971,9 @@ func.func private @_QPtest_dt_callee(%arg0: !fir.box<!fir.array<?xi32>>)
 // CHECK:         %[[BOX6:.*]] = llvm.insertvalue %[[F18ADDENDUM_I8]], %[[BOX5]][6] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[ZERO:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[ONE:.*]] = llvm.mlir.constant(1 : i64) : i64
-// CHECK:         %[[ELE_TYPE:.*]] = llvm.mlir.zero : !llvm.ptr
-// CHECK:         %[[GEP_DTYPE_SIZE:.*]] = llvm.getelementptr %[[ELE_TYPE]][1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"_QFtest_dt_sliceTt", (i32, i32)>
-// CHECK:         %[[PTRTOINT_DTYPE_SIZE:.*]] = llvm.ptrtoint %[[GEP_DTYPE_SIZE]] : !llvm.ptr to i64
+// CHECK:         %[[ELE_TYPE:.*]] = llvm.mlir.zero : !ptr.ptr
+// CHECK:         %[[GEP_DTYPE_SIZE:.*]] = llvm.getelementptr %[[ELE_TYPE]][1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"_QFtest_dt_sliceTt", (i32, i32)>
+// CHECK:         %[[PTRTOINT_DTYPE_SIZE:.*]] = llvm.ptrtoint %[[GEP_DTYPE_SIZE]] : !ptr.ptr to i64
 // CHECK:         %[[ADJUSTED_OFFSET:.*]] = llvm.sub %[[C1]], %[[ONE]]  : i64
 // CHECK:         %[[EXT_SUB:.*]] = llvm.sub %[[C10]], %[[C1]]  : i64
 // CHECK:         %[[EXT_ADD:.*]] = llvm.add %[[EXT_SUB]], %[[C2]]  : i64
@@ -1984,10 +1984,10 @@ func.func private @_QPtest_dt_callee(%arg0: !fir.box<!fir.array<?xi32>>)
 // CHECK:         %[[BOX8:.*]] = llvm.insertvalue %[[EXT_SELECT]], %[[BOX7]][7, 0, 1] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
 // CHECK:         %[[STRIDE_MUL:.*]] = llvm.mul %[[PTRTOINT_DTYPE_SIZE]], %[[C2]]  : i64
 // CHECK:         %[[BOX9:.*]] = llvm.insertvalue %[[STRIDE_MUL]], %[[BOX8]][7, 0, 2] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[X]][%[[ZERO]], %[[ADJUSTED_OFFSET]], 0] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<20 x struct<"_QFtest_dt_sliceTt", (i32, i32)>>
+// CHECK:         %[[BASE_PTR:.*]] = llvm.getelementptr %[[X]][%[[ZERO]], %[[ADJUSTED_OFFSET]], 0] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.array<20 x struct<"_QFtest_dt_sliceTt", (i32, i32)>>
 // CHECK:         %[[BOX10:.*]] = llvm.insertvalue %[[BASE_PTR]], %[[BOX9]][0] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK:         llvm.store %[[BOX10]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>, !llvm.ptr
-// CHECK:         llvm.call @_QPtest_dt_callee(%1) : (!llvm.ptr) -> ()
+// CHECK:         llvm.store %[[BOX10]], %[[ALLOCA]] : !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>, !ptr.ptr
+// CHECK:         llvm.call @_QPtest_dt_callee(%1) : (!ptr.ptr) -> ()
 
 // Conversion with a subcomponent that indexes a 2d array field in a derived type.
 
@@ -2001,12 +2001,12 @@ func.func @_QPtest_dt_slice2(%arg0: !fir.ref<!fir.array<2x!fir.type<_QPtest_dt_s
 }
 
 // CHECK-LABEL: llvm.func @_QPtest_dt_slice2(
-// CHECK-SAME:        %[[ARG0:.*]]: !llvm.ptr) {
+// CHECK-SAME:        %[[ARG0:.*]]: !ptr.ptr) {
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : index) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : index) : i64
 // CHECK:         %[[C2:.*]] = llvm.mlir.constant(2 : index) : i64
 // CHECK:         %[[C0_2:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[C0_2]], {{.*}}, 0, %[[C1]], %[[C0]]] : (!llvm.ptr, i64, i64, i64, i64) -> !llvm.ptr, !llvm.array<2 x struct<"_QPtest_dt_slice2Tt", (array<3 x array<2 x i32>>)>>
+// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[C0_2]], {{.*}}, 0, %[[C1]], %[[C0]]] : (!ptr.ptr, i64, i64, i64, i64) -> !ptr.ptr, !llvm.array<2 x struct<"_QPtest_dt_slice2Tt", (array<3 x array<2 x i32>>)>>
 // CHECK:         return
 // CHECK:       }
 
@@ -2023,7 +2023,7 @@ func.func @ext_array_coor0(%arg0: !fir.ref<!fir.array<?xi32>>) {
 }
 
 // CHECK-LABEL: llvm.func @ext_array_coor0(
-// CHECK-SAME:                             %[[ARG0:.*]]: !llvm.ptr)
+// CHECK-SAME:                             %[[ARG0:.*]]: !ptr.ptr)
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[C0_1:.*]] = llvm.mlir.constant(0 : i64) : i64
@@ -2031,7 +2031,7 @@ func.func @ext_array_coor0(%arg0: !fir.ref<!fir.array<?xi32>>) {
 // CHECK:         %[[DIFF0:.*]] = llvm.mul %[[IDX]], %[[C1]] : i64
 // CHECK:         %[[SC:.*]] = llvm.mul %[[DIFF0]], %[[C1]]  : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[SC]], %[[C0_1]]  : i64
-// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 
 // Conversion with shift and slice.
 
@@ -2042,7 +2042,7 @@ func.func @ext_array_coor1(%arg0: !fir.ref<!fir.array<?xi32>>) {
 }
 
 // CHECK-LABEL: llvm.func @ext_array_coor1(
-// CHECK-SAME:                             %[[ARG0:.*]]: !llvm.ptr)
+// CHECK-SAME:                             %[[ARG0:.*]]: !ptr.ptr)
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[C0_1:.*]] = llvm.mlir.constant(0 : i64) : i64
@@ -2052,7 +2052,7 @@ func.func @ext_array_coor1(%arg0: !fir.ref<!fir.array<?xi32>>) {
 // CHECK:         %[[DIFF1:.*]] = llvm.add %[[DIFF0]], %[[ADJ]]  : i64
 // CHECK:         %[[STRIDE:.*]] = llvm.mul %[[DIFF1]], %[[C1]]  : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[STRIDE]], %[[C0_1]]  : i64
-// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 
 // Conversion for a dynamic length char.
 
@@ -2063,7 +2063,7 @@ func.func @ext_array_coor2(%arg0: !fir.ref<!fir.array<?x!fir.char<1,?>>>) {
 }
 
 // CHECK-LABEL: llvm.func @ext_array_coor2(
-// CHECK-SAME:                             %[[ARG0:.*]]: !llvm.ptr)
+// CHECK-SAME:                             %[[ARG0:.*]]: !ptr.ptr)
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[C0_1:.*]] = llvm.mlir.constant(0 : i64) : i64
@@ -2071,7 +2071,7 @@ func.func @ext_array_coor2(%arg0: !fir.ref<!fir.array<?x!fir.char<1,?>>>) {
 // CHECK:         %[[DIFF0:.*]] = llvm.mul %[[IDX]], %[[C1]] : i64
 // CHECK:         %[[SC:.*]] = llvm.mul %[[DIFF0]], %[[C1]]  : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[SC]], %[[C0_1]]  : i64
-// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 
 // Conversion for a `fir.box`.
 
@@ -2082,19 +2082,19 @@ func.func @ext_array_coor3(%arg0: !fir.box<!fir.array<?xi32>>) {
 }
 
 // CHECK-LABEL: llvm.func @ext_array_coor3(
-// CHECK-SAME:                             %[[ARG0:.*]]: !llvm.ptr) {
+// CHECK-SAME:                             %[[ARG0:.*]]: !ptr.ptr) {
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[C1:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:         %[[C0_1:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[IDX:.*]] = llvm.sub %[[C0]], %[[C1]] : i64
 // CHECK:         %[[DIFF0:.*]] = llvm.mul %[[IDX]], %[[C1]] : i64
-// CHECK:         %[[GEPSTRIDE:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK:         %[[LOADEDSTRIDE:.*]] = llvm.load %[[GEPSTRIDE]] : !llvm.ptr -> i64
+// CHECK:         %[[GEPSTRIDE:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK:         %[[LOADEDSTRIDE:.*]] = llvm.load %[[GEPSTRIDE]] : !ptr.ptr -> i64
 // CHECK:         %[[SC:.*]] = llvm.mul %[[DIFF0]], %[[LOADEDSTRIDE]]  : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[SC]], %[[C0_1]]  : i64
-// CHECK:         %[[GEPADDR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK:         %[[LOADEDADDR:.*]] = llvm.load %[[GEPADDR]] : !llvm.ptr -> !llvm.ptr
-// CHECK:         %[[GEPADDROFFSET:.*]] = llvm.getelementptr %[[LOADEDADDR]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+// CHECK:         %[[GEPADDR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK:         %[[LOADEDADDR:.*]] = llvm.load %[[GEPADDR]] : !ptr.ptr -> !ptr.ptr
+// CHECK:         %[[GEPADDROFFSET:.*]] = llvm.getelementptr %[[LOADEDADDR]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 
 // Conversion with non zero shift and slice.
 
@@ -2108,7 +2108,7 @@ func.func @ext_array_coor4(%arg0: !fir.ref<!fir.array<100xi32>>) {
 }
 
 // CHECK-LABEL: llvm.func @ext_array_coor4(
-// CHECK:                                  %[[ARG0:.*]]: !llvm.ptr) {
+// CHECK:                                  %[[ARG0:.*]]: !ptr.ptr) {
 // CHECK:         %[[C0:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:         %[[C10:.*]] = llvm.mlir.constant(10 : i64) : i64
 // CHECK:         %[[C20:.*]] = llvm.mlir.constant(20 : i64) : i64
@@ -2121,7 +2121,7 @@ func.func @ext_array_coor4(%arg0: !fir.ref<!fir.array<100xi32>>) {
 // CHECK:         %[[DIFF1:.*]] = llvm.add %[[DIFF0]], %[[ADJ]]  : i64
 // CHECK:         %[[STRIDE:.*]] = llvm.mul %[[DIFF1]], %[[C1_1]] : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[STRIDE]], %[[C0_1]]  : i64
-// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:         %{{.*}} = llvm.getelementptr %[[ARG0]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 
 // Conversion with index type shape and slice
 
@@ -2131,7 +2131,7 @@ func.func @ext_array_coor5(%arg0: !fir.ref<!fir.array<?xi32>>, %idx1 : index, %i
 }
 
 // CHECK-LABEL:   llvm.func @ext_array_coor5(
-// CHECK-SAME:        %[[VAL_0:.*]]: !llvm.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
+// CHECK-SAME:        %[[VAL_0:.*]]: !ptr.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
 // CHECK:           %[[VAL_6:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:           %[[VAL_7:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:           %[[VAL_8:.*]] = llvm.sub %[[VAL_5]], %[[VAL_6]]  : i64
@@ -2141,7 +2141,7 @@ func.func @ext_array_coor5(%arg0: !fir.ref<!fir.array<?xi32>>, %idx1 : index, %i
 // CHECK:           %[[VAL_12:.*]] = llvm.mul %[[VAL_11]], %[[VAL_6]]  : i64
 // CHECK:           %[[VAL_13:.*]] = llvm.add %[[VAL_12]], %[[VAL_7]]  : i64
 // CHECK:           %[[VAL_14:.*]] = llvm.mul %[[VAL_6]], %[[VAL_1]]  : i64
-// CHECK:           %[[VAL_16:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_13]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           %[[VAL_16:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_13]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 // CHECK:         }
 
 // Conversion for 3-d array
@@ -2152,7 +2152,7 @@ func.func @ext_array_coor6(%arg0: !fir.ref<!fir.array<?x?x?xi32>>, %idx1 : index
 }
 
 // CHECK-LABEL:   llvm.func @ext_array_coor6(
-// CHECK-SAME:        %[[VAL_0:.*]]: !llvm.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
+// CHECK-SAME:        %[[VAL_0:.*]]: !ptr.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
 // CHECK:           %[[VAL_6:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:           %[[VAL_7:.*]] = llvm.mlir.constant(0 : i64) : i64
 // CHECK:           %[[VAL_8:.*]] = llvm.sub %[[VAL_5]], %[[VAL_6]]  : i64
@@ -2176,7 +2176,7 @@ func.func @ext_array_coor6(%arg0: !fir.ref<!fir.array<?x?x?xi32>>, %idx1 : index
 // CHECK:           %[[VAL_26:.*]] = llvm.mul %[[VAL_25]], %[[VAL_21]]  : i64
 // CHECK:           %[[VAL_27:.*]] = llvm.add %[[VAL_26]], %[[VAL_20]]  : i64
 // CHECK:           %[[VAL_28:.*]] = llvm.mul %[[VAL_21]], %[[VAL_1]]  : i64
-// CHECK:           %[[VAL_30:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_27]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           %[[VAL_30:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_27]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2189,7 +2189,7 @@ func.func @ext_array_coor_dt_slice(%arg0: !fir.ref<!fir.array<20x!fir.type<_QFte
 }
 
 // CHECK-LABEL:   llvm.func @ext_array_coor_dt_slice(
-// CHECK-SAME:        %[[VAL_0:.*]]: !llvm.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
+// CHECK-SAME:        %[[VAL_0:.*]]: !ptr.ptr, %[[VAL_1:.*]]: i64, %[[VAL_2:.*]]: i64, %[[VAL_3:.*]]: i64, %[[VAL_4:.*]]: i64, %[[VAL_5:.*]]: i64) {
 // CHECK:           %[[VAL_6:.*]] = llvm.mlir.constant(0 : i32) : i32
 // CHECK:           %[[VAL_7:.*]] = llvm.mlir.constant(1 : i64) : i64
 // CHECK:           %[[VAL_8:.*]] = llvm.mlir.constant(0 : i64) : i64
@@ -2200,7 +2200,7 @@ func.func @ext_array_coor_dt_slice(%arg0: !fir.ref<!fir.array<20x!fir.type<_QFte
 // CHECK:           %[[VAL_13:.*]] = llvm.mul %[[VAL_12]], %[[VAL_7]]  : i64
 // CHECK:           %[[VAL_14:.*]] = llvm.add %[[VAL_13]], %[[VAL_8]]  : i64
 // CHECK:           %[[VAL_15:.*]] = llvm.mul %[[VAL_7]], %[[VAL_1]]  : i64
-// CHECK:           %[[VAL_17:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_14]], 0] : (!llvm.ptr, i64) -> !llvm.ptr, !llvm.struct<"_QFtest_dt_sliceTt", (i32, i32)>
+// CHECK:           %[[VAL_17:.*]] = llvm.getelementptr %[[VAL_0]][%[[VAL_14]], 0] : (!ptr.ptr, i64) -> !ptr.ptr, !llvm.struct<"_QFtest_dt_sliceTt", (i32, i32)>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2213,8 +2213,8 @@ func.func @ext_array_coor_dt_slice2(%arg0: !fir.ref<!fir.array<2x!fir.type<_QFte
 }
 
 // CHECK-LABEL:   llvm.func @ext_array_coor_dt_slice2(
-// CHECK-SAME:        %[[ARG0:.*]]: !llvm.ptr, %[[IDX1:.*]]: i64, %[[IDX2:.*]]: i64, %[[IDX3:.*]]: i64, %[[IDX4:.*]]: i64, %[[IDX5:.*]]: i64, %[[IDX6:.*]]: i64, %[[IDX7:.*]]: i64) {
-// CHECK:           %{{.*}} = llvm.getelementptr %[[ARG0]][%{{.*}}, 0, %[[IDX6]], %[[IDX5]]] : (!llvm.ptr, i64, i64, i64) -> !llvm.ptr, !llvm.struct<"_QFtest_dt_slice2Tt", (array<3 x array<2 x i32>>)>
+// CHECK-SAME:        %[[ARG0:.*]]: !ptr.ptr, %[[IDX1:.*]]: i64, %[[IDX2:.*]]: i64, %[[IDX3:.*]]: i64, %[[IDX4:.*]]: i64, %[[IDX5:.*]]: i64, %[[IDX6:.*]]: i64, %[[IDX7:.*]]: i64) {
+// CHECK:           %{{.*}} = llvm.getelementptr %[[ARG0]][%{{.*}}, 0, %[[IDX6]], %[[IDX5]]] : (!ptr.ptr, i64, i64, i64) -> !ptr.ptr, !llvm.struct<"_QFtest_dt_slice2Tt", (array<3 x array<2 x i32>>)>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2243,18 +2243,18 @@ func.func @test_rebox_1(%arg0: !fir.box<!fir.array<?x?xf32>>) {
 }
 //CHECK-LABEL:  llvm.func @bar1
 //CHECK-LABEL:  llvm.func @test_rebox_1
-//CHECK-SAME:   %[[ARG0:.*]]: !llvm.ptr
+//CHECK-SAME:   %[[ARG0:.*]]: !ptr.ptr
 //CHECK:    %[[ONE_1:.*]] = llvm.mlir.constant(1 : i32) : i32
-//CHECK:    %[[RESULT_BOX_REF:.*]] = llvm.alloca %[[ONE_1]] x !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+//CHECK:    %[[RESULT_BOX_REF:.*]] = llvm.alloca %[[ONE_1]] x !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 //CHECK:    %[[THREE:.*]] = llvm.mlir.constant(3 : index) : i64
 //CHECK:    %[[FOUR:.*]] = llvm.mlir.constant(4 : index) : i64
 //CHECK:    %[[FIVE:.*]] = llvm.mlir.constant(5 : index) : i64
 //CHECK:    %[[SIX:.*]] = llvm.mlir.constant(6 : index) : i64
 //CHECK:    %[[EIGHTY:.*]] = llvm.mlir.constant(80 : index) : i64
 //CHECK:    %[[FLOAT_TYPE:.*]] = llvm.mlir.constant(27 : i32) : i32
-//CHECK:    %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+//CHECK:    %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 //CHECK:    %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-//CHECK:    %[[ELEM_SIZE_I64:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+//CHECK:    %[[ELEM_SIZE_I64:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 //CHECK:    %[[RBOX:.*]] = llvm.mlir.undef : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:    %[[RBOX_TMP1:.*]] = llvm.insertvalue %[[ELEM_SIZE_I64]], %[[RBOX]][1] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:    %[[CFI_VERSION:.*]] = llvm.mlir.constant(20180515 : i32) : i32
@@ -2270,19 +2270,19 @@ func.func @test_rebox_1(%arg0: !fir.box<!fir.array<?x?xf32>>) {
 //CHECK:    %[[ADDENDUM:.*]] = llvm.mlir.constant(0 : i32) : i32
 //CHECK:    %[[ADDENDUM_I8:.*]] = llvm.trunc %[[ADDENDUM]] : i32 to i8
 //CHECK:    %[[RBOX_TMP6:.*]] = llvm.insertvalue %[[ADDENDUM_I8]], %[[RBOX_TMP5]][6] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
-//CHECK:    %[[DIM1_STRIDE_REF:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
-//CHECK:    %[[DIM1_STRIDE:.*]] = llvm.load %[[DIM1_STRIDE_REF]] : !llvm.ptr -> i64
-//CHECK:    %[[DIM2_STRIDE_REF:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 1, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
-//CHECK:    %[[DIM2_STRIDE:.*]] = llvm.load %[[DIM2_STRIDE_REF]] : !llvm.ptr -> i64
-//CHECK:    %[[SOURCE_ARRAY_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
-//CHECK:    %[[SOURCE_ARRAY:.*]] = llvm.load %[[SOURCE_ARRAY_PTR]] : !llvm.ptr -> !llvm.ptr
+//CHECK:    %[[DIM1_STRIDE_REF:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
+//CHECK:    %[[DIM1_STRIDE:.*]] = llvm.load %[[DIM1_STRIDE_REF]] : !ptr.ptr -> i64
+//CHECK:    %[[DIM2_STRIDE_REF:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 1, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
+//CHECK:    %[[DIM2_STRIDE:.*]] = llvm.load %[[DIM2_STRIDE_REF]] : !ptr.ptr -> i64
+//CHECK:    %[[SOURCE_ARRAY_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<2 x array<3 x i64>>)>
+//CHECK:    %[[SOURCE_ARRAY:.*]] = llvm.load %[[SOURCE_ARRAY_PTR]] : !ptr.ptr -> !ptr.ptr
 //CHECK:    %[[ZERO_ELEMS:.*]] = llvm.mlir.constant(0 : i64) : i64
 //CHECK:    %[[DIM1_LB_DIFF:.*]] = llvm.sub %[[FIVE]], %[[THREE]]  : i64
 //CHECK:    %[[DIM1_LB_OFFSET:.*]] = llvm.mul %[[DIM1_LB_DIFF]], %[[DIM1_STRIDE]]  : i64
-//CHECK:    %[[RESULT_PTR_DIM1:.*]] = llvm.getelementptr %[[SOURCE_ARRAY]][%[[DIM1_LB_OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+//CHECK:    %[[RESULT_PTR_DIM1:.*]] = llvm.getelementptr %[[SOURCE_ARRAY]][%[[DIM1_LB_OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 //CHECK:    %[[DIM2_LB_DIFF:.*]] = llvm.sub %[[SIX]], %[[FOUR]]  : i64
 //CHECK:    %[[DIM2_LB_OFFSET:.*]] = llvm.mul %[[DIM2_LB_DIFF]], %[[DIM2_STRIDE]]  : i64
-//CHECK:    %[[RESULT_PTR:.*]] = llvm.getelementptr %[[RESULT_PTR_DIM1]][%[[DIM2_LB_OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+//CHECK:    %[[RESULT_PTR:.*]] = llvm.getelementptr %[[RESULT_PTR_DIM1]][%[[DIM2_LB_OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 //CHECK:    %[[RESULT_UB_LB_DIFF:.*]] = llvm.sub %[[EIGHTY]], %[[SIX]]  : i64
 //CHECK:    %[[RESULT_UB_LB_DIFF_PLUS_STRIDE:.*]] = llvm.add %[[RESULT_UB_LB_DIFF]], %[[THREE]]  : i64
 //CHECK:    %[[RESULT_NELEMS_TMP:.*]] = llvm.sdiv %[[RESULT_UB_LB_DIFF_PLUS_STRIDE]], %[[THREE]]  : i64
@@ -2294,8 +2294,8 @@ func.func @test_rebox_1(%arg0: !fir.box<!fir.array<?x?xf32>>) {
 //CHECK:    %[[RBOX_TMP7_2:.*]] = llvm.insertvalue %[[RESULT_NELEMS]], %[[RBOX_TMP7_1]][7, 0, 1] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:    %[[RBOX_TMP7_3:.*]] = llvm.insertvalue %[[RESULT_STRIDE]], %[[RBOX_TMP7_2]][7, 0, 2] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:    %[[RESULT_BOX:.*]] = llvm.insertvalue %[[RESULT_PTR]], %[[RBOX_TMP7_3]][0] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
-//CHECK:    llvm.store %[[RESULT_BOX]], %[[RESULT_BOX_REF]] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>, !llvm.ptr
-//CHECK:    llvm.call @bar1(%[[RESULT_BOX_REF]]) : (!llvm.ptr) -> ()
+//CHECK:    llvm.store %[[RESULT_BOX]], %[[RESULT_BOX_REF]] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>, !ptr.ptr
+//CHECK:    llvm.call @bar1(%[[RESULT_BOX_REF]]) : (!ptr.ptr) -> ()
 
 
 // Test a rebox of an array section like x(3:60:9)%c(2:8) with both a triplet, a component and a substring where x is a fir.box.
@@ -2312,20 +2312,20 @@ func.func @foo(%arg0: !fir.box<!fir.array<?x!fir.type<t{i:i32,c:!fir.char<1,10>}
   return
 }
 
-//CHECK: llvm.func @bar(!llvm.ptr) attributes {sym_visibility = "private"}
+//CHECK: llvm.func @bar(!ptr.ptr) attributes {sym_visibility = "private"}
 //CHECK-LABEL: llvm.func @foo
-//CHECK-SAME: %[[ARG0:.*]]: !llvm.ptr
+//CHECK-SAME: %[[ARG0:.*]]: !ptr.ptr
 //CHECK:   %[[ONE:.*]] = llvm.mlir.constant(1 : i32) : i32
-//CHECK:   %[[RESULT_BOX_REF:.*]] = llvm.alloca %[[ONE]] x !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+//CHECK:   %[[RESULT_BOX_REF:.*]] = llvm.alloca %[[ONE]] x !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
 //CHECK:   %[[RESULT_LB:.*]] = llvm.mlir.constant(3 : i64) : i64
 //CHECK:   %[[RESULT_UB:.*]] = llvm.mlir.constant(60 : i64) : i64
 //CHECK:   %[[RESULT_STRIDE:.*]] = llvm.mlir.constant(9 : i64) : i64
 //CHECK:   %[[COMPONENT_OFFSET_1:.*]] = llvm.mlir.constant(1 : i64) : i64
 //CHECK:   %[[ELEM_COUNT:.*]] = llvm.mlir.constant(7 : i64) : i64
 //CHECK:   %[[TYPE_CHAR:.*]] = llvm.mlir.constant(40 : i32) : i32
-//CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !llvm.ptr
+//CHECK:   %[[NULL:.*]] = llvm.mlir.zero : !ptr.ptr
 //CHECK:   %[[GEP:.*]] = llvm.getelementptr %[[NULL]][1]
-//CHECK:   %[[CHAR_SIZE:.*]] = llvm.ptrtoint %[[GEP]] : !llvm.ptr to i64
+//CHECK:   %[[CHAR_SIZE:.*]] = llvm.ptrtoint %[[GEP]] : !ptr.ptr to i64
 //CHECK:   %[[ELEM_SIZE:.*]] = llvm.mul %[[CHAR_SIZE]], %[[ELEM_COUNT]]
 //CHECK:   %[[RBOX_TMP1:.*]] = llvm.insertvalue %[[ELEM_SIZE]], %{{.*}}[1] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:   %[[RBOX_TMP2:.*]] = llvm.insertvalue %{{.*}}, %[[RBOX_TMP1]][2] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
@@ -2338,16 +2338,16 @@ func.func @foo(%arg0: !fir.box<!fir.array<?x!fir.type<t{i:i32,c:!fir.char<1,10>}
 //CHECK:   %[[ADDENDUM:.*]] = llvm.mlir.constant(0 : i32) : i32
 //CHECK:   %[[ADDENDUM_I8:.*]] = llvm.trunc %[[ADDENDUM]] : i32 to i8
 //CHECK:   %[[RBOX_TMP6:.*]] = llvm.insertvalue %[[ADDENDUM_I8]], %[[RBOX_TMP5]][6] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
-//CHECK:   %[[SRC_STRIDE_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
-//CHECK:   %[[SRC_STRIDE:.*]] = llvm.load %[[SRC_STRIDE_PTR]] : !llvm.ptr -> i64
-//CHECK:   %[[SRC_ARRAY_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
-//CHECK:   %[[SRC_ARRAY:.*]] = llvm.load %[[SRC_ARRAY_PTR]] : !llvm.ptr -> !llvm.ptr
+//CHECK:   %[[SRC_STRIDE_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
+//CHECK:   %[[SRC_STRIDE:.*]] = llvm.load %[[SRC_STRIDE_PTR]] : !ptr.ptr -> i64
+//CHECK:   %[[SRC_ARRAY_PTR:.*]] = llvm.getelementptr %[[ARG0]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
+//CHECK:   %[[SRC_ARRAY:.*]] = llvm.load %[[SRC_ARRAY_PTR]] : !ptr.ptr -> !ptr.ptr
 //CHECK:   %[[ZERO_6:.*]] = llvm.mlir.constant(0 : i64) : i64
-//CHECK:   %[[COMPONENT:.*]] = llvm.getelementptr %[[SRC_ARRAY]][%[[ZERO_6]], 1, %[[COMPONENT_OFFSET_1]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.struct<"t", (i32, array<10 x i8>)>
+//CHECK:   %[[COMPONENT:.*]] = llvm.getelementptr %[[SRC_ARRAY]][%[[ZERO_6]], 1, %[[COMPONENT_OFFSET_1]]] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.struct<"t", (i32, array<10 x i8>)>
 //CHECK:   %[[SRC_LB:.*]] = llvm.mlir.constant(1 : i64) : i64
 //CHECK:   %[[RESULT_TMP0:.*]] = llvm.sub %[[RESULT_LB]], %[[SRC_LB]]  : i64
 //CHECK:   %[[RESULT_OFFSET_START:.*]] = llvm.mul %[[RESULT_TMP0]], %[[SRC_STRIDE]]  : i64
-//CHECK:   %[[RESULT_PTR:.*]] = llvm.getelementptr %[[COMPONENT]][%[[RESULT_OFFSET_START]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+//CHECK:   %[[RESULT_PTR:.*]] = llvm.getelementptr %[[COMPONENT]][%[[RESULT_OFFSET_START]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 //CHECK:   %[[RESULT_TMP1:.*]] = llvm.sub %[[RESULT_UB]], %[[RESULT_LB]]  : i64
 //CHECK:   %[[RESULT_TMP2:.*]] = llvm.add %[[RESULT_TMP1]], %[[RESULT_STRIDE]]  : i64
 //CHECK:   %[[RESULT_TMP3:.*]] = llvm.sdiv %[[RESULT_TMP2]], %[[RESULT_STRIDE]]  : i64
@@ -2359,8 +2359,8 @@ func.func @foo(%arg0: !fir.box<!fir.array<?x!fir.type<t{i:i32,c:!fir.char<1,10>}
 //CHECK:   %[[RBOX_TMP7_2:.*]] = llvm.insertvalue %[[RESULT_NELEMS]], %[[RBOX_TMP7_1]][7, 0, 1] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:   %[[RBOX_TMP7_3:.*]] = llvm.insertvalue %[[RESULT_TOTAL_STRIDE]], %[[RBOX_TMP7_2]][7, 0, 2] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
 //CHECK:   %[[RESULT_BOX:.*]] = llvm.insertvalue %[[RESULT_PTR]], %[[RBOX_TMP7_3]][0] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
-//CHECK:   llvm.store %[[RESULT_BOX]], %[[RESULT_BOX_REF]] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>, !llvm.ptr
-//CHECK:   llvm.call @bar(%[[RESULT_BOX_REF]]) : (!llvm.ptr) -> ()
+//CHECK:   llvm.store %[[RESULT_BOX]], %[[RESULT_BOX_REF]] : !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>, !ptr.ptr
+//CHECK:   llvm.call @bar(%[[RESULT_BOX_REF]]) : (!ptr.ptr) -> ()
 //CHECK:   llvm.return
 //CHECK: }
 
@@ -2376,8 +2376,8 @@ func.func @coordinate_ref_complex(%arg0: !fir.ref<!fir.complex<16>>) {
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_ref_complex
-// CHECK-SAME:  %[[ARG0:.*]]: !llvm.ptr
-// CHECK:    %{{.*}} = llvm.getelementptr %[[ARG0]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(f128, f128)>
+// CHECK-SAME:  %[[ARG0:.*]]: !ptr.ptr
+// CHECK:    %{{.*}} = llvm.getelementptr %[[ARG0]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(f128, f128)>
 // CHECK-NEXT:    llvm.return
 
 // -----
@@ -2389,8 +2389,8 @@ func.func @coordinate_box_complex(%arg0: !fir.box<!fir.complex<16>>) {
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_box_complex
-// CHECK-SAME:  %[[BOX:.*]]: !llvm.ptr
-// CHECK:    %{{.*}} = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(f128, f128)>
+// CHECK-SAME:  %[[BOX:.*]]: !ptr.ptr
+// CHECK:    %{{.*}} = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(f128, f128)>
 // CHECK-NEXT:    llvm.return
 
 // -----
@@ -2405,11 +2405,11 @@ func.func @coordinate_box_derived_1(%arg0: !fir.box<!fir.type<derived_1{field_1:
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_box_derived_1
-// CHECK-SAME: %[[BOX:.*]]: !llvm.ptr)
+// CHECK-SAME: %[[BOX:.*]]: !ptr.ptr)
 // CHECK:    %[[COORDINATE:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:    %[[DERIVED_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i64>)>
-// CHECK:    %[[DERIVED_VAL:.*]] = llvm.load %[[DERIVED_ADDR]] : !llvm.ptr -> !llvm.ptr
-// CHECK:    %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[DERIVED_VAL]][0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"derived_1", (i32, i32)>
+// CHECK:    %[[DERIVED_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i64>)>
+// CHECK:    %[[DERIVED_VAL:.*]] = llvm.load %[[DERIVED_ADDR]] : !ptr.ptr -> !ptr.ptr
+// CHECK:    %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[DERIVED_VAL]][0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"derived_1", (i32, i32)>
 // CHECK-NEXT:    llvm.return
 
 // Derived type - basic case (2 indices)
@@ -2421,13 +2421,13 @@ func.func @coordinate_box_derived_2(%arg0: !fir.box<!fir.type<derived_2{field_1:
 }
 
 // CHECK-LABEL: llvm.func @coordinate_box_derived_2
-// CHECK-SAME: (%[[BOX:.*]]: !llvm.ptr)
+// CHECK-SAME: (%[[BOX:.*]]: !ptr.ptr)
 // CHECK-NEXT:    %[[C0_0:.*]] = llvm.mlir.constant(0 : i32) : i32
 // CHECK-NEXT:    %[[C1:.*]] = llvm.mlir.constant(1 : i32) : i32
-// CHECK:         %[[DERIVED_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}32, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i64>)>
-// CHECK-NEXT:    %[[DERIVED_VAL:.*]] = llvm.load %[[DERIVED_ADDR]] : !llvm.ptr -> !llvm.ptr
-// CHECK-NEXT:    %[[ANOTHER_DERIVED_ADDR:.*]] = llvm.getelementptr %[[DERIVED_VAL]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"derived_2", (struct<"another_derived", (i32, f32)>, i32)>
-// CHECK-NEXT:    %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ANOTHER_DERIVED_ADDR]][0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"another_derived", (i32, f32)>
+// CHECK:         %[[DERIVED_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}32, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, ptr, array<1 x i64>)>
+// CHECK-NEXT:    %[[DERIVED_VAL:.*]] = llvm.load %[[DERIVED_ADDR]] : !ptr.ptr -> !ptr.ptr
+// CHECK-NEXT:    %[[ANOTHER_DERIVED_ADDR:.*]] = llvm.getelementptr %[[DERIVED_VAL]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"derived_2", (struct<"another_derived", (i32, f32)>, i32)>
+// CHECK-NEXT:    %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ANOTHER_DERIVED_ADDR]][0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"another_derived", (i32, f32)>
 // CHECK-NEXT:   llvm.return
 
 // TODO: Derived type - special case with `fir.len_param_index`
@@ -2443,18 +2443,18 @@ func.func @coordinate_box_array_1d(%arg0: !fir.box<!fir.array<10 x f32>>, %arg1:
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_box_array_1d
-// CHECK-SAME:  %[[BOX:.*]]: !llvm.ptr
+// CHECK-SAME:  %[[BOX:.*]]: !ptr.ptr
 // CHECK-SAME:  %[[COORDINATE:.*]]: i64
 // There's only one box here. Its index is `0`. Generate it.
-// CHECK:       %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !llvm.ptr -> !llvm.ptr
+// CHECK:       %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !ptr.ptr -> !ptr.ptr
 // CHECK-NEXT:  %[[OFFSET_INIT:.*]] = llvm.mlir.constant(0 : i64) : i64
 // Index of the 1st CFI_dim_t object (corresonds the the 1st dimension)
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !llvm.ptr -> i64
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !ptr.ptr -> i64
 // CHECK-NEXT:  %[[BYTE_OFFSET:.*]] = llvm.mul %[[COORDINATE]], %[[DIM_1_MEM_STRIDE_VAL]]  : i64
 // CHECK-NEXT:  %[[SUBOJECT_OFFSET:.*]] = llvm.add %[[BYTE_OFFSET]], %[[OFFSET_INIT]]  : i64
-// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOJECT_OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOJECT_OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 // CHECK-NEXT:  llvm.return
 
 // `fir.array` inside a `fir.box` (1d) - dynamic size
@@ -2463,17 +2463,17 @@ func.func @coordinate_of_box_dynamic_array_1d(%arg0: !fir.box<!fir.array<? x f32
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_of_box_dynamic_array_1d
-// CHECK-SAME:  %[[BOX:.*]]: !llvm.ptr
+// CHECK-SAME:  %[[BOX:.*]]: !ptr.ptr
 // CHECK-SAME:  %[[COORDINATE:.*]]: i64
-// CHECK-NEXT:  %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !llvm.ptr -> !llvm.ptr
+// CHECK-NEXT:  %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !ptr.ptr -> !ptr.ptr
 // CHECK-NEXT:  %[[OFFSET_INIT:.*]] = llvm.mlir.constant(0 : i64) : i64
 // Index of the 1st CFI_dim_t object (corresonds the the 1st dimension)
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !llvm.ptr -> i64
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<1 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !ptr.ptr -> i64
 // CHECK-NEXT:  %[[BYTE_OFFSET:.*]] = llvm.mul %[[COORDINATE]], %[[DIM_1_MEM_STRIDE_VAL]]  : i64
 // CHECK-NEXT:  %[[SUBOJECT_OFFSET:.*]] = llvm.add %[[BYTE_OFFSET]], %[[OFFSET_INIT]]  : i64
-// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOJECT_OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOJECT_OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 // CHECK-NEXT:  llvm.return
 
 // -----
@@ -2484,22 +2484,22 @@ func.func @coordinate_box_array_2d(%arg0: !fir.box<!fir.array<10 x 10 x f32>>, %
   return
 }
 // CHECK-LABEL: llvm.func @coordinate_box_array_2d
-// CHECK-SAME: %[[BOX:.*]]: !llvm.ptr
+// CHECK-SAME: %[[BOX:.*]]: !ptr.ptr
 // CHECK-SAME: %[[COORDINATE_1:.*]]: i64, %[[COORDINATE_2:.*]]: i64)
-// CHECK-NEXT:  %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !llvm.ptr -> !llvm.ptr
+// CHECK-NEXT:  %[[ARRAY_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[ARRAY_OBJECT:.*]] = llvm.load %[[ARRAY_ADDR]] : !ptr.ptr -> !ptr.ptr
 // CHECK-NEXT:  %[[OFFSET_INIT:.*]] = llvm.mlir.constant(0 : i64) : i64
 // Index of the 1st CFI_dim_t object (corresonds the the 1st dimension)
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !llvm.ptr -> i64
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[DIM_1_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_1_MEM_STRIDE_ADDR]] : !ptr.ptr -> i64
 // CHECK-NEXT:  %[[BYTE_OFFSET_1:.*]] = llvm.mul %[[COORDINATE_1]], %[[DIM_1_MEM_STRIDE_VAL]]  : i64
 // CHECK-NEXT:  %[[SUBOBJECT_OFFSET_1:.*]] = llvm.add %[[BYTE_OFFSET]], %[[OFFSET_INIT]]  : i64
 // Index of the 1st CFI_dim_t object (corresonds the the 2nd dimension)
-// CHECK-NEXT:  %[[DIM_2_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 1, 2] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
-// CHECK-NEXT:  %[[DIM_2_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_2_MEM_STRIDE_ADDR]] : !llvm.ptr -> i64
+// CHECK-NEXT:  %[[DIM_2_MEM_STRIDE_ADDR:.*]] = llvm.getelementptr %[[BOX]][0, 7, 1, 2] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, i{{.*}}, array<2 x array<3 x i64>>)>
+// CHECK-NEXT:  %[[DIM_2_MEM_STRIDE_VAL:.*]] = llvm.load %[[DIM_2_MEM_STRIDE_ADDR]] : !ptr.ptr -> i64
 // CHECK-NEXT:  %[[BYTE_OFFSET_2:.*]] = llvm.mul %[[COORDINATE_2]], %[[DIM_2_MEM_STRIDE_VAL]]  : i64
 // CHECK-NEXT:  %[[SUBOBJECT_OFFSET_2:.*]] = llvm.add %[[BYTE_OFFSET_2]], %[[SUBOBJECT_OFFSET_1]]  : i64
-// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOBJECT_OFFSET_2]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
+// CHECK-NEXT:  %[[SUBOBJECT_ADDR:.*]] = llvm.getelementptr %[[ARRAY_OBJECT]][%[[SUBOBJECT_OFFSET_2]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
 // CHECK-NEXT:  llvm.return
 
 // -----
@@ -2513,17 +2513,17 @@ func.func @coordinate_box_derived_inside_array(%arg0: !fir.box<!fir.array<10 x !
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_box_derived_inside_array(
-// CHECK-SAME:    %[[BOX:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[BOX:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[COORDINATE_1:.*]]: i64) {
-// CHECK:         %[[VAL_6:.*]] = llvm.getelementptr %[[BOX]]{{\[}}0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
-// CHECK:         %[[ARRAY:.*]] = llvm.load %[[VAL_6]] : !llvm.ptr -> !llvm.ptr
+// CHECK:         %[[VAL_6:.*]] = llvm.getelementptr %[[BOX]]{{\[}}0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
+// CHECK:         %[[ARRAY:.*]] = llvm.load %[[VAL_6]] : !ptr.ptr -> !ptr.ptr
 // CHECK:         %[[VAL_8:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK:         %[[VAL_13:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!llvm.ptr) -> !llvm.ptr,  !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
-// CHECK:         %[[VAL_14:.*]] = llvm.load %[[VAL_13]] : !llvm.ptr -> i64
+// CHECK:         %[[VAL_13:.*]] = llvm.getelementptr %[[BOX]][0, 7, 0, 2] : (!ptr.ptr) -> !ptr.ptr,  !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>, ptr, array<1 x i64>)>
+// CHECK:         %[[VAL_14:.*]] = llvm.load %[[VAL_13]] : !ptr.ptr -> i64
 // CHECK:         %[[VAL_15:.*]] = llvm.mul %[[COORDINATE_1]], %[[VAL_14]]  : i64
 // CHECK:         %[[OFFSET:.*]] = llvm.add %[[VAL_15]], %[[VAL_8]]  : i64
-// CHECK:         %[[DERIVED:.*]] = llvm.getelementptr %[[ARRAY]][%[[OFFSET]]] : (!llvm.ptr, i64) -> !llvm.ptr, i8
-// CHECK:         %[[VAL_20:.*]] = llvm.getelementptr %[[DERIVED]][0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"derived_3", (f32, f32)>
+// CHECK:         %[[DERIVED:.*]] = llvm.getelementptr %[[ARRAY]][%[[OFFSET]]] : (!ptr.ptr, i64) -> !ptr.ptr, i8
+// CHECK:         %[[VAL_20:.*]] = llvm.getelementptr %[[DERIVED]][0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"derived_3", (f32, f32)>
 // CHECK:         llvm.return
 
 // -----
@@ -2536,9 +2536,9 @@ func.func @coordinate_array_unknown_size_1d(%arg0: !fir.ref<!fir.array<? x i32>>
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_array_unknown_size_1d(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[VAL_1:.*]]: i64) {
-// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2549,9 +2549,9 @@ func.func @coordinate_array_known_size_1d(%arg0: !fir.ref<!fir.array<10 x i32>>,
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_array_known_size_1d(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[VAL_1:.*]]: i64) {
-// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, %[[VAL_1]]] : (!llvm.ptr, i64) -> !llvm.ptr, !llvm.array<10 x i32>
+// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, %[[VAL_1]]] : (!ptr.ptr, i64) -> !ptr.ptr, !llvm.array<10 x i32>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2562,10 +2562,10 @@ func.func @coordinate_array_known_size_2d_get_i32(%arg0: !fir.ref<!fir.array<10 
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_array_known_size_2d_get_i32(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[VAL_1:.*]]: i64,
 // CHECK-SAME:    %[[VAL_2:.*]]: i64) {
-// CHECK:           %[[VAL_4:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, %[[VAL_2]], %[[VAL_1]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<10 x array<10 x i32>
+// CHECK:           %[[VAL_4:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, %[[VAL_2]], %[[VAL_1]]] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.array<10 x array<10 x i32>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2576,9 +2576,9 @@ func.func @coordinate_array_known_size_2d_get_array(%arg0: !fir.ref<!fir.array<1
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_array_known_size_2d_get_array(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[VAL_1:.*]]: i64) {
-// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]][0, %[[VAL_1]]] : (!llvm.ptr, i64) -> !llvm.ptr, !llvm.array<10 x array<10 x i32>>
+// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]][0, %[[VAL_1]]] : (!ptr.ptr, i64) -> !ptr.ptr, !llvm.array<10 x array<10 x i32>>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2591,8 +2591,8 @@ func.func @coordinate_ref_derived(%arg0: !fir.ref<!fir.type<dervied_4{field_1:i3
   return
 }
 // CHECK-LABEL:   llvm.func @coordinate_ref_derived(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr) {
-// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"dervied_4", (i32, i32)>
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr) {
+// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"dervied_4", (i32, i32)>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2605,8 +2605,8 @@ func.func @coordinate_ref_derived_nested(%arg0: !fir.ref<!fir.type<derived_5{fie
   return
 }
 // CHECK-LABEL:   llvm.func @coordinate_ref_derived_nested(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr) {
-// CHECK:           %[[VAL_4:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0, 1] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<"derived_5", (struct<"nested_derived", (i32, f32)>, i32)>
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr) {
+// CHECK:           %[[VAL_4:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0, 1] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<"derived_5", (struct<"nested_derived", (i32, f32)>, i32)>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2619,9 +2619,9 @@ func.func @test_coordinate_of_char(%arr : !fir.ref<!fir.char<10, 2>>) {
   return
 }
 // CHECK-LABEL:   llvm.func @test_coordinate_of_char(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr) {
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr) {
 // CHECK:           %[[VAL_1:.*]] = llvm.mlir.constant(10 : i32) : i32
-// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.array<2 x i80>
+// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.array<2 x i80>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2634,8 +2634,8 @@ func.func @test_coordinate_of_tuple(%tup : !fir.ref<tuple<!fir.ref<i32>>>) {
   return
 }
 // CHECK-LABEL:   llvm.func @test_coordinate_of_tuple(
-// CHECK-SAME:                                     %[[VAL_0:.*]]: !llvm.ptr) {
-// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<(ptr)>
+// CHECK-SAME:                                     %[[VAL_0:.*]]: !ptr.ptr) {
+// CHECK:           %[[VAL_3:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<(ptr)>
 // CHECK:           llvm.return
 // CHECK:         }
 
@@ -2651,8 +2651,8 @@ func.func @coordinate_array_unknown_size_1d(%arg0: !fir.ptr<!fir.array<? x i32>>
    return
 }
 // CHECK-LABEL:   llvm.func @coordinate_array_unknown_size_1d(
-// CHECK-SAME:    %[[VAL_0:.*]]: !llvm.ptr,
+// CHECK-SAME:    %[[VAL_0:.*]]: !ptr.ptr,
 // CHECK-SAME:    %[[VAL_1:.*]]: i64) {
-// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           %[[VAL_2:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}%[[VAL_1]]] : (!ptr.ptr, i64) -> !ptr.ptr, i32
 // CHECK:           llvm.return
 // CHECK:         }

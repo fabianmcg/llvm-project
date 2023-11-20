@@ -11,8 +11,8 @@ gpu.module @kernel {
 
 // CHECK-LABEL:  llvm.func @private
 //      CHECK:  llvm.store
-// ROCDL-SAME:   : f32, !llvm.ptr<5>
-//  NVVM-SAME:   : f32, !llvm.ptr
+// ROCDL-SAME:   : f32, !ptr.ptr<5>
+//  NVVM-SAME:   : f32, !ptr.ptr
 
 
 // -----
@@ -27,7 +27,7 @@ gpu.module @kernel {
 
 // CHECK-LABEL:  llvm.func @workgroup
 //       CHECK:  llvm.store
-//  CHECK-SAME:   : f32, !llvm.ptr<3>
+//  CHECK-SAME:   : f32, !ptr.ptr<3>
 
 // -----
 
@@ -42,7 +42,7 @@ gpu.module @kernel {
 
 // CHECK-LABEL:  llvm.func @nested_memref
 //       CHECK:  llvm.load
-//  CHECK-SAME:   : !llvm.ptr<1>
+//  CHECK-SAME:   : !ptr.ptr<1>
 //       CHECK: [[value:%.+]] = llvm.load
-//  CHECK-SAME:   : !llvm.ptr<1> -> f32
+//  CHECK-SAME:   : !ptr.ptr<1> -> f32
 //       CHECK: llvm.return [[value]]

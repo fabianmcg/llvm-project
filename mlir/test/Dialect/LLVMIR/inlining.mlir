@@ -5,29 +5,29 @@
 #variableAddr = #llvm.di_local_variable<scope = #file>
 #label = #llvm.di_label<scope = #file>
 
-func.func @inner_func_inlinable(%ptr : !llvm.ptr) -> i32 {
+func.func @inner_func_inlinable(%ptr : !ptr.ptr) -> i32 {
   %0 = llvm.mlir.constant(42 : i32) : i32
-  %stack = llvm.intr.stacksave : !llvm.ptr
-  llvm.store %0, %ptr { alignment = 8 } : i32, !llvm.ptr
-  %1 = llvm.load %ptr { alignment = 8 } : !llvm.ptr -> i32
+  %stack = llvm.intr.stacksave : !ptr.ptr
+  llvm.store %0, %ptr { alignment = 8 } : i32, !ptr.ptr
+  %1 = llvm.load %ptr { alignment = 8 } : !ptr.ptr -> i32
   llvm.intr.dbg.value #variable = %0 : i32
-  llvm.intr.dbg.declare #variableAddr = %ptr : !llvm.ptr
+  llvm.intr.dbg.declare #variableAddr = %ptr : !ptr.ptr
   llvm.intr.dbg.label #label
   %byte = llvm.mlir.constant(43 : i8) : i8
   %true = llvm.mlir.constant(1 : i1) : i1
-  "llvm.intr.memset"(%ptr, %byte, %0) <{isVolatile = true}> : (!llvm.ptr, i8, i32) -> ()
-  "llvm.intr.memmove"(%ptr, %ptr, %0) <{isVolatile = true}> : (!llvm.ptr, !llvm.ptr, i32) -> ()
-  "llvm.intr.memcpy"(%ptr, %ptr, %0) <{isVolatile = true}> : (!llvm.ptr, !llvm.ptr, i32) -> ()
+  "llvm.intr.memset"(%ptr, %byte, %0) <{isVolatile = true}> : (!ptr.ptr, i8, i32) -> ()
+  "llvm.intr.memmove"(%ptr, %ptr, %0) <{isVolatile = true}> : (!ptr.ptr, !ptr.ptr, i32) -> ()
+  "llvm.intr.memcpy"(%ptr, %ptr, %0) <{isVolatile = true}> : (!ptr.ptr, !ptr.ptr, i32) -> ()
   "llvm.intr.assume"(%true) : (i1) -> ()
   llvm.fence release
-  %2 = llvm.atomicrmw add %ptr, %0 monotonic : !llvm.ptr, i32
-  %3 = llvm.cmpxchg %ptr, %0, %1 acq_rel monotonic : !llvm.ptr, i32
+  %2 = llvm.atomicrmw add %ptr, %0 monotonic : !ptr.ptr, i32
+  %3 = llvm.cmpxchg %ptr, %0, %1 acq_rel monotonic : !ptr.ptr, i32
   llvm.inline_asm has_side_effects "foo", "bar" : () -> ()
   llvm.cond_br %true, ^bb1, ^bb2
 ^bb1:
   llvm.unreachable
 ^bb2:
-  llvm.intr.stackrestore %stack : !llvm.ptr
+  llvm.intr.stackrestore %stack : !ptr.ptr
   llvm.call_intrinsic "llvm.x86.sse41.round.ss"() : () -> (vector<8xf32>)
   return %1 : i32
 }
@@ -52,8 +52,8 @@ func.func @inner_func_inlinable(%ptr : !llvm.ptr) -> i32 {
 // CHECK: llvm.unreachable
 // CHECK: llvm.intr.stackrestore %[[STACK]]
 // CHECK: llvm.call_intrinsic "llvm.x86.sse41.round.ss"(
-func.func @test_inline(%ptr : !llvm.ptr) -> i32 {
-  %0 = call @inner_func_inlinable(%ptr) : (!llvm.ptr) -> i32
+func.func @test_inline(%ptr : !ptr.ptr) -> i32 {
+  %0 = call @inner_func_inlinable(%ptr) : (!ptr.ptr) -> i32
   return %0 : i32
 }
 
@@ -207,15 +207,15 @@ llvm.func @caller() {
 
 llvm.func @static_alloca() -> f32 {
   %0 = llvm.mlir.constant(4 : i32) : i32
-  %1 = llvm.alloca %0 x f32 : (i32) -> !llvm.ptr
-  %2 = llvm.load %1 : !llvm.ptr -> f32
+  %1 = llvm.alloca %0 x f32 : (i32) -> !ptr.ptr
+  %2 = llvm.load %1 : !ptr.ptr -> f32
   llvm.return %2 : f32
 }
 
 llvm.func @dynamic_alloca(%size : i32) -> f32 {
   %0 = llvm.add %size, %size : i32
-  %1 = llvm.alloca %0 x f32 : (i32) -> !llvm.ptr
-  %2 = llvm.load %1 : !llvm.ptr -> f32
+  %1 = llvm.alloca %0 x f32 : (i32) -> !ptr.ptr
+  %2 = llvm.load %1 : !ptr.ptr -> f32
   llvm.return %2 : f32
 }
 
@@ -260,14 +260,14 @@ llvm.func @static_alloca_not_in_entry(%cond : i1) -> f32 {
   llvm.cond_br %cond, ^bb1, ^bb2
 ^bb1:
   %0 = llvm.mlir.constant(4 : i32) : i32
-  %1 = llvm.alloca %0 x f32 : (i32) -> !llvm.ptr
-  llvm.br ^bb3(%1: !llvm.ptr)
+  %1 = llvm.alloca %0 x f32 : (i32) -> !ptr.ptr
+  llvm.br ^bb3(%1: !ptr.ptr)
 ^bb2:
   %2 = llvm.mlir.constant(8 : i32) : i32
-  %3 = llvm.alloca %2 x f32 : (i32) -> !llvm.ptr
-  llvm.br ^bb3(%3: !llvm.ptr)
-^bb3(%ptr : !llvm.ptr):
-  %4 = llvm.load %ptr : !llvm.ptr -> f32
+  %3 = llvm.alloca %2 x f32 : (i32) -> !ptr.ptr
+  llvm.br ^bb3(%3: !ptr.ptr)
+^bb3(%ptr : !ptr.ptr):
+  %4 = llvm.load %ptr : !ptr.ptr -> f32
   llvm.return %4 : f32
 }
 
@@ -285,10 +285,10 @@ llvm.func @test_inline(%cond : i1) -> f32 {
 
 llvm.func @static_alloca(%cond: i1) -> f32 {
   %0 = llvm.mlir.constant(4 : i32) : i32
-  %1 = llvm.alloca %0 x f32 : (i32) -> !llvm.ptr
+  %1 = llvm.alloca %0 x f32 : (i32) -> !ptr.ptr
   llvm.cond_br %cond, ^bb1, ^bb2
 ^bb1:
-  %2 = llvm.load %1 : !llvm.ptr -> f32
+  %2 = llvm.load %1 : !ptr.ptr -> f32
   llvm.return %2 : f32
 ^bb2:
   %3 = llvm.mlir.constant(3.14192 : f32) : f32
@@ -326,10 +326,10 @@ llvm.func @test_inline(%cond0 : i1, %cond1 : i1, %funcArg : f32) -> f32 {
 
 llvm.func @alloca_with_lifetime(%cond: i1) -> f32 {
   %0 = llvm.mlir.constant(4 : i32) : i32
-  %1 = llvm.alloca %0 x f32 : (i32) -> !llvm.ptr
-  llvm.intr.lifetime.start 4, %1 : !llvm.ptr
-  %2 = llvm.load %1 : !llvm.ptr -> f32
-  llvm.intr.lifetime.end 4, %1 : !llvm.ptr
+  %1 = llvm.alloca %0 x f32 : (i32) -> !ptr.ptr
+  llvm.intr.lifetime.start 4, %1 : !ptr.ptr
+  %2 = llvm.load %1 : !ptr.ptr -> f32
+  llvm.intr.lifetime.end 4, %1 : !ptr.ptr
   %3 = llvm.fadd %2, %2 : f32
   llvm.return %3 : f32
 }
@@ -359,13 +359,13 @@ llvm.func @test_inline(%cond0 : i1, %cond1 : i1, %funcArg : f32) -> f32 {
 
 // -----
 
-llvm.func @with_byval_arg(%ptr : !llvm.ptr { llvm.byval = f64 }) {
+llvm.func @with_byval_arg(%ptr : !ptr.ptr { llvm.byval = f64 }) {
   llvm.return
 }
 
 // CHECK-LABEL: llvm.func @test_byval
-// CHECK-SAME: %[[PTR:[a-zA-Z0-9_]+]]: !llvm.ptr
-llvm.func @test_byval(%ptr : !llvm.ptr) {
+// CHECK-SAME: %[[PTR:[a-zA-Z0-9_]+]]: !ptr.ptr
+llvm.func @test_byval(%ptr : !ptr.ptr) {
   // Make sure the new static alloca goes to the entry block.
   // CHECK: %[[ALLOCA:.+]] = llvm.alloca %{{.+}} x f64
   // CHECK: llvm.br ^[[BB1:[a-zA-Z0-9_]+]]
@@ -373,7 +373,7 @@ llvm.func @test_byval(%ptr : !llvm.ptr) {
   // CHECK: ^[[BB1]]
 ^bb1:
   // CHECK: "llvm.intr.memcpy"(%[[ALLOCA]], %[[PTR]]
-  llvm.call @with_byval_arg(%ptr) : (!llvm.ptr) -> ()
+  llvm.call @with_byval_arg(%ptr) : (!ptr.ptr) -> ()
   llvm.br ^bb2
 ^bb2:
   llvm.return
@@ -381,58 +381,58 @@ llvm.func @test_byval(%ptr : !llvm.ptr) {
 
 // -----
 
-llvm.func @with_byval_arg(%ptr : !llvm.ptr { llvm.byval = f64 }) attributes {memory = #llvm.memory_effects<other = readwrite, argMem = read, inaccessibleMem = readwrite>} {
+llvm.func @with_byval_arg(%ptr : !ptr.ptr { llvm.byval = f64 }) attributes {memory = #llvm.memory_effects<other = readwrite, argMem = read, inaccessibleMem = readwrite>} {
   llvm.return
 }
 
 // CHECK-LABEL: llvm.func @test_byval_read_only
 // CHECK-NOT: llvm.call
 // CHECK-NEXT: llvm.return
-llvm.func @test_byval_read_only(%ptr : !llvm.ptr) {
-  llvm.call @with_byval_arg(%ptr) : (!llvm.ptr) -> ()
+llvm.func @test_byval_read_only(%ptr : !ptr.ptr) {
+  llvm.call @with_byval_arg(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
 // -----
 
-llvm.func @with_byval_arg(%ptr : !llvm.ptr { llvm.byval = f64 }) attributes {memory = #llvm.memory_effects<other = readwrite, argMem = write, inaccessibleMem = readwrite>} {
+llvm.func @with_byval_arg(%ptr : !ptr.ptr { llvm.byval = f64 }) attributes {memory = #llvm.memory_effects<other = readwrite, argMem = write, inaccessibleMem = readwrite>} {
   llvm.return
 }
 
 // CHECK-LABEL: llvm.func @test_byval_write_only
-// CHECK-SAME: %[[PTR:[a-zA-Z0-9_]+]]: !llvm.ptr
+// CHECK-SAME: %[[PTR:[a-zA-Z0-9_]+]]: !ptr.ptr
 // CHECK: %[[ALLOCA:.+]] = llvm.alloca %{{.+}} x f64
 // CHECK: "llvm.intr.memcpy"(%[[ALLOCA]], %[[PTR]]
-llvm.func @test_byval_write_only(%ptr : !llvm.ptr) {
-  llvm.call @with_byval_arg(%ptr) : (!llvm.ptr) -> ()
+llvm.func @test_byval_write_only(%ptr : !ptr.ptr) {
+  llvm.call @with_byval_arg(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
 // -----
 
-llvm.func @aligned_byval_arg(%ptr : !llvm.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
+llvm.func @aligned_byval_arg(%ptr : !ptr.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
   llvm.return
 }
 
 // CHECK-LABEL: llvm.func @test_byval_input_aligned
-// CHECK-SAME: %[[UNALIGNED:[a-zA-Z0-9_]+]]: !llvm.ptr
-// CHECK-SAME: %[[ALIGNED:[a-zA-Z0-9_]+]]: !llvm.ptr
-llvm.func @test_byval_input_aligned(%unaligned : !llvm.ptr, %aligned : !llvm.ptr { llvm.align = 16 }) {
+// CHECK-SAME: %[[UNALIGNED:[a-zA-Z0-9_]+]]: !ptr.ptr
+// CHECK-SAME: %[[ALIGNED:[a-zA-Z0-9_]+]]: !ptr.ptr
+llvm.func @test_byval_input_aligned(%unaligned : !ptr.ptr, %aligned : !ptr.ptr { llvm.align = 16 }) {
   // Make sure only the unaligned input triggers a memcpy.
   // CHECK: %[[ALLOCA:.+]] = llvm.alloca %{{.+}} x i16 {alignment = 16
   // CHECK: "llvm.intr.memcpy"(%[[ALLOCA]], %[[UNALIGNED]]
-  llvm.call @aligned_byval_arg(%unaligned) : (!llvm.ptr) -> ()
+  llvm.call @aligned_byval_arg(%unaligned) : (!ptr.ptr) -> ()
   // CHECK-NOT: memcpy
-  llvm.call @aligned_byval_arg(%aligned) : (!llvm.ptr) -> ()
+  llvm.call @aligned_byval_arg(%aligned) : (!ptr.ptr) -> ()
   llvm.return
 }
 
 // -----
 
-llvm.func @func_that_uses_ptr(%ptr : !llvm.ptr)
+llvm.func @func_that_uses_ptr(%ptr : !ptr.ptr)
 
-llvm.func @aligned_byval_arg(%ptr : !llvm.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
-  llvm.call @func_that_uses_ptr(%ptr) : (!llvm.ptr) -> ()
+llvm.func @aligned_byval_arg(%ptr : !ptr.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
+  llvm.call @func_that_uses_ptr(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -442,8 +442,8 @@ llvm.func @test_byval_realign_alloca() {
   // CHECK-NOT: llvm.alloca{{.+}}alignment = 1
   // CHECK: llvm.alloca {{.+}}alignment = 16 : i64
   // CHECK-NOT: llvm.intr.memcpy
-  %unaligned = llvm.alloca %size x i16 { alignment = 1 } : (i64) -> !llvm.ptr
-  llvm.call @aligned_byval_arg(%unaligned) : (!llvm.ptr) -> ()
+  %unaligned = llvm.alloca %size x i16 { alignment = 1 } : (i64) -> !ptr.ptr
+  llvm.call @aligned_byval_arg(%unaligned) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -453,10 +453,10 @@ module attributes {
   dlti.dl_spec = #dlti.dl_spec<#dlti.dl_entry<"dlti.stack_alignment", 32 : i32>>
 } {
 
-llvm.func @func_that_uses_ptr(%ptr : !llvm.ptr)
+llvm.func @func_that_uses_ptr(%ptr : !ptr.ptr)
 
-llvm.func @aligned_byval_arg(%ptr : !llvm.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
-  llvm.call @func_that_uses_ptr(%ptr) : (!llvm.ptr) -> ()
+llvm.func @aligned_byval_arg(%ptr : !ptr.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
+  llvm.call @func_that_uses_ptr(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -468,8 +468,8 @@ llvm.func @test_exceeds_natural_stack_alignment() {
   // CHECK-DAG: %[[SRC:[a-zA-Z0-9_]+]] = llvm.alloca{{.+}}alignment = 2
   // CHECK-DAG: %[[DST:[a-zA-Z0-9_]+]] = llvm.alloca{{.+}}alignment = 16
   // CHECK: "llvm.intr.memcpy"(%[[DST]], %[[SRC]]
-  %unaligned = llvm.alloca %size x i16 { alignment = 2 } : (i64) -> !llvm.ptr
-  llvm.call @aligned_byval_arg(%unaligned) : (!llvm.ptr) -> ()
+  %unaligned = llvm.alloca %size x i16 { alignment = 2 } : (i64) -> !ptr.ptr
+  llvm.call @aligned_byval_arg(%unaligned) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -481,10 +481,10 @@ module attributes {
   dlti.dl_spec = #dlti.dl_spec<#dlti.dl_entry<"dlti.stack_alignment", 32 : i32>>
 } {
 
-llvm.func @func_that_uses_ptr(%ptr : !llvm.ptr)
+llvm.func @func_that_uses_ptr(%ptr : !ptr.ptr)
 
-llvm.func @aligned_byval_arg(%ptr : !llvm.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
-  llvm.call @func_that_uses_ptr(%ptr) : (!llvm.ptr) -> ()
+llvm.func @aligned_byval_arg(%ptr : !ptr.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
+  llvm.call @func_that_uses_ptr(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -497,8 +497,8 @@ llvm.func @test_alignment_exceeded_anyway() {
   // CHECK-NOT: llvm.alloca{{.+}}alignment = 1
   // CHECK: llvm.alloca {{.+}}alignment = 16 : i64
   // CHECK-NOT: llvm.intr.memcpy
-  %unaligned = llvm.alloca %size x i16 { alignment = 8 } : (i64) -> !llvm.ptr
-  llvm.call @aligned_byval_arg(%unaligned) : (!llvm.ptr) -> ()
+  %unaligned = llvm.alloca %size x i16 { alignment = 8 } : (i64) -> !ptr.ptr
+  llvm.call @aligned_byval_arg(%unaligned) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -509,7 +509,7 @@ llvm.func @test_alignment_exceeded_anyway() {
 llvm.mlir.global private @unaligned_global(42 : i64) : i64
 llvm.mlir.global private @aligned_global(42 : i64) { alignment = 64 } : i64
 
-llvm.func @aligned_byval_arg(%ptr : !llvm.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
+llvm.func @aligned_byval_arg(%ptr : !ptr.ptr { llvm.byval = i16, llvm.align = 16 }) attributes {memory = #llvm.memory_effects<other = read, argMem = read, inaccessibleMem = read>} {
   llvm.return
 }
 
@@ -520,37 +520,37 @@ llvm.func @test_byval_global() {
   // CHECK-DAG: %[[ALLOCA:.+]] = llvm.alloca
   // CHECK: "llvm.intr.memcpy"(%[[ALLOCA]], %[[UNALIGNED]]
   // CHECK-NOT: llvm.alloca
-  %unaligned = llvm.mlir.addressof @unaligned_global : !llvm.ptr
-  llvm.call @aligned_byval_arg(%unaligned) : (!llvm.ptr) -> ()
-  %aligned = llvm.mlir.addressof @aligned_global : !llvm.ptr
-  llvm.call @aligned_byval_arg(%aligned) : (!llvm.ptr) -> ()
+  %unaligned = llvm.mlir.addressof @unaligned_global : !ptr.ptr
+  llvm.call @aligned_byval_arg(%unaligned) : (!ptr.ptr) -> ()
+  %aligned = llvm.mlir.addressof @aligned_global : !ptr.ptr
+  llvm.call @aligned_byval_arg(%aligned) : (!ptr.ptr) -> ()
   llvm.return
 }
 
 // -----
 
-llvm.func @ignored_attrs(%ptr : !llvm.ptr { llvm.inreg, llvm.nocapture, llvm.nofree, llvm.preallocated = i32, llvm.returned, llvm.alignstack = 32 : i64, llvm.writeonly, llvm.noundef, llvm.nonnull }, %x : i32 { llvm.zeroext }) -> (!llvm.ptr { llvm.noundef, llvm.inreg, llvm.nonnull }) {
-  llvm.return %ptr : !llvm.ptr
+llvm.func @ignored_attrs(%ptr : !ptr.ptr { llvm.inreg, llvm.nocapture, llvm.nofree, llvm.preallocated = i32, llvm.returned, llvm.alignstack = 32 : i64, llvm.writeonly, llvm.noundef, llvm.nonnull }, %x : i32 { llvm.zeroext }) -> (!ptr.ptr { llvm.noundef, llvm.inreg, llvm.nonnull }) {
+  llvm.return %ptr : !ptr.ptr
 }
 
 // CHECK-LABEL: @test_ignored_attrs
 // CHECK-NOT: llvm.call
 // CHECK-NEXT: llvm.return
-llvm.func @test_ignored_attrs(%ptr : !llvm.ptr, %x : i32) {
-  llvm.call @ignored_attrs(%ptr, %x) : (!llvm.ptr, i32) -> (!llvm.ptr)
+llvm.func @test_ignored_attrs(%ptr : !ptr.ptr, %x : i32) {
+  llvm.call @ignored_attrs(%ptr, %x) : (!ptr.ptr, i32) -> (!ptr.ptr)
   llvm.return
 }
 
 // -----
 
-llvm.func @disallowed_arg_attr(%ptr : !llvm.ptr { llvm.inalloca = i64 }) {
+llvm.func @disallowed_arg_attr(%ptr : !ptr.ptr { llvm.inalloca = i64 }) {
   llvm.return
 }
 
 // CHECK-LABEL: @test_disallow_arg_attr
 // CHECK-NEXT: llvm.call
-llvm.func @test_disallow_arg_attr(%ptr : !llvm.ptr) {
-  llvm.call @disallowed_arg_attr(%ptr) : (!llvm.ptr) -> ()
+llvm.func @test_disallow_arg_attr(%ptr : !ptr.ptr) {
+  llvm.call @disallowed_arg_attr(%ptr) : (!ptr.ptr) -> ()
   llvm.return
 }
 
@@ -559,8 +559,8 @@ llvm.func @test_disallow_arg_attr(%ptr : !llvm.ptr) {
 #callee = #llvm.access_group<id = distinct[0]<>>
 #caller = #llvm.access_group<id = distinct[1]<>>
 
-llvm.func @inlinee(%ptr : !llvm.ptr) -> i32 {
-  %0 = llvm.load %ptr { access_groups = [#callee] } : !llvm.ptr -> i32
+llvm.func @inlinee(%ptr : !ptr.ptr) -> i32 {
+  %0 = llvm.load %ptr { access_groups = [#callee] } : !ptr.ptr -> i32
   llvm.return %0 : i32
 }
 
@@ -570,8 +570,8 @@ llvm.func @inlinee(%ptr : !llvm.ptr) -> i32 {
 // CHECK-LABEL: func @caller
 // CHECK: llvm.load
 // CHECK-SAME: access_groups = [#[[$CALLEE]], #[[$CALLER]]]
-llvm.func @caller(%ptr : !llvm.ptr) -> i32 {
-  %0 = llvm.call @inlinee(%ptr) { access_groups = [#caller] } : (!llvm.ptr) -> (i32)
+llvm.func @caller(%ptr : !ptr.ptr) -> i32 {
+  %0 = llvm.call @inlinee(%ptr) { access_groups = [#caller] } : (!ptr.ptr) -> (i32)
   llvm.return %0 : i32
 }
 
@@ -579,8 +579,8 @@ llvm.func @caller(%ptr : !llvm.ptr) -> i32 {
 
 #caller = #llvm.access_group<id = distinct[1]<>>
 
-llvm.func @inlinee(%ptr : !llvm.ptr) -> i32 {
-  %0 = llvm.load %ptr : !llvm.ptr -> i32
+llvm.func @inlinee(%ptr : !ptr.ptr) -> i32 {
+  %0 = llvm.load %ptr : !ptr.ptr -> i32
   llvm.return %0 : i32
 }
 
@@ -591,9 +591,9 @@ llvm.func @inlinee(%ptr : !llvm.ptr) -> i32 {
 // CHECK-SAME: access_groups = [#[[$CALLER]]]
 // CHECK: llvm.store
 // CHECK-SAME: access_groups = [#[[$CALLER]]]
-llvm.func @caller(%ptr : !llvm.ptr) -> i32 {
+llvm.func @caller(%ptr : !ptr.ptr) -> i32 {
   %c5 = llvm.mlir.constant(5 : i32) : i32
-  %0 = llvm.call @inlinee(%ptr) { access_groups = [#caller] } : (!llvm.ptr) -> (i32)
-  llvm.store %c5, %ptr { access_groups = [#caller] } : i32, !llvm.ptr
+  %0 = llvm.call @inlinee(%ptr) { access_groups = [#caller] } : (!ptr.ptr) -> (i32)
+  llvm.store %c5, %ptr { access_groups = [#caller] } : i32, !ptr.ptr
   llvm.return %0 : i32
 }

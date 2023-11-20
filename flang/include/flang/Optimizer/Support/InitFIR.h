@@ -35,7 +35,8 @@ namespace fir::support {
       mlir::vector::VectorDialect, mlir::math::MathDialect,                    \
       mlir::complex::ComplexDialect, mlir::DLTIDialect
 
-#define FLANG_CODEGEN_DIALECT_LIST FIRCodeGenDialect, mlir::LLVM::LLVMDialect
+#define FLANG_CODEGEN_DIALECT_LIST                                             \
+  FIRCodeGenDialect, mlir::ptr::PtrDialect, mlir::LLVM::LLVMDialect
 
 // The definitive list of dialects used by flang.
 #define FLANG_DIALECT_LIST                                                     \

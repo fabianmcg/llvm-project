@@ -7,7 +7,7 @@
 // length (like c(:)(2:*) where c is a fir.box array with constant length).
 
 // CHECK-LABEL: llvm.func @char_section(
-// CHECK-SAME:                          %[[VAL_0:.*]]: !llvm.ptr) {
+// CHECK-SAME:                          %[[VAL_0:.*]]: !ptr.ptr) {
 func.func @char_section(%arg0: !fir.box<!fir.array<?x!fir.char<1,20>>>) {
   %c7_i64 = arith.constant 7 : i64
   %c1_i64 = arith.constant 1 : i64
@@ -20,10 +20,10 @@ func.func @char_section(%arg0: !fir.box<!fir.array<?x!fir.char<1,20>>>) {
 
 // CHECK:         %[[VAL_4:.*]] = llvm.mlir.constant(1 : i64) : i64
 
-// CHECK:         %[[VAL_37:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<{{.*}}>
-// CHECK:         %[[VAL_38:.*]] = llvm.load %[[VAL_37]] : !llvm.ptr -> !llvm.ptr
+// CHECK:         %[[VAL_37:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<{{.*}}>
+// CHECK:         %[[VAL_38:.*]] = llvm.load %[[VAL_37]] : !ptr.ptr -> !ptr.ptr
 // CHECK:         %[[VAL_30:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK:         %[[VAL_40:.*]] = llvm.getelementptr %[[VAL_38]]{{\[}}%[[VAL_30]], %[[VAL_4]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<20 x i8>
+// CHECK:         %[[VAL_40:.*]] = llvm.getelementptr %[[VAL_38]]{{\[}}%[[VAL_30]], %[[VAL_4]]] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.array<20 x i8>
 
 // More offset computation with descriptor strides and triplets that is not character specific ...
 
@@ -35,7 +35,7 @@ func.func @char_section(%arg0: !fir.box<!fir.array<?x!fir.char<1,20>>>) {
 // Test a rebox of an array section like x(3:60:9)%c(2:8) with both a triplet, a component and a substring where x is a fir.box.
 
 // CHECK-LABEL: llvm.func @foo(
-// CHECK-SAME:                 %[[VAL_0:.*]]: !llvm.ptr) {
+// CHECK-SAME:                 %[[VAL_0:.*]]: !ptr.ptr) {
 func.func private @bar(!fir.box<!fir.array<?x!fir.char<1,?>>>)
 func.func @foo(%arg0: !fir.box<!fir.array<?x!fir.type<t{i:i32,c:!fir.char<1,10>}>>>) {
   %c7_i64 = arith.constant 7 : i64
@@ -50,10 +50,10 @@ func.func @foo(%arg0: !fir.box<!fir.array<?x!fir.type<t{i:i32,c:!fir.char<1,10>}
 
 // CHECK:         %[[VAL_1:.*]] = llvm.mlir.constant(1 : i32) : i32
 
-// CHECK:         %[[VAL_30:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!llvm.ptr) -> !llvm.ptr, !llvm.struct<{{.*}}>
-// CHECK:         %[[VAL_31:.*]] = llvm.load %[[VAL_30]] : !llvm.ptr -> !llvm.ptr
+// CHECK:         %[[VAL_30:.*]] = llvm.getelementptr %[[VAL_0]]{{\[}}0, 0] : (!ptr.ptr) -> !ptr.ptr, !llvm.struct<{{.*}}>
+// CHECK:         %[[VAL_31:.*]] = llvm.load %[[VAL_30]] : !ptr.ptr -> !ptr.ptr
 // CHECK:         %[[VAL_21:.*]] = llvm.mlir.constant(0 : i64) : i64
-// CHECK:         %[[VAL_33:.*]] = llvm.getelementptr %[[VAL_31]]{{\[}}%[[VAL_21]], 1, %[[VAL_4]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.struct<{{.*}}>
+// CHECK:         %[[VAL_33:.*]] = llvm.getelementptr %[[VAL_31]]{{\[}}%[[VAL_21]], 1, %[[VAL_4]]] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.struct<{{.*}}>
 
 // More offset computation with descriptor strides and triplets that is not character specific ...
 

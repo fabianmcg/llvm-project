@@ -2,7 +2,7 @@
 
 module attributes {gpu.container_module} {
   gpu.module @kernels [#nvvm.target]  {
-    llvm.func @kernel_1(%arg0: f32, %arg1: !llvm.ptr<1>) attributes {gpu.kernel, nvvm.kernel} {
+    llvm.func @kernel_1(%arg0: f32, %arg1: !ptr.ptr<1>) attributes {gpu.kernel, nvvm.kernel} {
       %0 = llvm.mlir.undef : !llvm.struct<(ptr<1>, ptr<1>, i64, array<1 x i64>, array<1 x i64>)>
       %1 = llvm.insertvalue %arg1, %0[0] : !llvm.struct<(ptr<1>, ptr<1>, i64, array<1 x i64>, array<1 x i64>)>
       %2 = llvm.insertvalue %arg1, %1[1] : !llvm.struct<(ptr<1>, ptr<1>, i64, array<1 x i64>, array<1 x i64>)>
@@ -20,7 +20,7 @@ module attributes {gpu.container_module} {
     // CHECK: [[DESCRIPTOR:%.*]] = builtin.unrealized_conversion_cast [[MEMREF]] : memref<10xf32, 1> to !llvm.struct<(ptr<1>, ptr<1>, i64, array<1 x i64>, array<1 x i64>)>
     // CHECK: [[PTR:%.*]] = llvm.extractvalue [[DESCRIPTOR]][1] : !llvm.struct<(ptr<1>, ptr<1>, i64, array<1 x i64>, array<1 x i64>)>
     // CHECK: gpu.launch_func  @kernels::@kernel_1 blocks in ({{.*}}) threads in ({{.*}}) : i64
-    // CHECK: args(%{{.*}} : f32, [[PTR]] : !llvm.ptr<1>)
+    // CHECK: args(%{{.*}} : f32, [[PTR]] : !ptr.ptr<1>)
     %0 = arith.constant 0. : f32
     %1 = gpu.alloc () : memref<10xf32, 1>
     %c8 = arith.constant 8 : index

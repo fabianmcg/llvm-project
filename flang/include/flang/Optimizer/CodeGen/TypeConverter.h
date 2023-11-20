@@ -97,7 +97,7 @@ public:
   }
 
   template <typename A> mlir::Type convertPointerLike(A &ty) const {
-    return mlir::LLVM::LLVMPointerType::get(ty.getContext());
+    return mlir::ptr::PtrType::get(ty.getContext());
   }
 
   // convert a front-end kind value to either a std or LLVM IR dialect type

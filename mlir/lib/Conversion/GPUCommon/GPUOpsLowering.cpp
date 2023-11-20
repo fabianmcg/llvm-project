@@ -107,8 +107,8 @@ GPUFuncOpLowering::matchAndRewrite(gpu::GPUFuncOp gpuFuncOp, OpAdaptor adaptor,
 
     for (const auto &en : llvm::enumerate(workgroupBuffers)) {
       LLVM::GlobalOp global = en.value();
-      auto ptrType = LLVM::LLVMPointerType::get(rewriter.getContext(),
-                                                global.getAddrSpace());
+      auto ptrType =
+          ptr::PtrType::get(rewriter.getContext(), global.getAddrSpace());
       Value address = rewriter.create<LLVM::AddressOfOp>(
           loc, ptrType, global.getSymNameAttr());
       Value memory =
@@ -138,8 +138,7 @@ GPUFuncOpLowering::matchAndRewrite(gpu::GPUFuncOp gpuFuncOp, OpAdaptor adaptor,
       // attributions since NVVM models it as `alloca`s in the default
       // memory space and does not support `alloca`s with addrspace(5).
       Type elementType = typeConverter->convertType(type.getElementType());
-      auto ptrType =
-          LLVM::LLVMPointerType::get(rewriter.getContext(), allocaAddrSpace);
+      auto ptrType = ptr::PtrType::get(rewriter.getContext(), allocaAddrSpace);
       Value numElements = rewriter.create<LLVM::ConstantOp>(
           gpuFuncOp.getLoc(), int64Ty, type.getNumElements());
       uint64_t alignment = 0;
@@ -215,7 +214,7 @@ GPUFuncOpLowering::matchAndRewrite(gpu::GPUFuncOp gpuFuncOp, OpAdaptor adaptor,
       for (size_t i = 0, e = remapping->size; i < e; ++i) {
         if (llvmFuncOp.getArgument(remapping->inputNo + i)
                 .getType()
-                .isa<LLVM::LLVMPointerType>()) {
+                .isa<ptr::PtrType>()) {
           llvmFuncOp.setArgAttr(remapping->inputNo + i, attrName, attr);
         }
       }
@@ -271,7 +270,7 @@ LogicalResult GPUPrintfOpToHIPLowering::matchAndRewrite(
   Location loc = gpuPrintfOp->getLoc();
 
   mlir::Type llvmI8 = typeConverter->convertType(rewriter.getI8Type());
-  auto ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+  auto ptrType = ptr::PtrType::get(rewriter.getContext());
   mlir::Type llvmI32 = typeConverter->convertType(rewriter.getI32Type());
   mlir::Type llvmI64 = typeConverter->convertType(rewriter.getI64Type());
   // Note: this is the GPUModule op, not the ModuleOp that surrounds it
@@ -321,8 +320,7 @@ LogicalResult GPUPrintfOpToHIPLowering::matchAndRewrite(
 
   // Get a pointer to the format string's first element and pass it to printf()
   Value globalPtr = rewriter.create<LLVM::AddressOfOp>(
-      loc,
-      LLVM::LLVMPointerType::get(rewriter.getContext(), global.getAddrSpace()),
+      loc, ptr::PtrType::get(rewriter.getContext(), global.getAddrSpace()),
       global.getSymNameAttr());
   Value stringStart = rewriter.create<LLVM::GEPOp>(
       loc, ptrType, globalType, globalPtr, ArrayRef<LLVM::GEPArg>{0, 0});
@@ -382,8 +380,7 @@ LogicalResult GPUPrintfOpToLLVMCallLowering::matchAndRewrite(
   Location loc = gpuPrintfOp->getLoc();
 
   mlir::Type llvmI8 = typeConverter->convertType(rewriter.getIntegerType(8));
-  mlir::Type ptrType =
-      LLVM::LLVMPointerType::get(rewriter.getContext(), addressSpace);
+  mlir::Type ptrType = ptr::PtrType::get(rewriter.getContext(), addressSpace);
 
   // Note: this is the GPUModule op, not the ModuleOp that surrounds it
   // This ensures that global constants and declarations are placed within
@@ -415,8 +412,7 @@ LogicalResult GPUPrintfOpToLLVMCallLowering::matchAndRewrite(
 
   // Get a pointer to the format string's first element
   Value globalPtr = rewriter.create<LLVM::AddressOfOp>(
-      loc,
-      LLVM::LLVMPointerType::get(rewriter.getContext(), global.getAddrSpace()),
+      loc, ptr::PtrType::get(rewriter.getContext(), global.getAddrSpace()),
       global.getSymNameAttr());
   Value stringStart = rewriter.create<LLVM::GEPOp>(
       loc, ptrType, globalType, globalPtr, ArrayRef<LLVM::GEPArg>{0, 0});
@@ -439,7 +435,7 @@ LogicalResult GPUPrintfOpToVPrintfLowering::matchAndRewrite(
   Location loc = gpuPrintfOp->getLoc();
 
   mlir::Type llvmI8 = typeConverter->convertType(rewriter.getIntegerType(8));
-  mlir::Type ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
+  mlir::Type ptrType = ptr::PtrType::get(rewriter.getContext());
 
   // Note: this is the GPUModule op, not the ModuleOp that surrounds it
   // This ensures that global constants and declarations are placed within

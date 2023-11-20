@@ -12,8 +12,8 @@
 // CHECK: omp.yield(%[[RES]] : f32)
 
 // CHECK: atomic
-// CHECK: ^{{.*}}(%[[ARG0:.*]]: !llvm.ptr, %[[ARG1:.*]]: !llvm.ptr):
-// CHECK: %[[RHS:.*]] = llvm.load %[[ARG1]] : !llvm.ptr -> f32
+// CHECK: ^{{.*}}(%[[ARG0:.*]]: !ptr.ptr, %[[ARG1:.*]]: !ptr.ptr):
+// CHECK: %[[RHS:.*]] = llvm.load %[[ARG1]] : !ptr.ptr -> f32
 // CHECK: llvm.atomicrmw fadd %[[ARG0]], %[[RHS]] monotonic
 
 // CHECK-LABEL: @reduction1
@@ -180,8 +180,8 @@ func.func @reduction3(%arg0 : index, %arg1 : index, %arg2 : index,
 // CHECK: omp.yield(%[[RES]] : i64)
 
 // CHECK: atomic
-// CHECK: ^{{.*}}(%[[ARG0:.*]]: !llvm.ptr, %[[ARG1:.*]]: !llvm.ptr):
-// CHECK: %[[RHS:.*]] = llvm.load %[[ARG1]] : !llvm.ptr -> i64
+// CHECK: ^{{.*}}(%[[ARG0:.*]]: !ptr.ptr, %[[ARG1:.*]]: !ptr.ptr):
+// CHECK: %[[RHS:.*]] = llvm.load %[[ARG1]] : !ptr.ptr -> i64
 // CHECK: llvm.atomicrmw max %[[ARG0]], %[[RHS]] monotonic
 
 // CHECK-LABEL: @reduction4
@@ -224,8 +224,8 @@ func.func @reduction4(%arg0 : index, %arg1 : index, %arg2 : index,
     // CHECK: omp.yield
   }
   // CHECK: omp.terminator
-  // CHECK: %[[RES1:.*]] = llvm.load %[[BUF1]] : !llvm.ptr -> f32
-  // CHECK: %[[RES2:.*]] = llvm.load %[[BUF2]] : !llvm.ptr -> i64
+  // CHECK: %[[RES1:.*]] = llvm.load %[[BUF1]] : !ptr.ptr -> f32
+  // CHECK: %[[RES2:.*]] = llvm.load %[[BUF2]] : !ptr.ptr -> i64
   // CHECK: return %[[RES1]], %[[RES2]]
   return %res#0, %res#1 : f32, i64
 }

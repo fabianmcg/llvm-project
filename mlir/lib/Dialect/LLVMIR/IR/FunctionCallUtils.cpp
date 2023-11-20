@@ -93,11 +93,11 @@ LLVM::LLVMFuncOp mlir::LLVM::lookupOrCreatePrintF64Fn(ModuleOp moduleOp) {
                           LLVM::LLVMVoidType::get(moduleOp->getContext()));
 }
 
-static LLVM::LLVMPointerType getCharPtr(MLIRContext *context) {
-  return LLVM::LLVMPointerType::get(context);
+static ptr::PtrType getCharPtr(MLIRContext *context) {
+  return ptr::PtrType::get(context);
 }
 
-static LLVM::LLVMPointerType getVoidPtr(MLIRContext *context) {
+static ptr::PtrType getVoidPtr(MLIRContext *context) {
   // A char pointer and void ptr are the same in LLVM IR.
   return getCharPtr(context);
 }

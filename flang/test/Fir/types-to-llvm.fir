@@ -40,28 +40,28 @@ func.func private @foo8(%arg0: !fir.array<6x?x!fir.char<1,3>>)
 
 func.func private @foo0(%arg0: !fir.ref<i32>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo1(%arg0: !fir.ref<!fir.array<10xf32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo2(%arg0: !fir.ref<!fir.box<!fir.heap<!fir.type<_QMs1Ta1{x:i32,y:f32}>>>>)
 // CHECK-LABEL: foo2
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo3(%arg0: !fir.ref<!fir.array<10x?x11xf32>>)
 // CHECK-LABEL: foo3
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo4(%arg0: !fir.ref<!fir.array<10x11x?x?xf32>>)
 // CHECK-LABEL: foo4
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo5(%arg0: !fir.ref<!fir.array<10x!fir.char<1,?>>>)
 // CHECK-LABEL: foo5
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo6(%arg0: !fir.ref<!fir.array<10x!fir.char<2,8>>>)
 // CHECK-LABEL: foo6
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 func.func private @foo7(%arg0: !fir.ref<!fir.box<!fir.array<?xf32>>>)
 // CHECK-LABEL: foo7
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 // -----
 
@@ -69,11 +69,11 @@ func.func private @foo7(%arg0: !fir.ref<!fir.box<!fir.array<?xf32>>>)
 
 func.func private @foo0(%arg0: !fir.ptr<i32>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo1(%arg0: !fir.ptr<!fir.array<10xf32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 // -----
 
@@ -81,23 +81,23 @@ func.func private @foo1(%arg0: !fir.ptr<!fir.array<10xf32>>)
 
 func.func private @foo0(%arg0: !fir.box<!fir.array<?xf32>>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo1(%arg0: !fir.box<!fir.array<10xf32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo2(%arg0: !fir.box<!fir.ref<i64>>)
 // CHECK-LABEL: foo2
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo3(%arg0: !fir.box<!fir.type<derived{f:f32}>>)
 // CHECK-LABEL: foo3
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo4(%arg0: !fir.box<!fir.heap<!fir.type<_QMs1Ta1{x:i32,y:f32}>>>)
 // CHECK-LABEL: foo4
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 // -----
 
@@ -123,39 +123,39 @@ func.func private @foo2(%arg0: !fir.char<4, 8>, %arg1: !fir.char<4, ?>)
 // Test `!fir.heap<>` conversion.
 func.func private @foo0(%arg0: !fir.heap<i32>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo1(%arg0: !fir.heap<!fir.array<4xf32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo2(%arg0: !fir.heap<!fir.array<?xf32>>)
 // CHECK-LABEL: foo2
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo3(%arg0: !fir.heap<!fir.char<1,10>>)
 // CHECK-LABEL: foo3
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo4(%arg0: !fir.heap<!fir.char<1,?>>)
 // CHECK-LABEL: foo4
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo5(%arg0: !fir.heap<!fir.array<2xf32>>)
 // CHECK-LABEL: foo5
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo6(%arg0: !fir.heap<!fir.array<?x?xf32>>)
 // CHECK-LABEL: foo6
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo7(%arg0: !fir.heap<!fir.type<ZT>>)
 // CHECK-LABEL: foo7
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo8(%arg0: !fir.heap<!fir.type<_QMalloc_assignTt{i:i32}>>)
 // CHECK-LABEL: foo8
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 // -----
 
@@ -211,19 +211,19 @@ func.func private @foo4(%arg0: !fir.logical<16>)
 
 func.func private @foo0(%arg0: !fir.llvm_ptr<i8>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo1(%arg0: !fir.llvm_ptr<!fir.ref<f32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo2(%arg0: !fir.llvm_ptr<!fir.ref<!fir.box<!fir.ptr<i32>>>>)
 // CHECK-LABEL: foo2
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 func.func private @foo3(%arg0: !fir.llvm_ptr<!fir.ptr<f32>>)
 // CHECK-LABEL: foo3
-// CHECK-SAME: !llvm.ptr
+// CHECK-SAME: !ptr.ptr
 
 // -----
 
@@ -387,19 +387,19 @@ func.func private @foo0(%arg0: !fir.len)
 
 func.func private @foo0(%arg0: !fir.tdesc<!fir.type<x>>)
 // CHECK-LABEL: foo0
-// CHECK-SAME:  !llvm.ptr
+// CHECK-SAME:  !ptr.ptr
 
 func.func private @foo1(%arg : !fir.tdesc<!fir.array<100xf32>>)
 // CHECK-LABEL: foo1
-// CHECK-SAME:  !llvm.ptr
+// CHECK-SAME:  !ptr.ptr
 
 func.func private @foo2(%arg : !fir.tdesc<f32>)
 // CHECK-LABEL: foo2
-// CHECK-SAME:  !llvm.ptr
+// CHECK-SAME:  !ptr.ptr
 
 func.func private @foo3(%arg : !fir.tdesc<!fir.type<derived7{f1:f32,f2:f32}>>)
 // CHECK-LABEL: foo3
-// CHECK-SAME:  !llvm.ptr
+// CHECK-SAME:  !ptr.ptr
 
 // -----
 
@@ -425,4 +425,4 @@ func.func private @foo1(%arg0: !fir.type<derived8{a:i64,b:!fir.box<i32>}>)
 // `none` is used for polymorphic type.
 func.func private @foo0(%arg0: !fir.box<none>)
 // CHECK-LABEL: foo0
-// CHECK-SAME: !llvm.ptr)
+// CHECK-SAME: !ptr.ptr)

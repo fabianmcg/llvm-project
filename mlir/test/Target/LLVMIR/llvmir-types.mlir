@@ -40,7 +40,7 @@ llvm.func @f_void_variadic(...)
 // CHECK: declare void @f_void_i32_i32_variadic(i32, i32, ...)
 llvm.func @f_void_i32_i32_variadic(i32, i32, ...)
 // CHECK: declare ptr @f_f_i32_i32()
-llvm.func @f_f_i32_i32() -> !llvm.ptr
+llvm.func @f_f_i32_i32() -> !ptr.ptr
 
 //
 // Integers.
@@ -66,11 +66,11 @@ llvm.func @return_i129() -> i129
 //
 
 // CHECK: declare ptr @return_p()
-llvm.func @return_p() -> !llvm.ptr
+llvm.func @return_p() -> !ptr.ptr
 // CHECK: declare ptr addrspace(1) @return_p_1()
-llvm.func @return_p_1() -> !llvm.ptr<1>
+llvm.func @return_p_1() -> !ptr.ptr<1>
 // CHECK: declare ptr addrspace(42) @return_p_42()
-llvm.func @return_p_42() -> !llvm.ptr<42>
+llvm.func @return_p_42() -> !ptr.ptr<42>
 
 //
 // Vectors.

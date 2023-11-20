@@ -10,10 +10,10 @@
 ; CHECK-LABEL: llvm.func @tbaa1
 ; CHECK:         llvm.store %{{.*}}, %{{.*}} {
 ; CHECK-SAME:        tbaa = [#[[$T0]]]
-; CHECK-SAME:    } : i8, !llvm.ptr
+; CHECK-SAME:    } : i8, !ptr.ptr
 ; CHECK:         llvm.store %{{.*}}, %{{.*}} {
 ; CHECK-SAME:        tbaa = [#[[$T1]]]
-; CHECK-SAME:    } : i8, !llvm.ptr
+; CHECK-SAME:    } : i8, !ptr.ptr
 define dso_local void @tbaa1(ptr %0, ptr %1) {
   store i8 1, ptr %0, align 4, !tbaa !0
   store i8 1, ptr %1, align 4, !tbaa !3
@@ -42,10 +42,10 @@ define dso_local void @tbaa1(ptr %0, ptr %1) {
 ; CHECK-LABEL: llvm.func @tbaa2
 ; CHECK:         llvm.load %{{.*}} {
 ; CHECK-SAME:        tbaa = [#[[$T0]]]
-; CHECK-SAME:    } : !llvm.ptr -> i64
+; CHECK-SAME:    } : !ptr.ptr -> i64
 ; CHECK:         llvm.store %{{.*}}, %{{.*}} {
 ; CHECK-SAME:        tbaa = [#[[$T1]]]
-; CHECK-SAME:    } : i32, !llvm.ptr
+; CHECK-SAME:    } : i32, !ptr.ptr
 %struct.agg2_t = type { i64, i64 }
 %struct.agg1_t = type { i32, i32 }
 

@@ -33,7 +33,7 @@ module {
   // GENERIC: () -> ()
   }) : () -> ()
 
-  // CHECK: llvm.func @qux(!llvm.ptr {llvm.noalias}, i64)
+  // CHECK: llvm.func @qux(!ptr.ptr {llvm.noalias}, i64)
   // CHECK: attributes {xxx = {yyy = 42 : i64}}
   "llvm.func"() ({
   }) {sym_name = "qux", function_type = !llvm.func<void (ptr, i64)>,
@@ -71,56 +71,56 @@ module {
   // CHECK: llvm.func @roundtrip8() -> i32
   llvm.func @roundtrip8() -> i32 attributes {}
 
-  // CHECK: llvm.func @roundtrip9(!llvm.ptr {llvm.noalias})
-  llvm.func @roundtrip9(!llvm.ptr {llvm.noalias})
+  // CHECK: llvm.func @roundtrip9(!ptr.ptr {llvm.noalias})
+  llvm.func @roundtrip9(!ptr.ptr {llvm.noalias})
 
-  // CHECK: llvm.func @roundtrip10(!llvm.ptr {llvm.noalias})
-  llvm.func @roundtrip10(%arg0: !llvm.ptr {llvm.noalias})
+  // CHECK: llvm.func @roundtrip10(!ptr.ptr {llvm.noalias})
+  llvm.func @roundtrip10(%arg0: !ptr.ptr {llvm.noalias})
 
-  // CHECK: llvm.func @roundtrip11(%{{.*}}: !llvm.ptr {llvm.noalias}) {
-  llvm.func @roundtrip11(%arg0: !llvm.ptr {llvm.noalias}) {
+  // CHECK: llvm.func @roundtrip11(%{{.*}}: !ptr.ptr {llvm.noalias}) {
+  llvm.func @roundtrip11(%arg0: !ptr.ptr {llvm.noalias}) {
     llvm.return
   }
 
-  // CHECK: llvm.func @roundtrip12(%{{.*}}: !llvm.ptr {llvm.noalias})
+  // CHECK: llvm.func @roundtrip12(%{{.*}}: !ptr.ptr {llvm.noalias})
   // CHECK: attributes {foo = 42 : i32}
-  llvm.func @roundtrip12(%arg0: !llvm.ptr {llvm.noalias})
+  llvm.func @roundtrip12(%arg0: !ptr.ptr {llvm.noalias})
   attributes {foo = 42 : i32} {
     llvm.return
   }
 
-  // CHECK: llvm.func @byvalattr(%{{.*}}: !llvm.ptr {llvm.byval = i32})
-  llvm.func @byvalattr(%arg0: !llvm.ptr {llvm.byval = i32}) {
+  // CHECK: llvm.func @byvalattr(%{{.*}}: !ptr.ptr {llvm.byval = i32})
+  llvm.func @byvalattr(%arg0: !ptr.ptr {llvm.byval = i32}) {
     llvm.return
   }
 
-  // CHECK: llvm.func @sretattr(%{{.*}}: !llvm.ptr {llvm.sret = i32})
-  // LOCINFO: llvm.func @sretattr(%{{.*}}: !llvm.ptr {llvm.sret = i32} loc("some_source_loc"))
-  llvm.func @sretattr(%arg0: !llvm.ptr {llvm.sret = i32} loc("some_source_loc")) {
+  // CHECK: llvm.func @sretattr(%{{.*}}: !ptr.ptr {llvm.sret = i32})
+  // LOCINFO: llvm.func @sretattr(%{{.*}}: !ptr.ptr {llvm.sret = i32} loc("some_source_loc"))
+  llvm.func @sretattr(%arg0: !ptr.ptr {llvm.sret = i32} loc("some_source_loc")) {
     llvm.return
   }
 
-  // CHECK: llvm.func @nestattr(%{{.*}}: !llvm.ptr {llvm.nest})
-  llvm.func @nestattr(%arg0: !llvm.ptr {llvm.nest}) {
+  // CHECK: llvm.func @nestattr(%{{.*}}: !ptr.ptr {llvm.nest})
+  llvm.func @nestattr(%arg0: !ptr.ptr {llvm.nest}) {
     llvm.return
   }
 
-  // CHECK: llvm.func @llvm_noalias_decl(!llvm.ptr {llvm.noalias})
-  llvm.func @llvm_noalias_decl(!llvm.ptr {llvm.noalias})
-  // CHECK: llvm.func @byrefattr_decl(!llvm.ptr {llvm.byref = i32})
-  llvm.func @byrefattr_decl(!llvm.ptr {llvm.byref = i32})
-  // CHECK: llvm.func @byvalattr_decl(!llvm.ptr {llvm.byval = i32})
-  llvm.func @byvalattr_decl(!llvm.ptr {llvm.byval = i32})
-  // CHECK: llvm.func @sretattr_decl(!llvm.ptr {llvm.sret = i32})
-  llvm.func @sretattr_decl(!llvm.ptr {llvm.sret = i32})
-  // CHECK: llvm.func @nestattr_decl(!llvm.ptr {llvm.nest})
-  llvm.func @nestattr_decl(!llvm.ptr {llvm.nest})
+  // CHECK: llvm.func @llvm_noalias_decl(!ptr.ptr {llvm.noalias})
+  llvm.func @llvm_noalias_decl(!ptr.ptr {llvm.noalias})
+  // CHECK: llvm.func @byrefattr_decl(!ptr.ptr {llvm.byref = i32})
+  llvm.func @byrefattr_decl(!ptr.ptr {llvm.byref = i32})
+  // CHECK: llvm.func @byvalattr_decl(!ptr.ptr {llvm.byval = i32})
+  llvm.func @byvalattr_decl(!ptr.ptr {llvm.byval = i32})
+  // CHECK: llvm.func @sretattr_decl(!ptr.ptr {llvm.sret = i32})
+  llvm.func @sretattr_decl(!ptr.ptr {llvm.sret = i32})
+  // CHECK: llvm.func @nestattr_decl(!ptr.ptr {llvm.nest})
+  llvm.func @nestattr_decl(!ptr.ptr {llvm.nest})
   // CHECK: llvm.func @noundefattr_decl(i32 {llvm.noundef})
   llvm.func @noundefattr_decl(i32 {llvm.noundef})
-  // CHECK: llvm.func @llvm_align_decl(!llvm.ptr {llvm.align = 4 : i64})
-  llvm.func @llvm_align_decl(!llvm.ptr {llvm.align = 4})
-  // CHECK: llvm.func @inallocaattr_decl(!llvm.ptr {llvm.inalloca = i32})
-  llvm.func @inallocaattr_decl(!llvm.ptr {llvm.inalloca = i32})
+  // CHECK: llvm.func @llvm_align_decl(!ptr.ptr {llvm.align = 4 : i64})
+  llvm.func @llvm_align_decl(!ptr.ptr {llvm.align = 4})
+  // CHECK: llvm.func @inallocaattr_decl(!ptr.ptr {llvm.inalloca = i32})
+  llvm.func @inallocaattr_decl(!ptr.ptr {llvm.inalloca = i32})
 
 
   // CHECK: llvm.func @variadic(...)

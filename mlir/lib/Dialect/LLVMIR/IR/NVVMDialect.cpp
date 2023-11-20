@@ -623,7 +623,7 @@ inferMMATypeFromMNK(NVVM::MMATypes type, NVVM::MMAFrag frag, int m, int n,
 
 LogicalResult NVVM::WMMALoadOp::verify() {
   unsigned addressSpace =
-      llvm::cast<LLVM::LLVMPointerType>(getPtr().getType()).getAddressSpace();
+      llvm::cast<ptr::PtrType>(getPtr().getType()).getAddressSpace();
   if (addressSpace != 0 && addressSpace != NVVM::kGlobalMemorySpace &&
       addressSpace != NVVM::kSharedMemorySpace)
     return emitOpError("expected source pointer in memory "
@@ -644,7 +644,7 @@ LogicalResult NVVM::WMMALoadOp::verify() {
 
 LogicalResult NVVM::WMMAStoreOp::verify() {
   unsigned addressSpace =
-      llvm::cast<LLVM::LLVMPointerType>(getPtr().getType()).getAddressSpace();
+      llvm::cast<ptr::PtrType>(getPtr().getType()).getAddressSpace();
   if (addressSpace != 0 && addressSpace != NVVM::kGlobalMemorySpace &&
       addressSpace != NVVM::kSharedMemorySpace)
     return emitOpError("expected operands to be a source pointer in memory "
@@ -697,7 +697,7 @@ LogicalResult NVVM::WMMAMmaOp::verify() {
 
 LogicalResult NVVM::LdMatrixOp::verify() {
   unsigned addressSpace =
-      llvm::cast<LLVM::LLVMPointerType>(getPtr().getType()).getAddressSpace();
+      llvm::cast<ptr::PtrType>(getPtr().getType()).getAddressSpace();
   if (addressSpace != NVVM::kSharedMemorySpace)
     return emitOpError("expected source pointer in memory space 3");
 
@@ -719,7 +719,7 @@ LogicalResult NVVM::LdMatrixOp::verify() {
 
 LogicalResult NVVM::StMatrixOp::verify() {
   unsigned addressSpace =
-      llvm::cast<LLVM::LLVMPointerType>(getPtr().getType()).getAddressSpace();
+      llvm::cast<ptr::PtrType>(getPtr().getType()).getAddressSpace();
   if (addressSpace != NVVM::kSharedMemorySpace)
     return emitOpError("expected source pointer in memory space 3");
 

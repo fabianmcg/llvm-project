@@ -64,11 +64,11 @@ llvm.mlir.global external @explicit_undef() : i32 {
 }
 
 // CHECK: @int_gep = internal constant ptr getelementptr (i32, ptr @i32_global, i32 2)
-llvm.mlir.global internal constant @int_gep() : !llvm.ptr {
-  %addr = llvm.mlir.addressof @i32_global : !llvm.ptr
+llvm.mlir.global internal constant @int_gep() : !ptr.ptr {
+  %addr = llvm.mlir.addressof @i32_global : !ptr.ptr
   %_c0 = llvm.mlir.constant(2: i32) :i32
-  %gepinit = llvm.getelementptr %addr[%_c0] : (!llvm.ptr, i32) -> !llvm.ptr, i32
-  llvm.return %gepinit : !llvm.ptr
+  %gepinit = llvm.getelementptr %addr[%_c0] : (!ptr.ptr, i32) -> !ptr.ptr, i32
+  llvm.return %gepinit : !ptr.ptr
 }
 
 // CHECK{LITERAL}: @dense_float_vector = internal global <3 x float> <float 1.000000e+00, float 2.000000e+00, float 3.000000e+00>
@@ -177,7 +177,7 @@ llvm.mlir.global internal constant @sectionvar("teststring")  {section = ".mysec
 //
 
 // CHECK: declare ptr @malloc(i64)
-llvm.func @malloc(i64) -> !llvm.ptr
+llvm.func @malloc(i64) -> !ptr.ptr
 // CHECK: declare void @free(ptr)
 
 
@@ -197,15 +197,15 @@ llvm.func @empty() {
 llvm.func @global_refs() {
   // Check load from globals.
   // CHECK: load i32, ptr @i32_global
-  %0 = llvm.mlir.addressof @i32_global : !llvm.ptr
-  %1 = llvm.load %0 : !llvm.ptr -> i32
+  %0 = llvm.mlir.addressof @i32_global : !ptr.ptr
+  %1 = llvm.load %0 : !ptr.ptr -> i32
 
   // Check the contracted form of load from array constants.
   // CHECK: load i8, ptr @string_const
-  %2 = llvm.mlir.addressof @string_const : !llvm.ptr
+  %2 = llvm.mlir.addressof @string_const : !ptr.ptr
   %c0 = llvm.mlir.constant(0 : index) : i64
-  %3 = llvm.getelementptr %2[%c0, %c0] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<6 x i8>
-  %4 = llvm.load %3 : !llvm.ptr -> i8
+  %3 = llvm.getelementptr %2[%c0, %c0] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.array<6 x i8>
+  %4 = llvm.load %3 : !ptr.ptr -> i8
 
   llvm.return
 }
@@ -550,7 +550,7 @@ llvm.func @memref_alloc() {
   %3 = llvm.mlir.undef : !llvm.struct<(ptr)>
   %4 = llvm.mlir.constant(4 : index) : i64
   %5 = llvm.mul %2, %4 : i64
-  %6 = llvm.call @malloc(%5) : (i64) -> !llvm.ptr
+  %6 = llvm.call @malloc(%5) : (i64) -> !ptr.ptr
   %7 = llvm.insertvalue %6, %3[0] : !llvm.struct<(ptr)>
 // CHECK-NEXT: ret void
   llvm.return
@@ -568,7 +568,7 @@ llvm.func @store_load_static() {
   %1 = llvm.mlir.undef : !llvm.struct<(ptr)>
   %2 = llvm.mlir.constant(4 : index) : i64
   %3 = llvm.mul %0, %2 : i64
-  %4 = llvm.call @malloc(%3) : (i64) -> !llvm.ptr
+  %4 = llvm.call @malloc(%3) : (i64) -> !ptr.ptr
   %6 = llvm.insertvalue %4, %1[0] : !llvm.struct<(ptr)>
   %7 = llvm.mlir.constant(1.000000e+00 : f32) : f32
   llvm.br ^bb1
@@ -588,8 +588,8 @@ llvm.func @store_load_static() {
 // CHECK-NEXT: store float 1.000000e+00, ptr %{{[0-9]+}}
   %12 = llvm.mlir.constant(10 : index) : i64
   %13 = llvm.extractvalue %6[0] : !llvm.struct<(ptr)>
-  %14 = llvm.getelementptr %13[%10] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %7, %14 : f32, !llvm.ptr
+  %14 = llvm.getelementptr %13[%10] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %7, %14 : f32, !ptr.ptr
   %15 = llvm.mlir.constant(1 : index) : i64
 // CHECK-NEXT: %{{[0-9]+}} = add i64 %{{[0-9]+}}, 1
   %16 = llvm.add %10, %15 : i64
@@ -613,8 +613,8 @@ llvm.func @store_load_static() {
 // CHECK-NEXT: %{{[0-9]+}} = load float, ptr %{{[0-9]+}}
   %21 = llvm.mlir.constant(10 : index) : i64
   %22 = llvm.extractvalue %6[0] : !llvm.struct<(ptr)>
-  %23 = llvm.getelementptr %22[%19] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  %24 = llvm.load %23 : !llvm.ptr -> f32
+  %23 = llvm.getelementptr %22[%19] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  %24 = llvm.load %23 : !ptr.ptr -> f32
   %25 = llvm.mlir.constant(1 : index) : i64
 // CHECK-NEXT: %{{[0-9]+}} = add i64 %{{[0-9]+}}, 1
   %26 = llvm.add %19, %25 : i64
@@ -634,7 +634,7 @@ llvm.func @store_load_dynamic(%arg0: i64) {
   %0 = llvm.mlir.undef : !llvm.struct<(ptr, i64)>
   %1 = llvm.mlir.constant(4 : index) : i64
   %2 = llvm.mul %arg0, %1 : i64
-  %3 = llvm.call @malloc(%2) : (i64) -> !llvm.ptr
+  %3 = llvm.call @malloc(%2) : (i64) -> !ptr.ptr
   %5 = llvm.insertvalue %3, %0[0] : !llvm.struct<(ptr, i64)>
   %6 = llvm.insertvalue %arg0, %5[1] : !llvm.struct<(ptr, i64)>
   %7 = llvm.mlir.constant(1.000000e+00 : f32) : f32
@@ -656,8 +656,8 @@ llvm.func @store_load_dynamic(%arg0: i64) {
 // CHECK-NEXT: store float 1.000000e+00, ptr %{{[0-9]+}}
   %11 = llvm.extractvalue %6[1] : !llvm.struct<(ptr, i64)>
   %12 = llvm.extractvalue %6[0] : !llvm.struct<(ptr, i64)>
-  %13 = llvm.getelementptr %12[%9] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %7, %13 : f32, !llvm.ptr
+  %13 = llvm.getelementptr %12[%9] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %7, %13 : f32, !ptr.ptr
   %14 = llvm.mlir.constant(1 : index) : i64
 // CHECK-NEXT: %{{[0-9]+}} = add i64 %{{[0-9]+}}, 1
   %15 = llvm.add %9, %14 : i64
@@ -681,8 +681,8 @@ llvm.func @store_load_dynamic(%arg0: i64) {
 // CHECK-NEXT: %{{[0-9]+}} = load float, ptr %{{[0-9]+}}
   %19 = llvm.extractvalue %6[1] : !llvm.struct<(ptr, i64)>
   %20 = llvm.extractvalue %6[0] : !llvm.struct<(ptr, i64)>
-  %21 = llvm.getelementptr %20[%17] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  %22 = llvm.load %21 : !llvm.ptr -> f32
+  %21 = llvm.getelementptr %20[%17] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  %22 = llvm.load %21 : !ptr.ptr -> f32
   %23 = llvm.mlir.constant(1 : index) : i64
 // CHECK-NEXT: %{{[0-9]+}} = add i64 %{{[0-9]+}}, 1
   %24 = llvm.add %17, %23 : i64
@@ -712,7 +712,7 @@ llvm.func @store_load_mixed(%arg0: i64) {
   %6 = llvm.mlir.undef : !llvm.struct<(ptr, i64, i64)>
   %7 = llvm.mlir.constant(4 : index) : i64
   %8 = llvm.mul %5, %7 : i64
-  %9 = llvm.call @malloc(%8) : (i64) -> !llvm.ptr
+  %9 = llvm.call @malloc(%8) : (i64) -> !ptr.ptr
   %11 = llvm.insertvalue %9, %6[0] : !llvm.struct<(ptr, i64, i64)>
   %12 = llvm.insertvalue %arg0, %11[1] : !llvm.struct<(ptr, i64, i64)>
   %13 = llvm.insertvalue %0, %12[2] : !llvm.struct<(ptr, i64, i64)>
@@ -746,8 +746,8 @@ llvm.func @store_load_mixed(%arg0: i64) {
   %27 = llvm.mul %26, %22 : i64
   %28 = llvm.add %27, %17 : i64
   %29 = llvm.extractvalue %13[0] : !llvm.struct<(ptr, i64, i64)>
-  %30 = llvm.getelementptr %29[%28] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %18, %30 : f32, !llvm.ptr
+  %30 = llvm.getelementptr %29[%28] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %18, %30 : f32, !ptr.ptr
 // CHECK-NEXT: %{{[0-9]+}} = extractvalue { ptr, i64, i64 } %{{[0-9]+}}, 1
 // CHECK-NEXT: %{{[0-9]+}} = extractvalue { ptr, i64, i64 } %{{[0-9]+}}, 2
 // CHECK-NEXT: %{{[0-9]+}} = mul i64 %{{[0-9]+}}, %{{[0-9]+}}
@@ -770,8 +770,8 @@ llvm.func @store_load_mixed(%arg0: i64) {
   %39 = llvm.mul %38, %34 : i64
   %40 = llvm.add %39, %14 : i64
   %41 = llvm.extractvalue %13[0] : !llvm.struct<(ptr, i64, i64)>
-  %42 = llvm.getelementptr %41[%40] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  %43 = llvm.load %42 : !llvm.ptr -> f32
+  %42 = llvm.getelementptr %41[%40] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  %43 = llvm.load %42 : !ptr.ptr -> f32
 // CHECK-NEXT: ret void
   llvm.return
 }
@@ -787,16 +787,16 @@ llvm.func @memref_args_rets(%arg0: !llvm.struct<(ptr)>, %arg1: !llvm.struct<(ptr
 // CHECK-NEXT: store float 4.200000e+01, ptr %{{[0-9]+}}
   %3 = llvm.mlir.constant(10 : index) : i64
   %4 = llvm.extractvalue %arg0[0] : !llvm.struct<(ptr)>
-  %5 = llvm.getelementptr %4[%0] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %2, %5 : f32, !llvm.ptr
+  %5 = llvm.getelementptr %4[%0] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %2, %5 : f32, !ptr.ptr
 // CHECK-NEXT: %{{[0-9]+}} = extractvalue { ptr, i64 } %{{[0-9]+}}, 1
 // CHECK-NEXT: %{{[0-9]+}} = extractvalue { ptr, i64 } %{{[0-9]+}}, 0
 // CHECK-NEXT: %{{[0-9]+}} = getelementptr float, ptr %{{[0-9]+}}, i64 7
 // CHECK-NEXT: store float 4.200000e+01, ptr %{{[0-9]+}}
   %6 = llvm.extractvalue %arg1[1] : !llvm.struct<(ptr, i64)>
   %7 = llvm.extractvalue %arg1[0] : !llvm.struct<(ptr, i64)>
-  %8 = llvm.getelementptr %7[%0] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %2, %8 : f32, !llvm.ptr
+  %8 = llvm.getelementptr %7[%0] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %2, %8 : f32, !ptr.ptr
 // CHECK-NEXT: %{{[0-9]+}} = extractvalue { ptr, i64 } %{{[0-9]+}}, 1
 // CHECK-NEXT: %{{[0-9]+}} = mul i64 7, %{{[0-9]+}}
 // CHECK-NEXT: %{{[0-9]+}} = add i64 %{{[0-9]+}}, %{{[0-9]+}}
@@ -808,8 +808,8 @@ llvm.func @memref_args_rets(%arg0: !llvm.struct<(ptr)>, %arg1: !llvm.struct<(ptr
   %11 = llvm.mul %0, %10 : i64
   %12 = llvm.add %11, %1 : i64
   %13 = llvm.extractvalue %arg2[0] : !llvm.struct<(ptr, i64)>
-  %14 = llvm.getelementptr %13[%12] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  llvm.store %2, %14 : f32, !llvm.ptr
+  %14 = llvm.getelementptr %13[%12] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  llvm.store %2, %14 : f32, !ptr.ptr
 // CHECK-NEXT: %{{[0-9]+}} = mul i64 10, %{{[0-9]+}}
 // CHECK-NEXT: %{{[0-9]+}} = mul i64 %{{[0-9]+}}, 4
 // CHECK-NEXT: %{{[0-9]+}} = call ptr @malloc(i64 %{{[0-9]+}})
@@ -820,7 +820,7 @@ llvm.func @memref_args_rets(%arg0: !llvm.struct<(ptr)>, %arg1: !llvm.struct<(ptr
   %17 = llvm.mlir.undef : !llvm.struct<(ptr, i64)>
   %18 = llvm.mlir.constant(4 : index) : i64
   %19 = llvm.mul %16, %18 : i64
-  %20 = llvm.call @malloc(%19) : (i64) -> !llvm.ptr
+  %20 = llvm.call @malloc(%19) : (i64) -> !ptr.ptr
   %22 = llvm.insertvalue %20, %17[0] : !llvm.struct<(ptr, i64)>
   %23 = llvm.insertvalue %1, %22[1] : !llvm.struct<(ptr, i64)>
 // CHECK-NEXT: ret { ptr, i64 } %{{[0-9]+}}
@@ -900,8 +900,8 @@ llvm.func @multireturn_caller() {
   %17 = llvm.mul %16, %12 : i64
   %18 = llvm.add %17, %8 : i64
   %19 = llvm.extractvalue %3[0] : !llvm.struct<(ptr, i64, i64)>
-  %20 = llvm.getelementptr %19[%18] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-  %21 = llvm.load %20 : !llvm.ptr -> f32
+  %20 = llvm.getelementptr %19[%18] : (!ptr.ptr, i64) -> !ptr.ptr, f32
+  %21 = llvm.load %20 : !ptr.ptr -> f32
   llvm.return
 }
 
@@ -1030,12 +1030,12 @@ llvm.func @ops(%arg0: f32, %arg1: f32, %arg2: i32, %arg3: i32) -> !llvm.struct<(
 }
 
 // CHECK-LABEL: @gep
-llvm.func @gep(%ptr: !llvm.ptr, %idx: i64,
-               %ptr2: !llvm.ptr) {
+llvm.func @gep(%ptr: !ptr.ptr, %idx: i64,
+               %ptr2: !ptr.ptr) {
   // CHECK: = getelementptr { i32, { i32, float } }, ptr %{{.*}}, i64 %{{.*}}, i32 1, i32 0
-  llvm.getelementptr %ptr[%idx, 1, 0] : (!llvm.ptr, i64) -> !llvm.ptr, !llvm.struct<(i32, struct<(i32, f32)>)>
+  llvm.getelementptr %ptr[%idx, 1, 0] : (!ptr.ptr, i64) -> !ptr.ptr, !llvm.struct<(i32, struct<(i32, f32)>)>
   // CHECK: = getelementptr inbounds { [10 x float] }, ptr %{{.*}}, i64 %{{.*}}, i32 0, i64 %{{.*}}
-  llvm.getelementptr inbounds %ptr2[%idx, 0, %idx] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.struct<(array<10 x f32>)>
+  llvm.getelementptr inbounds %ptr2[%idx, 0, %idx] : (!ptr.ptr, i64, i64) -> !ptr.ptr, !llvm.struct<(array<10 x f32>)>
   llvm.return
 }
 
@@ -1046,16 +1046,16 @@ llvm.func @gep(%ptr: !llvm.ptr, %idx: i64,
 // CHECK-LABEL: define void @indirect_const_call(i64 {{%.*}})
 llvm.func @indirect_const_call(%arg0: i64) {
 // CHECK-NEXT:  call void @body(i64 %0)
-  %0 = llvm.mlir.addressof @body : !llvm.ptr
-  llvm.call %0(%arg0) : !llvm.ptr, (i64) -> ()
+  %0 = llvm.mlir.addressof @body : !ptr.ptr
+  llvm.call %0(%arg0) : !ptr.ptr, (i64) -> ()
 // CHECK-NEXT:  ret void
   llvm.return
 }
 
 // CHECK-LABEL: define i32 @indirect_call(ptr addrspace(42) {{%.*}}, float {{%.*}})
-llvm.func @indirect_call(%arg0: !llvm.ptr<42>, %arg1: f32) -> i32 {
+llvm.func @indirect_call(%arg0: !ptr.ptr<42>, %arg1: f32) -> i32 {
 // CHECK-NEXT:  %3 = call addrspace(42) i32 %0(float %1)
-  %0 = llvm.call %arg0(%arg1) : !llvm.ptr<42>, (f32) -> i32
+  %0 = llvm.call %arg0(%arg1) : !ptr.ptr<42>, (f32) -> i32
 // CHECK-NEXT:  ret i32 %3
   llvm.return %0 : i32
 }
@@ -1083,44 +1083,44 @@ llvm.func @cond_br_arguments(%arg0: i1, %arg1: i1) {
 }
 
 // CHECK-LABEL: define void @llvm_noalias(ptr noalias {{%*.}})
-llvm.func @llvm_noalias(%arg0: !llvm.ptr {llvm.noalias}) {
+llvm.func @llvm_noalias(%arg0: !ptr.ptr {llvm.noalias}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @llvm_noalias_decl(ptr noalias)
-llvm.func @llvm_noalias_decl(!llvm.ptr {llvm.noalias})
+llvm.func @llvm_noalias_decl(!ptr.ptr {llvm.noalias})
 
 // CHECK-LABEL: define void @byrefattr(ptr byref(i32) %
-llvm.func @byrefattr(%arg0: !llvm.ptr {llvm.byref = i32}) {
+llvm.func @byrefattr(%arg0: !ptr.ptr {llvm.byref = i32}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @byrefattr_decl(ptr byref(i32))
-llvm.func @byrefattr_decl(!llvm.ptr {llvm.byref = i32})
+llvm.func @byrefattr_decl(!ptr.ptr {llvm.byref = i32})
 
 // CHECK-LABEL: define void @byvalattr(ptr byval(i32) %
-llvm.func @byvalattr(%arg0: !llvm.ptr {llvm.byval = i32}) {
+llvm.func @byvalattr(%arg0: !ptr.ptr {llvm.byval = i32}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @byvalattr_decl(ptr byval(i32))
-llvm.func @byvalattr_decl(!llvm.ptr {llvm.byval = i32})
+llvm.func @byvalattr_decl(!ptr.ptr {llvm.byval = i32})
 
 // CHECK-LABEL: define void @sretattr(ptr sret(i32) %
-llvm.func @sretattr(%arg0: !llvm.ptr {llvm.sret = i32}) {
+llvm.func @sretattr(%arg0: !ptr.ptr {llvm.sret = i32}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @sretattr_decl(ptr sret(i32))
-llvm.func @sretattr_decl(!llvm.ptr {llvm.sret = i32})
+llvm.func @sretattr_decl(!ptr.ptr {llvm.sret = i32})
 
 // CHECK-LABEL: define void @nestattr(ptr nest %
-llvm.func @nestattr(%arg0: !llvm.ptr {llvm.nest}) {
+llvm.func @nestattr(%arg0: !ptr.ptr {llvm.nest}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @nestattr_decl(ptr nest)
-llvm.func @nestattr_decl(!llvm.ptr {llvm.nest})
+llvm.func @nestattr_decl(!ptr.ptr {llvm.nest})
 
 // CHECK-LABEL: define void @noundefattr(i32 noundef %
 llvm.func @noundefattr(%arg0: i32 {llvm.noundef}) {
@@ -1131,20 +1131,20 @@ llvm.func @noundefattr(%arg0: i32 {llvm.noundef}) {
 llvm.func @noundefattr_decl(i32 {llvm.noundef})
 
 // CHECK-LABEL: define void @llvm_align(ptr align 4 {{%*.}})
-llvm.func @llvm_align(%arg0: !llvm.ptr {llvm.align = 4}) {
+llvm.func @llvm_align(%arg0: !ptr.ptr {llvm.align = 4}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @llvm_align_decl(ptr align 4)
-llvm.func @llvm_align_decl(!llvm.ptr {llvm.align = 4})
+llvm.func @llvm_align_decl(!ptr.ptr {llvm.align = 4})
 
 // CHECK-LABEL: define void @inallocaattr(ptr inalloca(i32) %
-llvm.func @inallocaattr(%arg0: !llvm.ptr {llvm.inalloca = i32}) {
+llvm.func @inallocaattr(%arg0: !ptr.ptr {llvm.inalloca = i32}) {
   llvm.return
 }
 
 // CHECK-LABEL: declare void @inallocaattr_decl(ptr inalloca(i32))
-llvm.func @inallocaattr_decl(!llvm.ptr {llvm.inalloca = i32})
+llvm.func @inallocaattr_decl(!ptr.ptr {llvm.inalloca = i32})
 
 // CHECK-LABEL: define void @signextattr(i1 signext %
 llvm.func @signextattr(%arg0: i1 {llvm.signext}) {
@@ -1163,46 +1163,46 @@ llvm.func @zeroextattr(%arg0: i1 {llvm.zeroext}) {
 llvm.func @zeroextattr_decl(i1 {llvm.zeroext})
 
 // CHECK-LABEL: declare void @alignattr_decl(ptr align 64)
-llvm.func @alignattr_decl(!llvm.ptr {llvm.align = 64 : i64})
+llvm.func @alignattr_decl(!ptr.ptr {llvm.align = 64 : i64})
 
 // CHECK-LABEL: declare void @dereferenceableattr_decl(ptr dereferenceable(32))
-llvm.func @dereferenceableattr_decl(!llvm.ptr {llvm.dereferenceable = 32 : i64})
+llvm.func @dereferenceableattr_decl(!ptr.ptr {llvm.dereferenceable = 32 : i64})
 
 // CHECK-LABEL: declare void @dereferenceableornullattr_decl(ptr dereferenceable_or_null(32))
-llvm.func @dereferenceableornullattr_decl(!llvm.ptr {llvm.dereferenceable_or_null = 32 : i64})
+llvm.func @dereferenceableornullattr_decl(!ptr.ptr {llvm.dereferenceable_or_null = 32 : i64})
 
 // CHECK-LABEL: declare void @inregattr_decl(ptr inreg)
-llvm.func @inregattr_decl(!llvm.ptr {llvm.inreg})
+llvm.func @inregattr_decl(!ptr.ptr {llvm.inreg})
 
 // CHECK-LABEL: declare void @nocaptureattr_decl(ptr nocapture)
-llvm.func @nocaptureattr_decl(!llvm.ptr {llvm.nocapture})
+llvm.func @nocaptureattr_decl(!ptr.ptr {llvm.nocapture})
 
 // CHECK-LABEL: declare void @nofreeattr_decl(ptr nofree)
-llvm.func @nofreeattr_decl(!llvm.ptr {llvm.nofree})
+llvm.func @nofreeattr_decl(!ptr.ptr {llvm.nofree})
 
 // CHECK-LABEL: declare void @nonnullattr_decl(ptr nonnull)
-llvm.func @nonnullattr_decl(!llvm.ptr {llvm.nonnull})
+llvm.func @nonnullattr_decl(!ptr.ptr {llvm.nonnull})
 
 // CHECK-LABEL: declare void @preallocatedattr_decl(ptr preallocated(float))
-llvm.func @preallocatedattr_decl(!llvm.ptr {llvm.preallocated = f32})
+llvm.func @preallocatedattr_decl(!ptr.ptr {llvm.preallocated = f32})
 
 // CHECK-LABEL: declare ptr @returnedattr_decl(ptr returned)
-llvm.func @returnedattr_decl(!llvm.ptr {llvm.returned}) -> !llvm.ptr
+llvm.func @returnedattr_decl(!ptr.ptr {llvm.returned}) -> !ptr.ptr
 
 // CHECK-LABEL: declare void @alignstackattr_decl(ptr alignstack(32))
-llvm.func @alignstackattr_decl(!llvm.ptr {llvm.alignstack = 32 : i64})
+llvm.func @alignstackattr_decl(!ptr.ptr {llvm.alignstack = 32 : i64})
 
 // CHECK-LABEL: declare void @writeonlyattr_decl(ptr writeonly)
-llvm.func @writeonlyattr_decl(!llvm.ptr {llvm.writeonly})
+llvm.func @writeonlyattr_decl(!ptr.ptr {llvm.writeonly})
 
 // CHECK-LABEL: declare align 4 ptr @alignattr_ret_decl()
-llvm.func @alignattr_ret_decl() -> (!llvm.ptr {llvm.align = 4})
+llvm.func @alignattr_ret_decl() -> (!ptr.ptr {llvm.align = 4})
 
 // CHECK-LABEL: declare noalias ptr @noaliasattr_ret_decl()
-llvm.func @noaliasattr_ret_decl() -> (!llvm.ptr {llvm.noalias})
+llvm.func @noaliasattr_ret_decl() -> (!ptr.ptr {llvm.noalias})
 
 // CHECK-LABEL: declare noundef ptr @noundefattr_ret_decl()
-llvm.func @noundefattr_ret_decl() -> (!llvm.ptr {llvm.noundef})
+llvm.func @noundefattr_ret_decl() -> (!ptr.ptr {llvm.noundef})
 
 // CHECK-LABEL: declare signext i1 @signextattr_ret_decl()
 llvm.func @signextattr_ret_decl() -> (i1 {llvm.signext})
@@ -1211,16 +1211,16 @@ llvm.func @signextattr_ret_decl() -> (i1 {llvm.signext})
 llvm.func @zeroextattr_ret_decl() -> (i1 {llvm.zeroext})
 
 // CHECK-LABEL: declare nonnull ptr @nonnullattr_ret_decl()
-llvm.func @nonnullattr_ret_decl() -> (!llvm.ptr {llvm.nonnull})
+llvm.func @nonnullattr_ret_decl() -> (!ptr.ptr {llvm.nonnull})
 
 // CHECK-LABEL: declare dereferenceable(32) ptr @dereferenceableattr_ret_decl()
-llvm.func @dereferenceableattr_ret_decl() -> (!llvm.ptr {llvm.dereferenceable = 32 : i64})
+llvm.func @dereferenceableattr_ret_decl() -> (!ptr.ptr {llvm.dereferenceable = 32 : i64})
 
 // CHECK-LABEL: declare dereferenceable_or_null(16) ptr @dereferenceableornullattr_ret_decl()
-llvm.func @dereferenceableornullattr_ret_decl() -> (!llvm.ptr {llvm.dereferenceable_or_null = 16 : i64})
+llvm.func @dereferenceableornullattr_ret_decl() -> (!ptr.ptr {llvm.dereferenceable_or_null = 16 : i64})
 
 // CHECK-LABEL: declare inreg ptr @inregattr_ret_decl()
-llvm.func @inregattr_ret_decl() -> (!llvm.ptr {llvm.inreg})
+llvm.func @inregattr_ret_decl() -> (!ptr.ptr {llvm.inreg})
 
 // CHECK-LABEL: @varargs(...)
 llvm.func @varargs(...)
@@ -1233,17 +1233,17 @@ llvm.func @varargs_call(%arg0 : i32) {
 }
 
 // CHECK-LABEL: define void @indirect_varargs_call(ptr %0, i32 %1)
-llvm.func @indirect_varargs_call(%arg0 : !llvm.ptr, %arg1 : i32) {
+llvm.func @indirect_varargs_call(%arg0 : !ptr.ptr, %arg1 : i32) {
 // CHECK:  call void (...) %0(i32 %1)
-  llvm.call %arg0(%arg1) vararg(!llvm.func<void (...)>) : !llvm.ptr, (i32) -> ()
+  llvm.call %arg0(%arg1) vararg(!llvm.func<void (...)>) : !ptr.ptr, (i32) -> ()
   llvm.return
 }
 
 llvm.func @intpointerconversion(%arg0 : i32) -> i32 {
 // CHECK:      %2 = inttoptr i32 %0 to ptr
 // CHECK-NEXT: %3 = ptrtoint ptr %2 to i32
-  %1 = llvm.inttoptr %arg0 : i32 to !llvm.ptr
-  %2 = llvm.ptrtoint %1 : !llvm.ptr to i32
+  %1 = llvm.inttoptr %arg0 : i32 to !ptr.ptr
+  %2 = llvm.ptrtoint %1 : !ptr.ptr to i32
   llvm.return %2 : i32
 }
 
@@ -1260,10 +1260,10 @@ llvm.func @fpconversion(%arg0 : i32) -> i32 {
 }
 
 // CHECK-LABEL: @addrspace
-llvm.func @addrspace(%arg0 : !llvm.ptr) -> !llvm.ptr<2> {
+llvm.func @addrspace(%arg0 : !ptr.ptr) -> !ptr.ptr<2> {
 // CHECK: %2 = addrspacecast ptr %0 to ptr addrspace(2)
-  %1 = llvm.addrspacecast %arg0 : !llvm.ptr to !llvm.ptr<2>
-  llvm.return %1 : !llvm.ptr<2>
+  %1 = llvm.addrspacecast %arg0 : !ptr.ptr to !ptr.ptr<2>
+  llvm.return %1 : !ptr.ptr<2>
 }
 
 llvm.func @stringconstant() -> !llvm.array<12 x i8> {
@@ -1393,13 +1393,13 @@ llvm.func @alloca(%size : i64) {
   // Alignment automatically set by the LLVM IR builder when alignment attribute
   // is 0.
   //  CHECK: alloca {{.*}} align 4
-  llvm.alloca %size x i32 {alignment = 0} : (i64) -> (!llvm.ptr)
+  llvm.alloca %size x i32 {alignment = 0} : (i64) -> (!ptr.ptr)
   // CHECK-NEXT: alloca {{.*}} align 8
-  llvm.alloca %size x i32 {alignment = 8} : (i64) -> (!llvm.ptr)
+  llvm.alloca %size x i32 {alignment = 8} : (i64) -> (!ptr.ptr)
   // CHECK-NEXT: alloca {{.*}} addrspace(3)
-  llvm.alloca %size x i32 {alignment = 0} : (i64) -> (!llvm.ptr<3>)
+  llvm.alloca %size x i32 {alignment = 0} : (i64) -> (!ptr.ptr<3>)
   // CHECK-NEXT: alloca inalloca {{.*}} align 4
-  llvm.alloca inalloca %size x i32 : (i64) -> !llvm.ptr
+  llvm.alloca inalloca %size x i32 : (i64) -> !ptr.ptr
   llvm.return
 }
 
@@ -1434,10 +1434,10 @@ llvm.func @integer_extension_and_truncation(%a : i32) {
 
 // Check that the auxiliary `null` operation is converted into a `null` value.
 // CHECK-LABEL: @null
-llvm.func @null() -> !llvm.ptr {
-  %0 = llvm.mlir.zero : !llvm.ptr
+llvm.func @null() -> !ptr.ptr {
+  %0 = llvm.mlir.zero : !ptr.ptr
   // CHECK: ret ptr null
-  llvm.return %0 : !llvm.ptr
+  llvm.return %0 : !ptr.ptr
 }
 
 // Check that dense elements attributes are exported properly in constants.
@@ -1461,54 +1461,54 @@ llvm.func @elements_constant_3d_array() -> !llvm.array<2 x array<2 x array<2 x i
 
 // CHECK-LABEL: @atomicrmw
 llvm.func @atomicrmw(
-    %f32_ptr : !llvm.ptr, %f32 : f32,
-    %i32_ptr : !llvm.ptr, %i32 : i32) {
+    %f32_ptr : !ptr.ptr, %f32 : f32,
+    %i32_ptr : !ptr.ptr, %i32 : i32) {
   // CHECK: atomicrmw fadd ptr %{{.*}}, float %{{.*}} monotonic
-  %0 = llvm.atomicrmw fadd %f32_ptr, %f32 monotonic : !llvm.ptr, f32
+  %0 = llvm.atomicrmw fadd %f32_ptr, %f32 monotonic : !ptr.ptr, f32
   // CHECK: atomicrmw fsub ptr %{{.*}}, float %{{.*}} monotonic
-  %1 = llvm.atomicrmw fsub %f32_ptr, %f32 monotonic : !llvm.ptr, f32
+  %1 = llvm.atomicrmw fsub %f32_ptr, %f32 monotonic : !ptr.ptr, f32
   // CHECK: atomicrmw fmax ptr %{{.*}}, float %{{.*}} monotonic
-  %2 = llvm.atomicrmw fmax %f32_ptr, %f32 monotonic : !llvm.ptr, f32
+  %2 = llvm.atomicrmw fmax %f32_ptr, %f32 monotonic : !ptr.ptr, f32
   // CHECK: atomicrmw fmin ptr %{{.*}}, float %{{.*}} monotonic
-  %3 = llvm.atomicrmw fmin %f32_ptr, %f32 monotonic : !llvm.ptr, f32
+  %3 = llvm.atomicrmw fmin %f32_ptr, %f32 monotonic : !ptr.ptr, f32
   // CHECK: atomicrmw xchg ptr %{{.*}}, float %{{.*}} monotonic
-  %4 = llvm.atomicrmw xchg %f32_ptr, %f32 monotonic : !llvm.ptr, f32
+  %4 = llvm.atomicrmw xchg %f32_ptr, %f32 monotonic : !ptr.ptr, f32
   // CHECK: atomicrmw add ptr %{{.*}}, i32 %{{.*}} acquire
-  %5 = llvm.atomicrmw add %i32_ptr, %i32 acquire : !llvm.ptr, i32
+  %5 = llvm.atomicrmw add %i32_ptr, %i32 acquire : !ptr.ptr, i32
   // CHECK: atomicrmw sub ptr %{{.*}}, i32 %{{.*}} release
-  %6 = llvm.atomicrmw sub %i32_ptr, %i32 release : !llvm.ptr, i32
+  %6 = llvm.atomicrmw sub %i32_ptr, %i32 release : !ptr.ptr, i32
   // CHECK: atomicrmw and ptr %{{.*}}, i32 %{{.*}} acq_rel
-  %7 = llvm.atomicrmw _and %i32_ptr, %i32 acq_rel : !llvm.ptr, i32
+  %7 = llvm.atomicrmw _and %i32_ptr, %i32 acq_rel : !ptr.ptr, i32
   // CHECK: atomicrmw nand ptr %{{.*}}, i32 %{{.*}} seq_cst
-  %8 = llvm.atomicrmw nand %i32_ptr, %i32 seq_cst : !llvm.ptr, i32
+  %8 = llvm.atomicrmw nand %i32_ptr, %i32 seq_cst : !ptr.ptr, i32
   // CHECK: atomicrmw or ptr %{{.*}}, i32 %{{.*}} monotonic
-  %9 = llvm.atomicrmw _or %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %9 = llvm.atomicrmw _or %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw xor ptr %{{.*}}, i32 %{{.*}} monotonic
-  %10 = llvm.atomicrmw _xor %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %10 = llvm.atomicrmw _xor %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw max ptr %{{.*}}, i32 %{{.*}} monotonic
-  %11 = llvm.atomicrmw max %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %11 = llvm.atomicrmw max %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw min ptr %{{.*}}, i32 %{{.*}} monotonic
-  %12 = llvm.atomicrmw min %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %12 = llvm.atomicrmw min %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw umax ptr %{{.*}}, i32 %{{.*}} monotonic
-  %13 = llvm.atomicrmw umax %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %13 = llvm.atomicrmw umax %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw umin ptr %{{.*}}, i32 %{{.*}} monotonic
-  %14 = llvm.atomicrmw umin %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %14 = llvm.atomicrmw umin %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw uinc_wrap ptr %{{.*}}, i32 %{{.*}} monotonic
-  %15 = llvm.atomicrmw uinc_wrap %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %15 = llvm.atomicrmw uinc_wrap %i32_ptr, %i32 monotonic : !ptr.ptr, i32
   // CHECK: atomicrmw udec_wrap ptr %{{.*}}, i32 %{{.*}} monotonic
-  %16 = llvm.atomicrmw udec_wrap %i32_ptr, %i32 monotonic : !llvm.ptr, i32
+  %16 = llvm.atomicrmw udec_wrap %i32_ptr, %i32 monotonic : !ptr.ptr, i32
 
   // CHECK: atomicrmw volatile
   // CHECK-SAME:  syncscope("singlethread")
   // CHECK-SAME:  align 8
-  %17 = llvm.atomicrmw volatile udec_wrap %i32_ptr, %i32 syncscope("singlethread") monotonic {alignment = 8 : i64} : !llvm.ptr, i32
+  %17 = llvm.atomicrmw volatile udec_wrap %i32_ptr, %i32 syncscope("singlethread") monotonic {alignment = 8 : i64} : !ptr.ptr, i32
   llvm.return
 }
 
 // CHECK-LABEL: @cmpxchg
-llvm.func @cmpxchg(%ptr : !llvm.ptr, %cmp : i32, %val: i32) {
+llvm.func @cmpxchg(%ptr : !ptr.ptr, %cmp : i32, %val: i32) {
   // CHECK: cmpxchg ptr %{{.*}}, i32 %{{.*}}, i32 %{{.*}} acq_rel monotonic
-  %0 = llvm.cmpxchg %ptr, %cmp, %val acq_rel monotonic : !llvm.ptr, i32
+  %0 = llvm.cmpxchg %ptr, %cmp, %val acq_rel monotonic : !ptr.ptr, i32
   // CHECK: %{{[0-9]+}} = extractvalue { i32, i1 } %{{[0-9]+}}, 0
   %1 = llvm.extractvalue %0[0] : !llvm.struct<(i32, i1)>
   // CHECK: %{{[0-9]+}} = extractvalue { i32, i1 } %{{[0-9]+}}, 1
@@ -1517,14 +1517,14 @@ llvm.func @cmpxchg(%ptr : !llvm.ptr, %cmp : i32, %val: i32) {
   // CHECK:  cmpxchg weak volatile
   // CHECK-SAME:  syncscope("singlethread")
   // CHECK-SAME:  align 8
-  %3 = llvm.cmpxchg weak volatile %ptr, %cmp, %val syncscope("singlethread") acq_rel monotonic {alignment = 8 : i64} : !llvm.ptr, i32
+  %3 = llvm.cmpxchg weak volatile %ptr, %cmp, %val syncscope("singlethread") acq_rel monotonic {alignment = 8 : i64} : !ptr.ptr, i32
   llvm.return
 }
 
-llvm.mlir.global external constant @_ZTIi() : !llvm.ptr
-llvm.func @foo(!llvm.ptr)
-llvm.func @vararg_foo(!llvm.ptr, ...)
-llvm.func @bar(!llvm.ptr) -> !llvm.ptr
+llvm.mlir.global external constant @_ZTIi() : !ptr.ptr
+llvm.func @foo(!ptr.ptr)
+llvm.func @vararg_foo(!ptr.ptr, ...)
+llvm.func @bar(!ptr.ptr) -> !ptr.ptr
 llvm.func @__gxx_personality_v0(...) -> i32
 
 // CHECK-LABEL: @invokeLandingpad
@@ -1532,13 +1532,13 @@ llvm.func @invokeLandingpad() -> i32 attributes { personality = @__gxx_personali
 // CHECK: %[[a1:[0-9]+]] = alloca i8
   %0 = llvm.mlir.constant(0 : i32) : i32
   %1 = llvm.mlir.constant(dense<0> : vector<1xi8>) : !llvm.array<1 x i8>
-  %2 = llvm.mlir.addressof @_ZTIi : !llvm.ptr
-  %4 = llvm.mlir.zero : !llvm.ptr
+  %2 = llvm.mlir.addressof @_ZTIi : !ptr.ptr
+  %4 = llvm.mlir.zero : !ptr.ptr
   %5 = llvm.mlir.constant(1 : i32) : i32
-  %6 = llvm.alloca %5 x i8 : (i32) -> !llvm.ptr
+  %6 = llvm.alloca %5 x i8 : (i32) -> !ptr.ptr
 // CHECK: invoke void @foo(ptr %[[a1]])
 // CHECK-NEXT: to label %[[normal:[0-9]+]] unwind label %[[unwind:[0-9]+]]
-  llvm.invoke @foo(%6) to ^bb2 unwind ^bb1 : (!llvm.ptr) -> ()
+  llvm.invoke @foo(%6) to ^bb2 unwind ^bb1 : (!ptr.ptr) -> ()
 
 // CHECK: [[unwind]]:
 ^bb1:
@@ -1546,7 +1546,7 @@ llvm.func @invokeLandingpad() -> i32 attributes { personality = @__gxx_personali
 // CHECK-NEXT:             catch ptr null
 // CHECK-NEXT:             catch ptr @_ZTIi
 // CHECK-NEXT:             filter [1 x i8] zeroinitializer
-  %7 = llvm.landingpad (catch %4 : !llvm.ptr) (catch %2 : !llvm.ptr) (filter %1 : !llvm.array<1 x i8>) : !llvm.struct<(ptr, i32)>
+  %7 = llvm.landingpad (catch %4 : !ptr.ptr) (catch %2 : !ptr.ptr) (filter %1 : !llvm.array<1 x i8>) : !llvm.struct<(ptr, i32)>
 // CHECK: br label %[[final:[0-9]+]]
   llvm.br ^bb3
 
@@ -1559,18 +1559,18 @@ llvm.func @invokeLandingpad() -> i32 attributes { personality = @__gxx_personali
 // CHECK-NEXT: %{{[0-9]+}} = invoke ptr @bar(ptr %[[a1]])
 // CHECK-NEXT:          to label %[[normal]] unwind label %[[unwind]]
 ^bb3:	// pred: ^bb1
-  %8 = llvm.invoke @bar(%6) to ^bb2 unwind ^bb1 : (!llvm.ptr) -> !llvm.ptr
+  %8 = llvm.invoke @bar(%6) to ^bb2 unwind ^bb1 : (!ptr.ptr) -> !ptr.ptr
 
 // CHECK: [[BB4:.*]]:
 // CHECK: invoke void (ptr, ...) @vararg_foo(ptr %[[a1]], i32 0)
 ^bb4:
-  llvm.invoke @vararg_foo(%6, %0) to ^bb2 unwind ^bb1 vararg(!llvm.func<void (ptr, ...)>) : (!llvm.ptr, i32) -> ()
+  llvm.invoke @vararg_foo(%6, %0) to ^bb2 unwind ^bb1 vararg(!llvm.func<void (ptr, ...)>) : (!ptr.ptr, i32) -> ()
 
 // CHECK: [[BB5:.*]]:
 // CHECK: invoke void (ptr, ...) undef(ptr %[[a1]], i32 0)
 ^bb5:
-  %9 = llvm.mlir.undef : !llvm.ptr
-  llvm.invoke %9(%6, %0) to ^bb2 unwind ^bb1 vararg(!llvm.func<void (ptr, ...)>) : !llvm.ptr, (!llvm.ptr, i32) -> ()
+  %9 = llvm.mlir.undef : !ptr.ptr
+  llvm.invoke %9(%6, %0) to ^bb2 unwind ^bb1 vararg(!llvm.func<void (ptr, ...)>) : !ptr.ptr, (!ptr.ptr, i32) -> ()
 }
 
 // -----
@@ -1580,7 +1580,7 @@ llvm.func @__gxx_personality_v0(...) -> i32
 
 // CHECK-LABEL: @invoke_result
 // CHECK-SAME: %[[a0:[0-9]+]]
-llvm.func @invoke_result(%arg0 : !llvm.ptr) attributes { personality = @__gxx_personality_v0 } {
+llvm.func @invoke_result(%arg0 : !ptr.ptr) attributes { personality = @__gxx_personality_v0 } {
 // CHECK: %[[a1:[0-9]+]] = invoke i8 @foo()
 // CHECK-NEXT: to label %[[normal:[0-9]+]] unwind label %[[unwind:[0-9]+]]
     %0 = llvm.invoke @foo() to ^bb1 unwind ^bb2 : () -> i8
@@ -1589,7 +1589,7 @@ llvm.func @invoke_result(%arg0 : !llvm.ptr) attributes { personality = @__gxx_pe
 // CHECK-NEXT: store i8 %[[a1]], ptr %[[a0]]
 // CHECK-NEXT: ret void
 ^bb1:
-    llvm.store %0, %arg0 : i8, !llvm.ptr
+    llvm.store %0, %arg0 : i8, !ptr.ptr
     llvm.return
 
 // CHECK: [[unwind]]:
@@ -1771,17 +1771,17 @@ llvm.func @address_taken() {
   llvm.return
 }
 
-llvm.mlir.global internal constant @taker_of_address() : !llvm.ptr {
-  %0 = llvm.mlir.addressof @address_taken : !llvm.ptr
-  llvm.return %0 : !llvm.ptr
+llvm.mlir.global internal constant @taker_of_address() : !ptr.ptr {
+  %0 = llvm.mlir.addressof @address_taken : !ptr.ptr
+  llvm.return %0 : !ptr.ptr
 }
 
 // -----
 
 // CHECK: @forward_use_of_address = linkonce global ptr @address_declared_after_use
-llvm.mlir.global linkonce @forward_use_of_address() : !llvm.ptr {
-  %0 = llvm.mlir.addressof @address_declared_after_use : !llvm.ptr
-  llvm.return %0 : !llvm.ptr
+llvm.mlir.global linkonce @forward_use_of_address() : !ptr.ptr {
+  %0 = llvm.mlir.addressof @address_declared_after_use : !ptr.ptr
+  llvm.return %0 : !ptr.ptr
 }
 
 llvm.mlir.global linkonce @address_declared_after_use() : f32
@@ -1789,14 +1789,14 @@ llvm.mlir.global linkonce @address_declared_after_use() : f32
 // -----
 
 // CHECK: @take_self_address = linkonce global { i32, ptr } {{.*}} ptr @take_self_address
-llvm.mlir.global linkonce @take_self_address() : !llvm.struct<(i32, !llvm.ptr)> {
+llvm.mlir.global linkonce @take_self_address() : !llvm.struct<(i32, !ptr.ptr)> {
   %z32 = llvm.mlir.constant(0 : i32) : i32
-  %0 = llvm.mlir.undef : !llvm.struct<(i32, !llvm.ptr)>
-  %1 = llvm.mlir.addressof @take_self_address : !llvm.ptr
-  %2 = llvm.getelementptr %1[%z32, 0] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.struct<(i32, !llvm.ptr)>
-  %3 = llvm.insertvalue %z32, %0[0] : !llvm.struct<(i32, !llvm.ptr)>
-  %4 = llvm.insertvalue %2, %3[1] : !llvm.struct<(i32, !llvm.ptr)>
-  llvm.return %4 : !llvm.struct<(i32, !llvm.ptr)>
+  %0 = llvm.mlir.undef : !llvm.struct<(i32, !ptr.ptr)>
+  %1 = llvm.mlir.addressof @take_self_address : !ptr.ptr
+  %2 = llvm.getelementptr %1[%z32, 0] : (!ptr.ptr, i32) -> !ptr.ptr, !llvm.struct<(i32, !ptr.ptr)>
+  %3 = llvm.insertvalue %z32, %0[0] : !llvm.struct<(i32, !ptr.ptr)>
+  %4 = llvm.insertvalue %2, %3[1] : !llvm.struct<(i32, !ptr.ptr)>
+  llvm.return %4 : !llvm.struct<(i32, !ptr.ptr)>
 }
 
 // -----
@@ -1881,11 +1881,11 @@ llvm.func @invoke_branch_weights() -> i32 attributes {personality = @__gxx_perso
 llvm.func @volatile_store_and_load() {
   %val = llvm.mlir.constant(5 : i32) : i32
   %size = llvm.mlir.constant(1 : i64) : i64
-  %0 = llvm.alloca %size x i32 : (i64) -> (!llvm.ptr)
+  %0 = llvm.alloca %size x i32 : (i64) -> (!ptr.ptr)
   // CHECK: store volatile i32 5, ptr %{{.*}}
-  llvm.store volatile %val, %0 : i32, !llvm.ptr
+  llvm.store volatile %val, %0 : i32, !ptr.ptr
   // CHECK: %{{.*}} = load volatile i32, ptr %{{.*}}
-  %1 = llvm.load volatile %0: !llvm.ptr -> i32
+  %1 = llvm.load volatile %0: !ptr.ptr -> i32
   llvm.return
 }
 
@@ -1895,11 +1895,11 @@ llvm.func @volatile_store_and_load() {
 llvm.func @nontemporal_store_and_load() {
   %val = llvm.mlir.constant(5 : i32) : i32
   %size = llvm.mlir.constant(1 : i64) : i64
-  %0 = llvm.alloca %size x i32 : (i64) -> (!llvm.ptr)
+  %0 = llvm.alloca %size x i32 : (i64) -> (!ptr.ptr)
   // CHECK: !nontemporal ![[NODE:[0-9]+]]
-  llvm.store %val, %0 {nontemporal} : i32, !llvm.ptr
+  llvm.store %val, %0 {nontemporal} : i32, !ptr.ptr
   // CHECK: !nontemporal ![[NODE]]
-  %1 = llvm.load %0 {nontemporal} : !llvm.ptr -> i32
+  %1 = llvm.load %0 {nontemporal} : !ptr.ptr -> i32
   llvm.return
 }
 
@@ -1907,20 +1907,20 @@ llvm.func @nontemporal_store_and_load() {
 
 // -----
 
-llvm.func @atomic_store_and_load(%ptr : !llvm.ptr) {
+llvm.func @atomic_store_and_load(%ptr : !ptr.ptr) {
   // CHECK: load atomic
   // CHECK-SAME:  acquire, align 4
-  %1 = llvm.load %ptr atomic acquire {alignment = 4 : i64} : !llvm.ptr -> f32
+  %1 = llvm.load %ptr atomic acquire {alignment = 4 : i64} : !ptr.ptr -> f32
   // CHECK: load atomic
   // CHECK-SAME:  syncscope("singlethread") acquire, align 4
-  %2 = llvm.load %ptr atomic syncscope("singlethread") acquire {alignment = 4 : i64} : !llvm.ptr -> f32
+  %2 = llvm.load %ptr atomic syncscope("singlethread") acquire {alignment = 4 : i64} : !ptr.ptr -> f32
 
   // CHECK: store atomic
   // CHECK-SAME:  release, align 4
-  llvm.store %1, %ptr atomic release {alignment = 4 : i64} : f32, !llvm.ptr
+  llvm.store %1, %ptr atomic release {alignment = 4 : i64} : f32, !ptr.ptr
   // CHECK: store atomic
   // CHECK-SAME:  syncscope("singlethread") release, align 4
-  llvm.store %2, %ptr atomic syncscope("singlethread") release {alignment = 4 : i64} : f32, !llvm.ptr
+  llvm.store %2, %ptr atomic syncscope("singlethread") release {alignment = 4 : i64} : f32, !ptr.ptr
   llvm.return
 }
 
@@ -2235,17 +2235,17 @@ llvm.func @vararg_function(%arg0: i32, ...) {
   %0 = llvm.mlir.constant(1 : i32) : i32
   %1 = llvm.mlir.constant(1 : i32) : i32
   // CHECK: %[[ALLOCA0:.+]] = alloca %struct.va_list, align 8
-  %2 = llvm.alloca %1 x !llvm.struct<"struct.va_list", (ptr)> {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %2 = llvm.alloca %1 x !llvm.struct<"struct.va_list", (ptr)> {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK: call void @llvm.va_start(ptr %[[ALLOCA0]])
-  llvm.intr.vastart %2 : !llvm.ptr
+  llvm.intr.vastart %2 : !ptr.ptr
   // CHECK: %[[ALLOCA1:.+]] = alloca ptr, align 8
-  %4 = llvm.alloca %0 x !llvm.ptr {alignment = 8 : i64} : (i32) -> !llvm.ptr
+  %4 = llvm.alloca %0 x !ptr.ptr {alignment = 8 : i64} : (i32) -> !ptr.ptr
   // CHECK: call void @llvm.va_copy(ptr %[[ALLOCA1]], ptr %[[ALLOCA0]])
-  llvm.intr.vacopy %2 to %4 : !llvm.ptr, !llvm.ptr
+  llvm.intr.vacopy %2 to %4 : !ptr.ptr, !ptr.ptr
   // CHECK: call void @llvm.va_end(ptr %[[ALLOCA1]])
   // CHECK: call void @llvm.va_end(ptr %[[ALLOCA0]])
-  llvm.intr.vaend %4 : !llvm.ptr
-  llvm.intr.vaend %2 : !llvm.ptr
+  llvm.intr.vaend %4 : !ptr.ptr
+  llvm.intr.vaend %2 : !ptr.ptr
   // CHECK: ret void
   llvm.return
 }
@@ -2253,7 +2253,7 @@ llvm.func @vararg_function(%arg0: i32, ...) {
 // -----
 
 // CHECK: declare void @readonly_function([[PTR:.+]] readonly)
-llvm.func @readonly_function(%arg0: !llvm.ptr {llvm.readonly})
+llvm.func @readonly_function(%arg0: !ptr.ptr {llvm.readonly})
 
 // -----
 
@@ -2316,11 +2316,11 @@ llvm.mlir.global linkonce @partially_zeroinit_aggregate() : !llvm.struct<(i32, i
 llvm.func @zeroinit_complex_local_aggregate() {
   // CHECK: %[[#VAR:]] = alloca [1000 x { i32, [3 x { double, <4 x ptr>, [2 x ptr] }], [6 x ptr] }], i64 1, align 32
   %0 = llvm.mlir.constant(1 : i64) : i64
-  %1 = llvm.alloca %0 x !llvm.array<1000 x !llvm.struct<(i32, !llvm.array<3 x !llvm.struct<(f64, !llvm.vec<4 x ptr>, !llvm.array<2 x ptr>)>>, !llvm.array<6 x ptr>)>> : (i64) -> !llvm.ptr
+  %1 = llvm.alloca %0 x !llvm.array<1000 x !llvm.struct<(i32, !llvm.array<3 x !llvm.struct<(f64, !llvm.vec<4 x ptr>, !llvm.array<2 x ptr>)>>, !llvm.array<6 x ptr>)>> : (i64) -> !ptr.ptr
 
   // CHECK: store [1000 x { i32, [3 x { double, <4 x ptr>, [2 x ptr] }], [6 x ptr] }] zeroinitializer, ptr %[[#VAR]], align 32
   %2 = llvm.mlir.zero : !llvm.array<1000 x !llvm.struct<(i32, !llvm.array<3 x !llvm.struct<(f64, !llvm.vec<4 x ptr>, !llvm.array<2 x ptr>)>>, !llvm.array<6 x ptr>)>>
-  llvm.store %2, %1 : !llvm.array<1000 x !llvm.struct<(i32, !llvm.array<3 x !llvm.struct<(f64, !llvm.vec<4 x ptr>, !llvm.array<2 x ptr>)>>, !llvm.array<6 x ptr>)>>, !llvm.ptr
+  llvm.store %2, %1 : !llvm.array<1000 x !llvm.struct<(i32, !llvm.array<3 x !llvm.struct<(f64, !llvm.vec<4 x ptr>, !llvm.array<2 x ptr>)>>, !llvm.array<6 x ptr>)>>, !ptr.ptr
 
   llvm.return
 }

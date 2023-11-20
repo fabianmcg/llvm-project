@@ -65,7 +65,7 @@ private:
   void initializeCachedTypes() {
     llvmFloatType = Float32Type::get(&getContext());
     llvmVoidType = LLVM::LLVMVoidType::get(&getContext());
-    llvmPointerType = LLVM::LLVMPointerType::get(&getContext());
+    llvmPointerType = ptr::PtrType::get(&getContext());
     llvmInt32Type = IntegerType::get(&getContext(), 32);
     llvmInt64Type = IntegerType::get(&getContext(), 64);
   }

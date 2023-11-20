@@ -89,13 +89,13 @@ llvm.func @func_no_debug() {
 llvm.func @func_with_debug(%arg: i64) {
   // CHECK: %[[ALLOC:.*]] = alloca
   %allocCount = llvm.mlir.constant(1 : i32) : i32
-  %alloc = llvm.alloca %allocCount x i64 : (i32) -> !llvm.ptr
+  %alloc = llvm.alloca %allocCount x i64 : (i32) -> !ptr.ptr
 
   // CHECK: call void @llvm.dbg.value(metadata i64 %[[ARG]], metadata ![[VAR_LOC:[0-9]+]], metadata !DIExpression(DW_OP_LLVM_fragment, 8, 8))
   // CHECK: call void @llvm.dbg.declare(metadata ptr %[[ALLOC]], metadata ![[ADDR_LOC:[0-9]+]], metadata !DIExpression(DW_OP_LLVM_fragment, 0, 8))
   // CHECK: call void @llvm.dbg.value(metadata i64 %[[ARG]], metadata ![[NO_NAME_VAR:[0-9]+]], metadata !DIExpression())
   llvm.intr.dbg.value #variable #llvm.di_expr<[4096, 8, 8]> = %arg : i64
-  llvm.intr.dbg.declare #variableAddr #llvm.di_expr<[4096, 0, 8]> = %alloc : !llvm.ptr
+  llvm.intr.dbg.declare #variableAddr #llvm.di_expr<[4096, 0, 8]> = %alloc : !ptr.ptr
   llvm.intr.dbg.value #noNameVariable = %arg : i64
 
   // CHECK: call void @func_no_debug(), !dbg ![[CALLSITE_LOC:[0-9]+]]
@@ -254,11 +254,11 @@ llvm.func @func_without_subprogram(%0 : i32) {
 // CHECK-LABEL: define i32 @dbg_intrinsics_with_no_location(
 llvm.func @dbg_intrinsics_with_no_location(%arg0: i32) -> (i32) {
   %allocCount = llvm.mlir.constant(1 : i32) : i32
-  %alloc = llvm.alloca %allocCount x i64 : (i32) -> !llvm.ptr
+  %alloc = llvm.alloca %allocCount x i64 : (i32) -> !ptr.ptr
   // CHECK-NOT: @llvm.dbg.value
   llvm.intr.dbg.value #di_local_variable = %arg0 : i32
   // CHECK-NOT: @llvm.dbg.declare
-  llvm.intr.dbg.declare #declared_var = %alloc : !llvm.ptr
+  llvm.intr.dbg.declare #declared_var = %alloc : !ptr.ptr
   // CHECK-NOT: @llvm.dbg.label
   llvm.intr.dbg.label #di_label
   llvm.return %arg0 : i32

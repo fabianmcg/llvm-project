@@ -450,7 +450,7 @@ struct ConvertNVGPUToNVVMPass
           nvgpu::getMBarrierMemrefType(rewriter.getContext(), type));
     });
     converter.addConversion([&](nvgpu::TensorMapDescriptorType type) -> Type {
-      return LLVM::LLVMPointerType::get(type.getContext());
+      return ptr::PtrType::get(type.getContext());
     });
     populateNVGPUToNVVMConversionPatterns(converter, patterns);
     LLVMConversionTarget target(getContext());
@@ -666,7 +666,7 @@ struct NVGPUAsyncCopyLowering
     Value scrPtr = getStridedElementPtr(loc, srcMemrefType, adaptor.getSrc(),
                                         adaptor.getSrcIndices(), rewriter);
     // Intrinsics takes a global pointer so we need an address space cast.
-    auto srcPointerGlobalType = LLVM::LLVMPointerType::get(
+    auto srcPointerGlobalType = ptr::PtrType::get(
         op->getContext(), NVVM::NVVMMemorySpace::kGlobalMemorySpace);
     scrPtr = b.create<LLVM::AddrSpaceCastOp>(srcPointerGlobalType, scrPtr);
     int64_t dstElements = adaptor.getDstElements().getZExtValue();
@@ -1118,7 +1118,7 @@ struct NVGPUTmaCreateDescriptorOpLowering
   matchAndRewrite(nvgpu::TmaCreateDescriptorOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     ImplicitLocOpBuilder b(op->getLoc(), rewriter);
-    auto llvmPointerType = LLVM::LLVMPointerType::get(op->getContext());
+    auto llvmPointerType = ptr::PtrType::get(op->getContext());
     Type llvmInt64Type = IntegerType::get(op->getContext(), 64);
 
     Value tensorElementType =

@@ -300,18 +300,18 @@ llvm.func @rocdl.wmma(%arg0 : vector<8xf32>, %arg1 : vector<16 x f16>, %arg2 : v
   llvm.return %r0 : vector<8xf32>
 }
 
-llvm.func @rocdl.make.buffer.rsrc(%ptr : !llvm.ptr,
+llvm.func @rocdl.make.buffer.rsrc(%ptr : !ptr.ptr,
                                   %stride : i16,
                                   %numRecords : i32,
-                                  %flags : i32) -> !llvm.ptr<8> {
+                                  %flags : i32) -> !ptr.ptr<8> {
   // CHECK-LABEL: rocdl.make.buffer.rsrc
   // CHECK: %[[rsrc:.*]] = call ptr addrspace(8) @llvm.amdgcn.make.buffer.rsrc.p0(ptr %{{.*}}, i16 %{{.*}}, i32 %{{.*}}, i32 %{{.*}})
   // CHECK: ret ptr addrspace(8) %[[rsrc]]
-  %rsrc = rocdl.make.buffer.rsrc %ptr, %stride, %numRecords, %flags : !llvm.ptr to !llvm.ptr<8>
-  llvm.return %rsrc : !llvm.ptr<8>
+  %rsrc = rocdl.make.buffer.rsrc %ptr, %stride, %numRecords, %flags : !ptr.ptr to !ptr.ptr<8>
+  llvm.return %rsrc : !ptr.ptr<8>
 }
 
-llvm.func @rocdl.raw.ptr.buffer(%rsrc : !llvm.ptr<8>,
+llvm.func @rocdl.raw.ptr.buffer(%rsrc : !ptr.ptr<8>,
                         %offset : i32, %soffset : i32,
                         %vdata1 : i32,
                         %vdata2 : vector<2xi32>,
@@ -337,7 +337,7 @@ llvm.func @rocdl.raw.ptr.buffer(%rsrc : !llvm.ptr<8>,
   llvm.return
 }
 
-llvm.func @rocdl.raw.ptr.buffer.atomic.f32(%rsrc : !llvm.ptr<8>,
+llvm.func @rocdl.raw.ptr.buffer.atomic.f32(%rsrc : !ptr.ptr<8>,
                         %offset : i32, %soffset : i32,
                         %vdata1 : f32) {
   %aux = llvm.mlir.constant(0 : i32) : i32
@@ -351,7 +351,7 @@ llvm.func @rocdl.raw.ptr.buffer.atomic.f32(%rsrc : !llvm.ptr<8>,
   llvm.return
 }
 
-llvm.func @rocdl.raw.ptr.buffer.atomic.i32(%rsrc : !llvm.ptr<8>,
+llvm.func @rocdl.raw.ptr.buffer.atomic.i32(%rsrc : !ptr.ptr<8>,
                         %offset : i32, %soffset : i32,
                         %vdata1 : i32) {
   %aux = llvm.mlir.constant(0 : i32) : i32
@@ -365,7 +365,7 @@ llvm.func @rocdl.raw.ptr.buffer.atomic.i32(%rsrc : !llvm.ptr<8>,
   llvm.return
 }
 
-llvm.func @rocdl.raw.ptr.buffer.atomic.cmpswap(%rsrc : !llvm.ptr<8>,
+llvm.func @rocdl.raw.ptr.buffer.atomic.cmpswap(%rsrc : !ptr.ptr<8>,
                         %offset : i32, %soffset : i32,
                         %src : i32, %cmp : i32) -> i32 {
   %aux = llvm.mlir.constant(0 : i32) : i32

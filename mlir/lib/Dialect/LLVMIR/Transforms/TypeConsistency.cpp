@@ -79,9 +79,9 @@ static void insertFieldIndirection(MemOp op, PatternRewriter &rewriter,
   rewriter.setInsertionPointAfterValue(op.getAddr());
   SmallVector<GEPArg> firstTypeIndices{0, 0};
 
-  Value properPtr = rewriter.create<GEPOp>(
-      op->getLoc(), LLVM::LLVMPointerType::get(op.getContext()), elemType,
-      op.getAddr(), firstTypeIndices);
+  Value properPtr =
+      rewriter.create<GEPOp>(op->getLoc(), ptr::PtrType::get(op.getContext()),
+                             elemType, op.getAddr(), firstTypeIndices);
 
   rewriter.updateRootInPlace(op,
                              [&]() { op.getAddrMutable().assign(properPtr); });
@@ -333,9 +333,9 @@ CanonicalizeAlignedGep::matchAndRewrite(GEPOp gep,
           findIndicesForOffset(layout, *typeHint, *desiredOffset, newIndices)))
     return failure();
 
-  rewriter.replaceOpWithNewOp<GEPOp>(
-      gep, LLVM::LLVMPointerType::get(getContext()), *typeHint, gep.getBase(),
-      newIndices, gep.getInbounds());
+  rewriter.replaceOpWithNewOp<GEPOp>(gep, ptr::PtrType::get(getContext()),
+                                     *typeHint, gep.getBase(), newIndices,
+                                     gep.getInbounds());
 
   return success();
 }

@@ -89,7 +89,7 @@ private:
   LogicalResult tryToEmplaceAlignmentEntry(Type type, StringRef token);
 
   /// Adds a pointer alignment entry if there is none yet.
-  LogicalResult tryToEmplacePointerAlignmentEntry(LLVMPointerType type,
+  LogicalResult tryToEmplacePointerAlignmentEntry(ptr::PtrType type,
                                                   StringRef token);
 
   /// Adds an endianness entry if there is none yet.

@@ -23,9 +23,9 @@ class LLVMTypeConverter;
 class MemRefType;
 class UnrankedMemRefType;
 
-namespace LLVM {
-class LLVMPointerType;
-} // namespace LLVM
+namespace ptr {
+class PtrType;
+} // namespace ptr
 
 /// Helper class to produce LLVM dialect operations extracting or inserting
 /// elements of a MemRef descriptor. Wraps a Value pointing to the descriptor.
@@ -88,7 +88,7 @@ public:
   Type getIndexType() { return indexType; };
 
   /// Returns the (LLVM) pointer type this descriptor contains.
-  LLVM::LLVMPointerType getElementPtrType();
+  ptr::PtrType getElementPtrType();
 
   /// Builds IR for getting the start address of the buffer represented
   /// by this memref:
@@ -206,24 +206,20 @@ public:
 
   /// Builds IR extracting the allocated pointer from the descriptor.
   static Value allocatedPtr(OpBuilder &builder, Location loc,
-                            Value memRefDescPtr,
-                            LLVM::LLVMPointerType elemPtrType);
+                            Value memRefDescPtr, ptr::PtrType elemPtrType);
   /// Builds IR inserting the allocated pointer into the descriptor.
   static void setAllocatedPtr(OpBuilder &builder, Location loc,
-                              Value memRefDescPtr,
-                              LLVM::LLVMPointerType elemPtrType,
+                              Value memRefDescPtr, ptr::PtrType elemPtrType,
                               Value allocatedPtr);
 
   /// Builds IR extracting the aligned pointer from the descriptor.
   static Value alignedPtr(OpBuilder &builder, Location loc,
                           const LLVMTypeConverter &typeConverter,
-                          Value memRefDescPtr,
-                          LLVM::LLVMPointerType elemPtrType);
+                          Value memRefDescPtr, ptr::PtrType elemPtrType);
   /// Builds IR inserting the aligned pointer into the descriptor.
   static void setAlignedPtr(OpBuilder &builder, Location loc,
                             const LLVMTypeConverter &typeConverter,
-                            Value memRefDescPtr,
-                            LLVM::LLVMPointerType elemPtrType,
+                            Value memRefDescPtr, ptr::PtrType elemPtrType,
                             Value alignedPtr);
 
   /// Builds IR for getting the pointer to the offset's location.
@@ -231,23 +227,21 @@ public:
   /// of a struct {index, index[rank], index[rank]}.
   static Value offsetBasePtr(OpBuilder &builder, Location loc,
                              const LLVMTypeConverter &typeConverter,
-                             Value memRefDescPtr,
-                             LLVM::LLVMPointerType elemPtrType);
+                             Value memRefDescPtr, ptr::PtrType elemPtrType);
   /// Builds IR extracting the offset from the descriptor.
   static Value offset(OpBuilder &builder, Location loc,
                       const LLVMTypeConverter &typeConverter,
-                      Value memRefDescPtr, LLVM::LLVMPointerType elemPtrType);
+                      Value memRefDescPtr, ptr::PtrType elemPtrType);
   /// Builds IR inserting the offset into the descriptor.
   static void setOffset(OpBuilder &builder, Location loc,
                         const LLVMTypeConverter &typeConverter,
-                        Value memRefDescPtr, LLVM::LLVMPointerType elemPtrType,
+                        Value memRefDescPtr, ptr::PtrType elemPtrType,
                         Value offset);
 
   /// Builds IR extracting the pointer to the first element of the size array.
   static Value sizeBasePtr(OpBuilder &builder, Location loc,
                            const LLVMTypeConverter &typeConverter,
-                           Value memRefDescPtr,
-                           LLVM::LLVMPointerType elemPtrType);
+                           Value memRefDescPtr, ptr::PtrType elemPtrType);
   /// Builds IR extracting the size[index] from the descriptor.
   static Value size(OpBuilder &builder, Location loc,
                     const LLVMTypeConverter &typeConverter, Value sizeBasePtr,

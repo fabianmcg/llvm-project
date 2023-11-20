@@ -97,7 +97,7 @@ private:
 
   /// Translates the given pointer type.
   Type translate(llvm::PointerType *type) {
-    return LLVM::LLVMPointerType::get(&context, type->getAddressSpace());
+    return ptr::PtrType::get(&context, type->getAddressSpace());
   }
 
   /// Translates the given structure type.

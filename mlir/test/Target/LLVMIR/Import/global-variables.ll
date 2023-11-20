@@ -13,7 +13,7 @@
 @global_float = external global double, align 8
 
 ; CHECK:  llvm.mlir.global internal constant @address_before
-; CHECK:  = llvm.mlir.addressof @global_int : !llvm.ptr
+; CHECK:  = llvm.mlir.addressof @global_int : !ptr.ptr
 @address_before = internal constant ptr @global_int
 
 ; CHECK:  llvm.mlir.global external @global_int
@@ -21,7 +21,7 @@
 @global_int = external global i32, align 8
 
 ; CHECK:  llvm.mlir.global internal constant @address_after
-; CHECK:  = llvm.mlir.addressof @global_int : !llvm.ptr
+; CHECK:  = llvm.mlir.addressof @global_int : !ptr.ptr
 @address_after = internal constant ptr @global_int
 
 ; CHECK:  llvm.mlir.global internal @global_string("hello world")
@@ -32,11 +32,11 @@
 @global_vector = external global <8 x i32>
 
 ; CHECK: llvm.mlir.global internal constant @global_gep_const_expr
-; CHECK-SAME:  {addr_space = 0 : i32, dso_local} : !llvm.ptr {
-; CHECK-DAG:  %[[ADDR:[0-9]+]] = llvm.mlir.addressof @global_int : !llvm.ptr
+; CHECK-SAME:  {addr_space = 0 : i32, dso_local} : !ptr.ptr {
+; CHECK-DAG:  %[[ADDR:[0-9]+]] = llvm.mlir.addressof @global_int : !ptr.ptr
 ; CHECK-DAG:  %[[IDX:[0-9]+]] = llvm.mlir.constant(2 : i32) : i32
-; CHECK-DAG:  %[[GEP:[0-9]+]] = llvm.getelementptr %[[ADDR]][%[[IDX]]] : (!llvm.ptr, i32) -> !llvm.ptr
-; CHECK-DAG   llvm.return %[[GEP]] : !llvm.ptr
+; CHECK-DAG:  %[[GEP:[0-9]+]] = llvm.getelementptr %[[ADDR]][%[[IDX]]] : (!ptr.ptr, i32) -> !ptr.ptr
+; CHECK-DAG   llvm.return %[[GEP]] : !ptr.ptr
 @global_gep_const_expr = internal constant ptr getelementptr (i32, ptr @global_int, i32 2)
 
 ; // -----

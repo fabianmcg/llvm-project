@@ -1805,7 +1805,7 @@ static void genMapInfos(llvm::IRBuilderBase &builder,
       if (mapInfoOp.getMapCaptureType().value() ==
               mlir::omp::VariableCaptureKind::ByCopy &&
           !(mapInfoOp.getVarType().has_value() &&
-            mapInfoOp.getVarType()->isa<LLVM::LLVMPointerType>()))
+            mapInfoOp.getVarType()->isa<ptr::PtrType>()))
         mapFlag |= llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_LITERAL;
 
     combinedInfo.BasePointers.emplace_back(mapData.BasePointers[i]);
@@ -1829,7 +1829,7 @@ static void genMapInfos(llvm::IRBuilderBase &builder,
   auto addDevInfos = [&, fail](auto devOperands, auto devOpType) -> void {
     for (const auto &devOp : devOperands) {
       // TODO: Only LLVMPointerTypes are handled.
-      if (!devOp.getType().template isa<LLVM::LLVMPointerType>())
+      if (!devOp.getType().template isa<ptr::PtrType>())
         return fail();
 
       llvm::Value *mapOpValue = moduleTranslation.lookupValue(devOp);

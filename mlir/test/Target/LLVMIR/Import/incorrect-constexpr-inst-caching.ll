@@ -6,7 +6,7 @@
 
 %my_struct = type {i32, ptr}
 ; CHECK-DAG: llvm.mlir.constant(8 : i32) : i32
-; CHECK-DAG: llvm.mlir.addressof @str0 : !llvm.ptr
+; CHECK-DAG: llvm.mlir.addressof @str0 : !ptr.ptr
 ; CHECK-DAG: llvm.mlir.constant(0 : i32) : i32
 ; CHECK-DAG: llvm.mlir.constant(1 : i32) : i32
 ; CHECK-DAG: llvm.getelementptr
@@ -14,7 +14,7 @@
 ; CHECK-DAG: llvm.insertvalue
 ; CHECK-DAG: llvm.insertvalue
 ; CHECK-DAG: llvm.mlir.constant(7 : i32) : i32
-; CHECK-DAG: llvm.mlir.addressof @str1 : !llvm.ptr
+; CHECK-DAG: llvm.mlir.addressof @str1 : !ptr.ptr
 ; CHECK-DAG: llvm.mlir.constant(2 : i32) : i32
 ; CHECK-DAG: llvm.mlir.constant(3 : i32) : i32
 ; CHECK-DAG: llvm.getelementptr

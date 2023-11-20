@@ -71,9 +71,9 @@ public:
               return llvm::Type::getMetadataTy(context);
             })
             .Case<LLVM::LLVMArrayType, IntegerType, LLVM::LLVMFunctionType,
-                  LLVM::LLVMPointerType, LLVM::LLVMStructType,
-                  LLVM::LLVMFixedVectorType, LLVM::LLVMScalableVectorType,
-                  VectorType, LLVM::LLVMTargetExtType>(
+                  ptr::PtrType, LLVM::LLVMStructType, LLVM::LLVMFixedVectorType,
+                  LLVM::LLVMScalableVectorType, VectorType,
+                  LLVM::LLVMTargetExtType>(
                 [this](auto type) { return this->translate(type); })
             .Default([](Type t) -> llvm::Type * {
               llvm_unreachable("unknown LLVM dialect type");
@@ -105,7 +105,7 @@ private:
   }
 
   /// Translates the given pointer type.
-  llvm::Type *translate(LLVM::LLVMPointerType type) {
+  llvm::Type *translate(ptr::PtrType type) {
     return llvm::PointerType::get(context, type.getAddressSpace());
   }
 

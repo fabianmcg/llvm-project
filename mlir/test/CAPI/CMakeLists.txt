@@ -42,6 +42,7 @@ _add_capi_test_executable(mlir-capi-llvm-test
   LINK_LIBS PRIVATE
     MLIRCAPIIR
     MLIRCAPILLVM
+    MLIRCAPIPtr
     MLIRCAPIRegisterEverything
 )
 

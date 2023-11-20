@@ -19,6 +19,7 @@ add_mlir_dialect_library(MLIRLLVMDialect
   MLIRLLVMIntrinsicOpsIncGen
   MLIRLLVMInterfacesIncGen
   MLIROpenMPOpsIncGen
+  MLIRPtrOpsIncGen
   intrinsics_gen
 
   LINK_COMPONENTS
@@ -38,6 +39,7 @@ add_mlir_dialect_library(MLIRLLVMDialect
   MLIRMemorySlotInterfaces
   MLIRSideEffectInterfaces
   MLIRSupport
+  MLIRPtrDialect
   )
 
 add_mlir_dialect_library(MLIRNVVMDialect

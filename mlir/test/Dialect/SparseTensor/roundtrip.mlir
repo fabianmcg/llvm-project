@@ -3,11 +3,11 @@
 #SparseVector = #sparse_tensor.encoding<{map = (d0) -> (d0 : compressed)}>
 
 // CHECK-LABEL: func @sparse_new(
-// CHECK-SAME: %[[A:.*]]: !llvm.ptr)
-//       CHECK: %[[T:.*]] = sparse_tensor.new %[[A]] : !llvm.ptr to tensor<128xf64, #{{.*}}>
+// CHECK-SAME: %[[A:.*]]: !ptr.ptr)
+//       CHECK: %[[T:.*]] = sparse_tensor.new %[[A]] : !ptr.ptr to tensor<128xf64, #{{.*}}>
 //       CHECK: return %[[T]] : tensor<128xf64, #{{.*}}>
-func.func @sparse_new(%arg0: !llvm.ptr) -> tensor<128xf64, #SparseVector> {
-  %0 = sparse_tensor.new %arg0 : !llvm.ptr to tensor<128xf64, #SparseVector>
+func.func @sparse_new(%arg0: !ptr.ptr) -> tensor<128xf64, #SparseVector> {
+  %0 = sparse_tensor.new %arg0 : !ptr.ptr to tensor<128xf64, #SparseVector>
   return %0 : tensor<128xf64, #SparseVector>
 }
 
@@ -401,11 +401,11 @@ func.func @sparse_compression(%values: memref<?xf64>,
 
 // CHECK-LABEL: func @sparse_out(
 //  CHECK-SAME: %[[A:.*]]: tensor<?x?xf64, #sparse{{[0-9]*}}>,
-//  CHECK-SAME: %[[B:.*]]: !llvm.ptr)
-//       CHECK: sparse_tensor.out %[[A]], %[[B]] : tensor<?x?xf64, #sparse{{[0-9]*}}>, !llvm.ptr
+//  CHECK-SAME: %[[B:.*]]: !ptr.ptr)
+//       CHECK: sparse_tensor.out %[[A]], %[[B]] : tensor<?x?xf64, #sparse{{[0-9]*}}>, !ptr.ptr
 //       CHECK: return
-func.func @sparse_out(%arg0: tensor<?x?xf64, #SparseMatrix>, %arg1: !llvm.ptr) {
-  sparse_tensor.out %arg0, %arg1 : tensor<?x?xf64, #SparseMatrix>, !llvm.ptr
+func.func @sparse_out(%arg0: tensor<?x?xf64, #SparseMatrix>, %arg1: !ptr.ptr) {
+  sparse_tensor.out %arg0, %arg1 : tensor<?x?xf64, #SparseMatrix>, !ptr.ptr
   return
 }
 

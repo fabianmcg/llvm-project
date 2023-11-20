@@ -42,7 +42,7 @@ static char getRegisterType(Type type) {
     return 'f';
   if (type.isF64())
     return 'd';
-  if (auto ptr = type.dyn_cast<LLVM::LLVMPointerType>()) {
+  if (auto ptr = type.dyn_cast<ptr::PtrType>()) {
     // Shared address spaces is addressed with 32-bit pointers.
     if (ptr.getAddressSpace() == kSharedMemorySpace) {
       return 'r';
