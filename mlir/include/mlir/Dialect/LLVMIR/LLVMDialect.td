@@ -96,6 +96,9 @@ def LLVM_Dialect : Dialect {
     /// Register the attributes of this dialect.
     void registerAttributes();
   }];
+  let dependentDialects = [
+    "ptr::PtrDialect"
+  ];
 }
 
 #endif  // LLVMIR_DIALECT

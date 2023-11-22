@@ -188,4 +188,29 @@ def ShapedTypeInterface : TypeInterface<"ShapedType"> {
   }];
 }
 
+//===----------------------------------------------------------------------===//
+// SharedDialectTypeInterface
+//===----------------------------------------------------------------------===//
+
+def SharedDialectTypeInterface : TypeInterface<"SharedDialectTypeInterface"> {
+  let cppNamespace = "::mlir";
+  let description = [{
+    This interface allows sharing a type between dialects, allowing custom 
+    parsing and printing of a type by a foreign dialect.
+    If a dialect has a type with this interface, then it must implement the
+    dialect methods `parseType` and `printType`.
+  }];
+  let methods = [
+    InterfaceMethod<[{
+        Returns the dialect responsible for printing and parsing the type
+        instance.
+      }],
+      "Dialect&", "getSharedDialect", (ins),
+      [{}],
+      [{ return $_type.getDialect(); }]
+    >
+  ];
+}
+
+
 #endif // MLIR_IR_BUILTINTYPEINTERFACES_TD_

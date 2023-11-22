@@ -2703,7 +2703,10 @@ void AsmPrinter::Impl::printDialectAttribute(Attribute attr) {
 }
 
 void AsmPrinter::Impl::printDialectType(Type type) {
-  auto &dialect = type.getDialect();
+  Dialect *dialectPtr = &type.getDialect();
+  if (auto ifce = dyn_cast<SharedDialectTypeInterface>(type))
+    dialectPtr = &ifce.getSharedDialect();
+  auto &dialect = *dialectPtr;
 
   // Ask the dialect to serialize the type to a string.
   std::string typeName;

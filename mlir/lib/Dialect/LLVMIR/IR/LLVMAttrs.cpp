@@ -109,3 +109,17 @@ bool MemoryEffectsAttr::isReadWrite() {
     return false;
   return true;
 }
+
+//===----------------------------------------------------------------------===//
+// AddressSpaceAttr
+//===----------------------------------------------------------------------===//
+
+Dialect *AddressSpaceAttr::getModelOwner() const { return &getDialect(); }
+
+bool AddressSpaceAttr::isValidLoad(Type type) const {
+  return isCompatibleType(type);
+}
+
+Attribute AddressSpaceAttr::getDefaultMemorySpace() const {
+  return AddressSpaceAttr::get(getContext(), 0);
+}

@@ -11,6 +11,7 @@
 
 include "mlir/Dialect/LLVMIR/LLVMDialect.td"
 include "mlir/IR/AttrTypeBase.td"
+include "mlir/Dialect/Ptr/IR/MemorySpaceInterfaces.td"
 
 // All of the attributes will extend this class.
 class LLVM_Attr<string name, string attrMnemonic,
@@ -45,6 +46,20 @@ def ComdatAttr : LLVM_Attr<"Comdat", "comdat"> {
 def LinkageAttr : LLVM_Attr<"Linkage", "linkage"> {
   let parameters = (ins "linkage::Linkage":$linkage);
   let assemblyFormat = "`<` $linkage `>`";
+}
+
+//===----------------------------------------------------------------------===//
+// AddressSpaceAttr
+//===----------------------------------------------------------------------===//
+
+def AddressSpaceAttr : LLVM_Attr<"AddressSpace", "address_space", [
+    DeclareAttrInterfaceMethods<MemorySpaceAttrInterface, [
+      "getModelOwner",
+      "getDefaultMemorySpace",
+      "isValidLoad"]>
+  ]> {
+  let parameters = (ins DefaultValuedParameter<"unsigned", "0">:$addressSpace);
+  let assemblyFormat = "(`<` $addressSpace^ `>`)?";
 }
 
 //===----------------------------------------------------------------------===//
