@@ -12,6 +12,7 @@
 
 #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/OpenACCMPCommon/Interfaces/AtomicInterfaces.h"
 #include "mlir/IR/Attributes.h"
@@ -84,7 +85,10 @@ void OpenMPDialect::initialize() {
 
   // Attach default offload module interface to module op to access
   // offload functionality through
-  mlir::ModuleOp::attachInterface<mlir::omp::OffloadModuleDefaultModel>(
+  mlir::ModuleOp::attachInterface<
+      mlir::omp::OffloadModuleDefaultModel<mlir::ModuleOp>>(*getContext());
+  mlir::gpu::GPUModuleOp::attachInterface<
+      mlir::omp::OffloadModuleDefaultModel<mlir::gpu::GPUModuleOp>>(
       *getContext());
 
   // Attach default declare target interfaces to operations which can be marked

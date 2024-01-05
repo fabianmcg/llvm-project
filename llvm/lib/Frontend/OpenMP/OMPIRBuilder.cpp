@@ -6959,6 +6959,24 @@ void OffloadEntriesInfoManager::registerTargetRegionEntryInfo(
   incrementTargetRegionEntryInfoCount(EntryInfo);
 }
 
+std::optional<OffloadEntriesInfoManager::OffloadEntryInfoTargetRegion>
+OffloadEntriesInfoManager::getTargetRegionInfo(
+    const TargetRegionEntryInfo &EntryInfo) {
+  auto It = OffloadEntriesTargetRegion.find(EntryInfo);
+  if (It == OffloadEntriesTargetRegion.end()) {
+    return std::nullopt;
+  }
+  return It->second;
+}
+
+bool OffloadEntriesInfoManager::removeTargetRegionInfo(
+    const TargetRegionEntryInfo &EntryInfo) {
+  bool Removed = OffloadEntriesTargetRegion.erase(EntryInfo) > 0;
+  if (Removed && OffloadingEntriesNum)
+    --OffloadingEntriesNum;
+  return Removed;
+}
+
 bool OffloadEntriesInfoManager::hasTargetRegionEntryInfo(
     TargetRegionEntryInfo EntryInfo, bool IgnoreAddressId) const {
 

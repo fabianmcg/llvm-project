@@ -310,6 +310,14 @@ public:
   void getTargetRegionEntryFnName(SmallVectorImpl<char> &Name,
                                   const TargetRegionEntryInfo &EntryInfo);
 
+  /// Return the offload entry information for `EntryInfo` or `std::nullopt` if
+  /// it doesn't exist.
+  std::optional<OffloadEntryInfoTargetRegion>
+  getTargetRegionInfo(const TargetRegionEntryInfo &EntryInfo);
+
+  /// Removes a target region entry info. Returns true if the entry was removed.
+  bool removeTargetRegionInfo(const TargetRegionEntryInfo &EntryInfo);
+
   /// brief Applies action \a Action on all registered entries.
   typedef function_ref<void(const TargetRegionEntryInfo &EntryInfo,
                             const OffloadEntryInfoTargetRegion &)>

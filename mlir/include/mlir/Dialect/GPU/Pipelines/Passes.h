@@ -37,6 +37,9 @@ struct GPUToNVVMPipelineOptions
       *this, "cubin-format",
       llvm::cl::desc("Compilation format to use to serialize to cubin."),
       llvm::cl::init("fatbin")};
+  PassOptions::ListOption<std::string> linkLibs{
+      *this, "link-libs",
+      llvm::cl::desc("Extra bitcode libraries paths to link to.")};
   PassOptions::Option<int> optLevel{
       *this, "opt-level",
       llvm::cl::desc("Optimization level for NVVM compilation"),

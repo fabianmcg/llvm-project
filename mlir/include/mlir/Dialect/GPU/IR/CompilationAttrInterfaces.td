@@ -47,7 +47,16 @@ def GPUTargetAttrInterface : AttrInterface<"TargetAttrInterface"> {
         attribute.
       }], "Attribute", "createObject",
         (ins "const SmallVector<char, 0>&":$object,
-             "const gpu::TargetOptions&":$options)>
+             "const gpu::TargetOptions&":$options)>,
+    InterfaceMethod<[{
+        Returns the target triple used for compilation.
+      }], "StringRef", "getTargetTriple", (ins), [{}], [{ return ""; }]>,
+    InterfaceMethod<[{
+        Returns the target chip used for compilation.
+      }], "StringRef", "getTargetChip", (ins), [{}], [{ return ""; }]>,
+    InterfaceMethod<[{
+        Returns the target features used for compilation.
+      }], "StringRef", "getTargetFeatures", (ins), [{}], [{ return ""; }]>
   ];
 }
 

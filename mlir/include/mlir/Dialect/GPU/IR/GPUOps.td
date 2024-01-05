@@ -22,6 +22,7 @@ include "mlir/Dialect/GPU/TransformOps/GPUDeviceMappingAttr.td"
 include "mlir/IR/CommonTypeConstraints.td"
 include "mlir/IR/EnumAttr.td"
 include "mlir/IR/SymbolInterfaces.td"
+include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/DataLayoutInterfaces.td"
 include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/InferIntRangeInterface.td"
@@ -961,7 +962,7 @@ def GPU_TerminatorOp : GPU_Op<"terminator", [HasParent<"LaunchOp">,
   let assemblyFormat = "attr-dict";
 }
 
-def GPU_YieldOp : GPU_Op<"yield", [Pure, Terminator]>,
+def GPU_YieldOp : GPU_Op<"yield", [Pure, ReturnLike, Terminator]>,
     Arguments<(ins Variadic<AnyType>:$values)> {
   let summary = "GPU yield operation";
   let description = [{
@@ -974,6 +975,8 @@ def GPU_YieldOp : GPU_Op<"yield", [Pure, Terminator]>,
     gpu.yield %f0, %f1 : f32, f32
     ```
   }];
+
+  let assemblyFormat = "attr-dict ($values^ `:` type($values))?";
 }
 
 // These mirror the reduction combining kinds from the vector dialect.
@@ -1191,7 +1194,9 @@ def GPU_BarrierOp : GPU_Op<"barrier"> {
 def GPU_GPUModuleOp : GPU_Op<"module", [
       DataLayoutOpInterface, HasDefaultDLTIDataLayout, IsolatedFromAbove,
       SymbolTable, Symbol, SingleBlockImplicitTerminator<"ModuleEndOp">
-    ]>, Arguments<(ins OptionalAttr<GPUNonEmptyTargetArrayAttr>:$targets)> {
+    ]>, Arguments<(ins
+          OptionalAttr<GPUNonEmptyTargetArrayAttr>:$targets,
+          OptionalAttr<OffloadingTranslationAttr>:$offloadingHandler)> {
   let summary = "A top level compilation unit containing code to be run on a GPU.";
   let description = [{
     GPU module contains code that is intended to be run on a GPU. A host device
@@ -1226,8 +1231,12 @@ def GPU_GPUModuleOp : GPU_Op<"module", [
     ```
   }];
   let builders = [
-    OpBuilder<(ins "StringRef":$name, CArg<"ArrayAttr", "{}">:$targets)>,
-    OpBuilder<(ins "StringRef":$name, "ArrayRef<Attribute>":$targets)>
+    OpBuilder<(ins "StringRef":$name,
+                   CArg<"ArrayAttr", "{}">:$targets,
+                   CArg<"Attribute", "{}">:$handler)>,
+    OpBuilder<(ins "StringRef":$name,
+                   "ArrayRef<Attribute>":$targets,
+                   CArg<"Attribute", "{}">:$handler)>
   ];
   let regions = (region SizedRegion<1>:$bodyRegion);
   let hasCustomAssemblyFormat = 1;
@@ -2722,6 +2731,46 @@ def GPU_SetCsrPointersOp : GPU_Op<"set_csr_pointers", [GPU_AsyncOpInterface]> {
       $spmat `,` $positions `,` $coordinates `,` $values attr-dict
         `:` type($positions) `,` type($coordinates) `,` type($values)
   }];
+}
+
+def GPU_ConditionalExecutionOp : GPU_Op<"conditional_execution", [
+    DeclareOpInterfaceMethods<RegionBranchOpInterface>
+  ]> {
+  let summary = "Executes a region of code based on the surrounding context.";
+  let description = [{
+    The `conditional_execution` operation executes a region of host or device
+    code depending on the surrounding execution context of the operation. If
+    the operation is inside a GPU module or launch operation, it executes the
+    device region; otherwise, it runs the host region.
+
+    This operation can yield a variadic set of results. If the operation yields
+    results, then both regions have to be present. However, if there are no
+    results, then it's valid to implement only one of the regions.
+
+    Examples:
+    ```mlir
+    // Conditional exeution with results.
+    %res = gpu.conditional_execution device {
+      ...
+      gpu.yield %val : i32
+    } host {
+      ...
+      gpu.yield %val : i32
+    } -> i32
+    // Conditional exeution with no results and only the host region.
+    gpu.conditional_execution host {
+      ...
+      gpu.yield
+    }
+    ```
+  }];
+  let results = (outs Variadic<AnyType>:$results);
+  let regions = (region AnyRegion:$hostRegion, AnyRegion:$deviceRegion);
+  let assemblyFormat = [{
+    (`device` $deviceRegion^)? (`host` $hostRegion^)? attr-dict
+    (`->` type($results)^)?
+  }];
+  let hasVerifier = 1;
 }
 
 #endif // GPU_OPS

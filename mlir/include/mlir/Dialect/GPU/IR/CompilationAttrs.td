@@ -107,4 +107,26 @@ def GPU_SelectObjectAttr : GPU_Attr<"SelectObject", "select_object", [
   let genVerifyDecl = 1;
 }
 
+//===----------------------------------------------------------------------===//
+// GPU LLVM offload attribute.
+//===----------------------------------------------------------------------===//
+def GPU_OffloadOpenMP : I32EnumAttrCase<"OpenMP", 1, "omp">;
+def GPU_OffloadCUDA : I32EnumAttrCase<"CUDA", 2, "cuda">;
+def GPU_OffloadHIP : I32EnumAttrCase<"HIP", 3, "hip">;
+def GPU_OffloadKindEnum : GPU_I32Enum<
+  "OffloadKind", "GPU offload kind", [
+    GPU_OffloadOpenMP,
+    GPU_OffloadCUDA,
+    GPU_OffloadHIP
+  ]>;
+
+def GPU_OffloadEmbeddingAttr : GPU_Attr<"OffloadEmbedding", "offload_object", [
+    OffloadingTranslationAttrTrait
+  ]> {
+  let description = [{
+  }];
+  let parameters = (ins "gpu::OffloadKind":$kind);
+  let assemblyFormat = [{ `<` $kind `>` }];
+}
+
 #endif // GPU_COMPILATION_ATTRS

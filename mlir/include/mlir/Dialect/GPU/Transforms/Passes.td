@@ -97,7 +97,9 @@ def GpuModuleToBinaryPass
     Option<"cmdOptions", "opts", "std::string", [{""}],
            "Command line options to pass to the tools.">,
     Option<"compilationTarget", "format", "std::string", [{"fatbin"}],
-           "The target representation of the compilation process.">
+           "The target representation of the compilation process.">,
+    Option<"linkingFlags", "lflags", "std::string", [{"only-needed"}],
+           "The LLVM bitcode linking flags.">
   ];
 }
 
@@ -248,6 +250,12 @@ def GpuSPIRVAttachTarget: Pass<"spirv-attach-target", ""> {
            /*default=*/ "",
            "Device ID">,
   ];
+}
+
+def GpuResolveConditionalExecutionPass :
+    Pass<"gpu-resolve-conditional-execution", ""> {
+  let summary = "Resolve all conditional execution operations";
+  let dependentDialects = ["scf::SCFDialect"];
 }
 
 #endif // MLIR_DIALECT_GPU_PASSES

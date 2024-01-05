@@ -37,6 +37,12 @@ public:
   Attribute createObject(Attribute attribute,
                          const SmallVector<char, 0> &object,
                          const gpu::TargetOptions &options) const;
+
+  StringRef getTargetTriple(Attribute attribute) const { return ""; }
+
+  StringRef getTargetChip(Attribute attribute) const { return ""; }
+
+  StringRef getTargetFeatures(Attribute attribute) const { return ""; }
 };
 } // namespace
 

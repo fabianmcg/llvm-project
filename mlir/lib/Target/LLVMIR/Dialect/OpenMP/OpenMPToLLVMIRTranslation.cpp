@@ -18,12 +18,14 @@
 #include "mlir/IR/Operation.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
+#include "mlir/Target/LLVM/Offload.h"
 #include "mlir/Target/LLVMIR/Dialect/OpenMPCommon.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 #include "mlir/Transforms/RegionUtils.h"
 
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Frontend/Offloading/Utility.h"
 #include "llvm/Frontend/OpenMP/OMPConstants.h"
 #include "llvm/Frontend/OpenMP/OMPIRBuilder.h"
 #include "llvm/IR/DebugInfoMetadata.h"
@@ -2065,6 +2067,25 @@ LogicalResult convertFlagsAttr(Operation *op, mlir::omp::FlagsAttr attribute,
   return success();
 }
 
+static bool
+getAndRegisterTargetEntryUniqueInfo(llvm::TargetRegionEntryInfo &targetInfo,
+                                    LLVM::ModuleTranslation &moduleTranslation,
+                                    omp::TargetOp targetOp,
+                                    llvm::StringRef parentName = "") {
+  omp::TargetRegionEntryInfoAttr infoAttr =
+      targetOp.getTargetRegionEntryInfoAttr();
+  if (!infoAttr)
+    return false;
+  targetInfo =
+      llvm::TargetRegionEntryInfo(parentName, infoAttr.getDeviceID(),
+                                  infoAttr.getFileID(), infoAttr.getLine());
+  llvm::OpenMPIRBuilder *ompBuilder = moduleTranslation.getOpenMPBuilder();
+  if (ompBuilder->Config.isTargetDevice() && ompBuilder->Config.isGPU())
+    ompBuilder->OffloadInfoManager.initializeTargetRegionEntryInfo(targetInfo,
+                                                                   0);
+  return true;
+}
+
 static bool getTargetEntryUniqueInfo(llvm::TargetRegionEntryInfo &targetInfo,
                                      omp::TargetOp targetOp,
                                      llvm::StringRef parentName = "") {
@@ -2371,7 +2392,9 @@ convertOmpTarget(Operation &opInst, llvm::IRBuilderBase &builder,
 
   llvm::TargetRegionEntryInfo entryInfo;
 
-  if (!getTargetEntryUniqueInfo(entryInfo, targetOp, parentName))
+  if (!(getAndRegisterTargetEntryUniqueInfo(entryInfo, moduleTranslation,
+                                            targetOp, parentName) ||
+        getTargetEntryUniqueInfo(entryInfo, targetOp, parentName)))
     return failure();
 
   int32_t defaultValTeams = -1;
@@ -2442,6 +2465,45 @@ convertOmpTarget(Operation &opInst, llvm::IRBuilderBase &builder,
   // device, essentially generating extra loadop's as necessary
   if (moduleTranslation.getOpenMPBuilder()->Config.isTargetDevice())
     handleDeclareTargetMapVar(mapData, moduleTranslation, builder);
+
+  // Return early if the target op it's being emitted for a device.
+  llvm::OpenMPIRBuilder *ompBuilder = moduleTranslation.getOpenMPBuilder();
+  if (ompBuilder->Config.isTargetDevice())
+    return bodyGenStatus;
+
+  // Try to manually insert the entry into the special section given by id.
+  omp::TargetRegionEntryInfoAttr regionInfoAttr =
+      targetOp.getTargetRegionEntryInfoAttr();
+  FlatSymbolRefAttr entryArraySection =
+      regionInfoAttr ? regionInfoAttr.getSection() : FlatSymbolRefAttr();
+
+  // Return early if there is not enough information to add the entry.
+  if (!entryArraySection)
+    return bodyGenStatus;
+
+  // Get the target entry information.
+  auto &offloadInfoManager = ompBuilder->OffloadInfoManager;
+  std::optional<llvm::OffloadEntriesInfoManager::OffloadEntryInfoTargetRegion>
+      targetRegionInfo = offloadInfoManager.getTargetRegionInfo(entryInfo);
+  assert(targetRegionInfo && "missing target entry region information");
+
+  auto regionAddrGV =
+      dyn_cast_or_null<llvm::GlobalValue>(targetRegionInfo->getAddress());
+  assert(regionAddrGV && "missing reggion address");
+
+  // Emit the offload entry.
+  llvm::Module &llvmModule = *moduleTranslation.getLLVMModule();
+  LLVM::OffloadHandler offloadHandler(llvmModule);
+  std::pair<llvm::Constant *, llvm::GlobalVariable *> entryInit =
+      llvm::offloading::getOffloadingEntryInitializer(
+          llvmModule, targetRegionInfo->getID(), regionAddrGV->getName(), 0,
+          targetRegionInfo->getFlags(), 0);
+
+  if (failed(offloadHandler.insertOffloadEntry(entryArraySection.getValue(),
+                                               entryInit.first)))
+    targetOp.emitError("failed to insert the entry");
+
+  offloadInfoManager.removeTargetRegionInfo(entryInfo);
 
   return bodyGenStatus;
 }

@@ -27,7 +27,9 @@ include "mlir/Dialect/OpenMP/OpenMPTypeInterfaces.td"
 def OpenMP_Dialect : Dialect {
   let name = "omp";
   let cppNamespace = "::mlir::omp";
-  let dependentDialects = ["::mlir::LLVM::LLVMDialect, ::mlir::func::FuncDialect"];
+  let dependentDialects = ["::mlir::LLVM::LLVMDialect",
+                            "::mlir::func::FuncDialect",
+                            "::mlir::gpu::GPUDialect"];
   let useDefaultAttributePrinterParser = 1;
   let useDefaultTypePrinterParser = 1;
 }
@@ -81,6 +83,16 @@ def TargetAttr : OpenMP_Attr<"Target", "target"> {
   let assemblyFormat = "`<` struct(params) `>`";
 }
 
+def TargetRegionEntryInfoAttr : OpenMP_Attr<"TargetRegionEntryInfo", "tgt_entry_info"> {
+  let parameters = (ins
+    "unsigned":$deviceID,
+    "unsigned":$fileID,
+    "unsigned":$line,
+    OptionalParameter<"FlatSymbolRefAttr">:$section
+  );
+
+  let assemblyFormat = "`<` struct(params) `>`";
+}
 
 class OpenMP_Op<string mnemonic, list<Trait> traits = []> :
       Op<OpenMP_Dialect, mnemonic, traits>;
@@ -1451,7 +1463,8 @@ def TargetOp : OpenMP_Op<"target",[IsolatedFromAbove, OutlineableOpenMPOpInterfa
                        Optional<AnyInteger>:$device,
                        Optional<AnyInteger>:$thread_limit,
                        UnitAttr:$nowait,
-                       Variadic<AnyType>:$map_operands);
+                       Variadic<AnyType>:$map_operands,
+                       OptionalAttr<TargetRegionEntryInfoAttr>:$targetRegionEntryInfo);
 
   let regions = (region AnyRegion:$region);
 
@@ -1461,6 +1474,7 @@ def TargetOp : OpenMP_Op<"target",[IsolatedFromAbove, OutlineableOpenMPOpInterfa
     | `thread_limit` `(` $thread_limit `:` type($thread_limit) `)`
     | `nowait` $nowait
     | `map_entries` `(` custom<MapEntries>($map_operands, type($map_operands)) `)`
+    | `info` `=` qualified($targetRegionEntryInfo)
     ) $region attr-dict
   }];
 

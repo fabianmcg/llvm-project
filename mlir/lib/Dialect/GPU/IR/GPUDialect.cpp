@@ -29,6 +29,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Support/LogicalResult.h"
+#include "mlir/Target/LLVM/Options.h"
 #include "mlir/Transforms/InliningUtils.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
@@ -1724,19 +1725,24 @@ LogicalResult gpu::ReturnOp::verify() {
 //===----------------------------------------------------------------------===//
 
 void GPUModuleOp::build(OpBuilder &builder, OperationState &result,
-                        StringRef name, ArrayAttr targets) {
+                        StringRef name, ArrayAttr targets,
+                        Attribute offloadingHandler) {
   ensureTerminator(*result.addRegion(), builder, result.location);
   result.attributes.push_back(builder.getNamedAttr(
       ::mlir::SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
 
+  Properties &props = result.getOrAddProperties<Properties>();
   if (targets)
-    result.getOrAddProperties<Properties>().targets = targets;
+    props.targets = targets;
+  props.offloadingHandler = offloadingHandler;
 }
 
 void GPUModuleOp::build(OpBuilder &builder, OperationState &result,
-                        StringRef name, ArrayRef<Attribute> targets) {
+                        StringRef name, ArrayRef<Attribute> targets,
+                        Attribute offloadingHandler) {
   build(builder, result, name,
-        targets.empty() ? ArrayAttr() : builder.getArrayAttr(targets));
+        targets.empty() ? ArrayAttr() : builder.getArrayAttr(targets),
+        offloadingHandler);
 }
 
 ParseResult GPUModuleOp::parse(OpAsmParser &parser, OperationState &result) {
@@ -1747,6 +1753,16 @@ ParseResult GPUModuleOp::parse(OpAsmParser &parser, OperationState &result) {
                              result.attributes))
     return failure();
 
+  Properties &props = result.getOrAddProperties<Properties>();
+
+  // Parse the optional offloadingHandler
+  if (succeeded(parser.parseOptionalLess())) {
+    if (parser.parseAttribute(props.offloadingHandler))
+      return failure();
+    if (parser.parseGreater())
+      return failure();
+  }
+
   // Parse the optional array of target attributes.
   OptionalParseResult targetsAttrResult =
       parser.parseOptionalAttribute(targetsAttr, Type{});
@@ -1754,7 +1770,7 @@ ParseResult GPUModuleOp::parse(OpAsmParser &parser, OperationState &result) {
     if (failed(*targetsAttrResult)) {
       return failure();
     }
-    result.getOrAddProperties<Properties>().targets = targetsAttr;
+    props.targets = targetsAttr;
   }
 
   // If module attributes are present, parse them.
@@ -1774,6 +1790,12 @@ ParseResult GPUModuleOp::parse(OpAsmParser &parser, OperationState &result) {
 void GPUModuleOp::print(OpAsmPrinter &p) {
   p << ' ';
   p.printSymbolName(getName());
+
+  if (Attribute attr = getOffloadingHandlerAttr()) {
+    p << " <";
+    p.printAttribute(attr);
+    p << ">";
+  }
 
   if (Attribute attr = getTargetsAttr()) {
     p << ' ';
@@ -1804,24 +1826,6 @@ void GPUModuleOp::setTargets(ArrayRef<TargetAttrInterface> targets) {
 //===----------------------------------------------------------------------===//
 // GPUBinaryOp
 //===----------------------------------------------------------------------===//
-void BinaryOp::build(OpBuilder &builder, OperationState &result, StringRef name,
-                     Attribute offloadingHandler, ArrayAttr objects) {
-  auto &properties = result.getOrAddProperties<Properties>();
-  result.attributes.push_back(builder.getNamedAttr(
-      SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
-  properties.objects = objects;
-  if (offloadingHandler)
-    properties.offloadingHandler = offloadingHandler;
-  else
-    properties.offloadingHandler = builder.getAttr<SelectObjectAttr>(nullptr);
-}
-
-void BinaryOp::build(OpBuilder &builder, OperationState &result, StringRef name,
-                     Attribute offloadingHandler, ArrayRef<Attribute> objects) {
-  build(builder, result, name, offloadingHandler,
-        objects.empty() ? ArrayAttr() : builder.getArrayAttr(objects));
-}
-
 static ParseResult parseOffloadingHandler(OpAsmParser &parser,
                                           Attribute &offloadingHandler) {
   if (succeeded(parser.parseOptionalLess())) {
@@ -1839,6 +1843,24 @@ static void printOffloadingHandler(OpAsmPrinter &printer, Operation *op,
                                    Attribute offloadingHandler) {
   if (offloadingHandler != SelectObjectAttr::get(op->getContext(), nullptr))
     printer << '<' << offloadingHandler << '>';
+}
+
+void BinaryOp::build(OpBuilder &builder, OperationState &result, StringRef name,
+                     Attribute offloadingHandler, ArrayAttr objects) {
+  auto &properties = result.getOrAddProperties<Properties>();
+  result.attributes.push_back(builder.getNamedAttr(
+      SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
+  properties.objects = objects;
+  if (offloadingHandler)
+    properties.offloadingHandler = offloadingHandler;
+  else
+    properties.offloadingHandler = builder.getAttr<SelectObjectAttr>(nullptr);
+}
+
+void BinaryOp::build(OpBuilder &builder, OperationState &result, StringRef name,
+                     Attribute offloadingHandler, ArrayRef<Attribute> objects) {
+  build(builder, result, name, offloadingHandler,
+        objects.empty() ? ArrayAttr() : builder.getArrayAttr(objects));
 }
 
 //===----------------------------------------------------------------------===//
@@ -2205,22 +2227,66 @@ LogicalResult gpu::DynamicSharedMemoryOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
+// ConditionalExecutionOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult ConditionalExecutionOp::verify() {
+  Region &devRegion = getDeviceRegion();
+  Region &hostRegion = getHostRegion();
+  if (devRegion.empty() && hostRegion.empty())
+    return emitError("both regions can't be empty");
+  if (getResults().size() > 0 && (devRegion.empty() || hostRegion.empty()))
+    return emitError(
+        "when there are results both regions have to be specified");
+  if ((!devRegion.empty() &&
+       !mlir::isa<YieldOp>(devRegion.back().getTerminator())) ||
+      (!hostRegion.empty() &&
+       !mlir::isa<YieldOp>(hostRegion.back().getTerminator()))) {
+    return emitError(
+        "conditional execution regions must terminate with gpu.yield");
+  }
+  return success();
+}
+
+void ConditionalExecutionOp::getSuccessorRegions(
+    RegionBranchPoint point, SmallVectorImpl<RegionSuccessor> &regions) {
+  // Both sub-regions always return to the parent.
+  if (!point.isParent()) {
+    regions.push_back(RegionSuccessor(getResults()));
+    return;
+  }
+
+  Region &devRegion = getDeviceRegion();
+  Region &hostRegion = getHostRegion();
+
+  // Don't consider the regions if they are empty.
+  regions.push_back(devRegion.empty() ? RegionSuccessor()
+                                      : RegionSuccessor(&devRegion));
+  regions.push_back(hostRegion.empty() ? RegionSuccessor()
+                                       : RegionSuccessor(&hostRegion));
+}
+
+//===----------------------------------------------------------------------===//
 // GPU target options
 //===----------------------------------------------------------------------===//
 
 TargetOptions::TargetOptions(
     StringRef toolkitPath, ArrayRef<std::string> linkFiles,
     StringRef cmdOptions, CompilationTarget compilationTarget,
+    LLVM::LinkingFlags llvmLinkingFlags,
     function_ref<SymbolTable *()> getSymbolTableCallback)
     : TargetOptions(TypeID::get<TargetOptions>(), toolkitPath, linkFiles,
-                    cmdOptions, compilationTarget, getSymbolTableCallback) {}
+                    cmdOptions, compilationTarget, llvmLinkingFlags,
+                    getSymbolTableCallback) {}
 
 TargetOptions::TargetOptions(
     TypeID typeID, StringRef toolkitPath, ArrayRef<std::string> linkFiles,
     StringRef cmdOptions, CompilationTarget compilationTarget,
+    LLVM::LinkingFlags llvmLinkingFlags,
     function_ref<SymbolTable *()> getSymbolTableCallback)
     : toolkitPath(toolkitPath.str()), linkFiles(linkFiles),
       cmdOptions(cmdOptions.str()), compilationTarget(compilationTarget),
+      llvmLinkingFlags(llvmLinkingFlags),
       getSymbolTableCallback(getSymbolTableCallback), typeID(typeID) {}
 
 TypeID TargetOptions::getTypeID() const { return typeID; }
@@ -2241,6 +2307,14 @@ CompilationTarget TargetOptions::getCompilationTarget() const {
 
 CompilationTarget TargetOptions::getDefaultCompilationTarget() {
   return CompilationTarget::Fatbin;
+}
+
+LLVM::LinkingFlags TargetOptions::getLinkingFlags() const {
+  return llvmLinkingFlags;
+}
+
+LLVM::LinkingFlags TargetOptions::getDefaultLinkingFlags() {
+  return LLVM::LinkingFlags::onlyNeeded;
 }
 
 std::pair<llvm::BumpPtrAllocator, SmallVector<const char *>>

@@ -65,6 +65,12 @@ public:
   Attribute createObject(Attribute attribute,
                          const SmallVector<char, 0> &object,
                          const gpu::TargetOptions &options) const;
+
+  StringRef getTargetTriple(Attribute attribute) const;
+
+  StringRef getTargetChip(Attribute attribute) const;
+
+  StringRef getTargetFeatures(Attribute attribute) const;
 };
 } // namespace
 
@@ -98,7 +104,8 @@ SerializeGPUModuleBase::SerializeGPUModuleBase(
     Operation &module, ROCDLTargetAttr target,
     const gpu::TargetOptions &targetOptions)
     : ModuleToObject(module, target.getTriple(), target.getChip(),
-                     target.getFeatures(), target.getO()),
+                     target.getFeatures(), target.getO(),
+                     targetOptions.getLinkingFlags()),
       target(target), toolkitPath(targetOptions.getToolkitPath()),
       fileList(targetOptions.getLinkFiles()) {
 
@@ -485,4 +492,16 @@ ROCDLTargetAttrImpl::createObject(Attribute attribute,
       format > gpu::CompilationTarget::Binary ? gpu::CompilationTarget::Binary
                                               : format,
       builder.getStringAttr(StringRef(object.data(), object.size())), nullptr);
+}
+
+StringRef ROCDLTargetAttrImpl::getTargetTriple(Attribute attribute) const {
+  return cast<ROCDLTargetAttr>(attribute).getTriple();
+}
+
+StringRef ROCDLTargetAttrImpl::getTargetChip(Attribute attribute) const {
+  return cast<ROCDLTargetAttr>(attribute).getChip();
+}
+
+StringRef ROCDLTargetAttrImpl::getTargetFeatures(Attribute attribute) const {
+  return cast<ROCDLTargetAttr>(attribute).getFeatures();
 }

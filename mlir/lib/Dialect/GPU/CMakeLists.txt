@@ -57,6 +57,7 @@ add_mlir_dialect_library(MLIRGPUTransforms
   Transforms/ModuleToBinary.cpp
   Transforms/NVVMAttachTarget.cpp
   Transforms/ParallelLoopMapper.cpp
+  Transforms/ResolveConditionalExecution.cpp
   Transforms/ROCDLAttachTarget.cpp
   Transforms/SerializeToBlob.cpp
   Transforms/SerializeToCubin.cpp

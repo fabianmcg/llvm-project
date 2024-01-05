@@ -51,6 +51,12 @@ public:
   Attribute createObject(Attribute attribute,
                          const SmallVector<char, 0> &object,
                          const gpu::TargetOptions &options) const;
+
+  StringRef getTargetTriple(Attribute attribute) const;
+
+  StringRef getTargetChip(Attribute attribute) const;
+
+  StringRef getTargetFeatures(Attribute attribute) const;
 };
 } // namespace
 
@@ -84,7 +90,8 @@ SerializeGPUModuleBase::SerializeGPUModuleBase(
     Operation &module, NVVMTargetAttr target,
     const gpu::TargetOptions &targetOptions)
     : ModuleToObject(module, target.getTriple(), target.getChip(),
-                     target.getFeatures(), target.getO()),
+                     target.getFeatures(), target.getO(),
+                     targetOptions.getLinkingFlags()),
       target(target), toolkitPath(targetOptions.getToolkitPath()),
       fileList(targetOptions.getLinkFiles()) {
 
@@ -600,4 +607,16 @@ NVVMTargetAttrImpl::createObject(Attribute attribute,
       attribute, format,
       builder.getStringAttr(StringRef(object.data(), object.size())),
       objectProps);
+}
+
+StringRef NVVMTargetAttrImpl::getTargetTriple(Attribute attribute) const {
+  return cast<NVVMTargetAttr>(attribute).getTriple();
+}
+
+StringRef NVVMTargetAttrImpl::getTargetChip(Attribute attribute) const {
+  return cast<NVVMTargetAttr>(attribute).getChip();
+}
+
+StringRef NVVMTargetAttrImpl::getTargetFeatures(Attribute attribute) const {
+  return cast<NVVMTargetAttr>(attribute).getFeatures();
 }
