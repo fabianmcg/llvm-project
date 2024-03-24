@@ -12,6 +12,7 @@ add_mlir_translation_library(MLIRLLVMIRToPtrTranslation
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRPtrDialect
+  MLIRLLVMDialect
   MLIRSupport
   MLIRTargetLLVMIRImport
   )
