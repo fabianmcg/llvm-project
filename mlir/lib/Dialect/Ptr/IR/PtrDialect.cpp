@@ -46,6 +46,10 @@ void PtrDialect::initialize() {
 #define GET_TYPEDEF_LIST
 #include "mlir/Dialect/Ptr/IR/PtrOpsTypes.cpp.inc"
       >();
+  addAttributes<
+#define GET_ATTRDEF_LIST
+#include "mlir/Dialect/Ptr/IR/PtrOpsAttrs.cpp.inc"
+      >();
   addInterfaces<PtrInlinerInterface>();
 }
 

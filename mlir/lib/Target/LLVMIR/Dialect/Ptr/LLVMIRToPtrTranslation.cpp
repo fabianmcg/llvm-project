@@ -30,6 +30,15 @@ using namespace mlir;
 using namespace mlir::ptr;
 
 namespace {
+inline ArrayRef<unsigned> getSupportedInstructionsImpl() {
+  static unsigned instructions[] = {
+      llvm::Instruction::AtomicCmpXchg, llvm::Instruction::AtomicRMW,
+      llvm::Instruction::Load,          llvm::Instruction::Store,
+      llvm::Instruction::AddrSpaceCast, llvm::Instruction::IntToPtr,
+      llvm::Instruction::PtrToInt};
+  return instructions;
+}
+
 inline LLVM_ATTRIBUTE_UNUSED AtomicBinOp
 convertAtomicBinOpFromLLVM(::llvm::AtomicRMWInst::BinOp value) {
   switch (value) {
@@ -284,10 +293,7 @@ public:
   }
 
   ArrayRef<unsigned> getSupportedInstructions() const override {
-    return {llvm::Instruction::AtomicCmpXchg, llvm::Instruction::AtomicRMW,
-            llvm::Instruction::Load,          llvm::Instruction::Store,
-            llvm::Instruction::AddrSpaceCast, llvm::Instruction::IntToPtr,
-            llvm::Instruction::PtrToInt};
+    return getSupportedInstructionsImpl();
   }
 };
 } // namespace

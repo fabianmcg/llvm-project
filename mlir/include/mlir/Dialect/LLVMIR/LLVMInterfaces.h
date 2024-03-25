@@ -21,8 +21,9 @@ namespace LLVM {
 namespace detail {
 using ptr::detail::verifyAccessGroupOpInterface;
 using ptr::detail::verifyAliasAnalysisOpInterface;
-
 } // namespace detail
+using ptr::AccessGroupOpInterface;
+using ptr::AliasAnalysisOpInterface;
 } // namespace LLVM
 } // namespace mlir
 
