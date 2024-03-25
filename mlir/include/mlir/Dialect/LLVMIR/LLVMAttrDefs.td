@@ -11,6 +11,7 @@
 
 include "mlir/Dialect/LLVMIR/LLVMDialect.td"
 include "mlir/Dialect/LLVMIR/LLVMInterfaces.td"
+include "mlir/Dialect/Ptr/IR/MemorySpaceInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/CommonAttrConstraints.td"
 
@@ -20,6 +21,26 @@ class LLVM_Attr<string name, string attrMnemonic,
                 string baseCppClass = "::mlir::Attribute">
     : AttrDef<LLVM_Dialect, name, traits, baseCppClass> {
   let mnemonic = attrMnemonic;
+}
+
+//===----------------------------------------------------------------------===//
+// AddressSpaceAttr
+//===----------------------------------------------------------------------===//
+
+def AddressSpaceAttr : LLVM_Attr<"AddressSpace", "address_space", [
+    DeclareAttrInterfaceMethods<MemorySpaceAttrInterface, [
+      "getDefaultMemorySpace",
+      "getAddressSpace",
+      "isValidLoad",
+      "isValidStore",
+      "isValidAtomicOp",
+      "isValidAtomicXchg",
+      "isValidAddrSpaceCast",
+      "isValidPtrIntCast"
+    ]>
+  ]> {
+  let parameters = (ins DefaultValuedParameter<"unsigned", "0">:$as);
+  let assemblyFormat = "(`<` $as^ `>`)?";
 }
 
 //===----------------------------------------------------------------------===//

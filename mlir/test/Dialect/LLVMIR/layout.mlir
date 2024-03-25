@@ -96,7 +96,7 @@ module attributes { dlti.dl_spec = #dlti.dl_spec<
 
 // -----
 
-// expected-error@below {{expected layout attribute for '!llvm.ptr' to be a dense integer elements attribute with 3 or 4 elements}}
+// expected-error@below {{expected layout attribute for '!ptr.ptr<#llvm.address_space>' to be a dense integer elements attribute with 3 or 4 elements}}
 module attributes { dlti.dl_spec = #dlti.dl_spec<
   #dlti.dl_entry<!llvm.ptr, dense<[64.0, 64.0, 64.0]> : vector<3xf32>>
 >} {
@@ -118,7 +118,7 @@ module attributes { dlti.dl_spec = #dlti.dl_spec<
 
 // -----
 
-// expected-error @below {{expected i64 parameters for '!llvm.ptr'}}
+// expected-error @below {{expected i64 parameters for '!ptr.ptr<#llvm.address_space>'}}
 module attributes { dlti.dl_spec = #dlti.dl_spec<
   #dlti.dl_entry<!llvm.ptr, dense<[32, 32, 64]> : vector<3xi32>>
 >} {

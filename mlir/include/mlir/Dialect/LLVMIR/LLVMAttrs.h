@@ -15,6 +15,7 @@
 #define MLIR_DIALECT_LLVMIR_LLVMATTRS_H_
 
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Dialect/Ptr/IR/MemoryModel.h"
 #include "mlir/IR/OpImplementation.h"
 #include <optional>
 

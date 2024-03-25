@@ -56,10 +56,10 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         This method checks if it's valid to load a value from the memory space
         with a specific type, alignment, and atomic ordering.
       }],
-      /*returnType=*/  "MemOpValidity",
+      /*returnType=*/  "mlir::ptr::MemOpValidity",
       /*methodName=*/  "isValidLoad",
       /*args=*/        (ins "Type":$type,
-                            "AtomicOrdering":$ordering,
+                            "mlir::ptr::AtomicOrdering":$ordering,
                             "IntegerAttr":$alignment),
       /*methodBody=*/  [{}],
       /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
@@ -69,10 +69,10 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         This method checks if it's valid to store a value in the memory space
         with a specific type, alignment, and atomic ordering.
       }],
-      /*returnType=*/  "MemOpValidity",
+      /*returnType=*/  "mlir::ptr::MemOpValidity",
       /*methodName=*/  "isValidStore",
       /*args=*/        (ins "Type":$type,
-                            "AtomicOrdering":$ordering,
+                            "mlir::ptr::AtomicOrdering":$ordering,
                             "IntegerAttr":$alignment),
       /*methodBody=*/  [{}],
       /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
@@ -82,11 +82,11 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         This method checks if it's valid to perform an atomic operation in the
         memory space with a specific type, alignment, and atomic ordering.
       }],
-      /*returnType=*/  "MemOpValidity",
+      /*returnType=*/  "mlir::ptr::MemOpValidity",
       /*methodName=*/  "isValidAtomicOp",
-      /*args=*/        (ins "AtomicBinOp":$op,
+      /*args=*/        (ins "mlir::ptr::AtomicBinOp":$op,
                             "Type":$type,
-                            "AtomicOrdering":$ordering,
+                            "mlir::ptr::AtomicOrdering":$ordering,
                             "IntegerAttr":$alignment),
       /*methodBody=*/  [{}],
       /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
@@ -97,11 +97,11 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         in the memory space with a specific type, alignment, and atomic
         orderings.
       }],
-      /*returnType=*/  "MemOpValidity",
+      /*returnType=*/  "mlir::ptr::MemOpValidity",
       /*methodName=*/  "isValidAtomicXchg",
       /*args=*/        (ins "Type":$type,
-                            "AtomicOrdering":$successOrdering,
-                            "AtomicOrdering":$failureOrdering,
+                            "mlir::ptr::AtomicOrdering":$successOrdering,
+                            "mlir::ptr::AtomicOrdering":$failureOrdering,
                             "IntegerAttr":$alignment),
       /*methodBody=*/  [{}],
       /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
@@ -113,7 +113,7 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         Both types are expected to be vectors of rank 1, or scalars of `ptr`
         type.
       }],
-      /*returnType=*/  "CastValidity",
+      /*returnType=*/  "mlir::ptr::CastValidity",
       /*methodName=*/  "isValidAddrSpaceCast",
       /*args=*/        (ins "Type":$tgt, "Type":$src),
       /*methodBody=*/  [{}],
@@ -128,7 +128,7 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         The first type is expected to be integer-like, while the second must be a
         ptr-like type.
       }],
-      /*returnType=*/  "CastValidity",
+      /*returnType=*/  "mlir::ptr::CastValidity",
       /*methodName=*/  "isValidPtrIntCast",
       /*args=*/        (ins "Type":$intLikeTy, "Type":$ptrLikeTy),
       /*methodBody=*/  [{}],

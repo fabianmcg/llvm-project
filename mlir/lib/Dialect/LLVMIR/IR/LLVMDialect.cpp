@@ -17,6 +17,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
 #include "mlir/Dialect/LLVMIR/LLVMInterfaces.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Dialect/Ptr/IR/PtrDialect.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -2944,6 +2945,22 @@ struct LLVMOpAsmDialectInterface : public OpAsmDialectInterface {
           return AliasResult::OverridableAlias;
         })
         .Default([](Attribute) { return AliasResult::NoAlias; });
+  }
+
+  AliasResult getAlias(Type type, raw_ostream &os) const override {
+    return TypeSwitch<Type, AliasResult>(type)
+        .Case<LLVMPointerType>(
+            [&](LLVMPointerType type) { return AliasResult::DialectAlias; })
+        .Default([](Type) { return AliasResult::NoAlias; });
+  }
+
+  void printDialectAlias(DialectAsmPrinter &printer, Type type) const {
+    return TypeSwitch<Type, void>(type)
+        .Case<LLVMPointerType>([&](LLVMPointerType type) {
+          printer << "ptr";
+          type.print(printer);
+        })
+        .Default([](Type) {});
   }
 };
 } // namespace

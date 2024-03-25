@@ -52,6 +52,49 @@ void LLVMDialect::registerAttributes() {
 }
 
 //===----------------------------------------------------------------------===//
+// AddressSpaceAttr
+//===----------------------------------------------------------------------===//
+
+Attribute AddressSpaceAttr::getDefaultMemorySpace() const {
+  return AddressSpaceAttr::get(getContext(), 0);
+}
+
+unsigned AddressSpaceAttr::getAddressSpace() const { return getAs(); }
+
+mlir::ptr::MemOpValidity
+AddressSpaceAttr::isValidLoad(Type type, mlir::ptr::AtomicOrdering ordering,
+                              IntegerAttr alignment) const {
+  return mlir::ptr::MemOpValidity::Valid;
+}
+
+mlir::ptr::MemOpValidity
+AddressSpaceAttr::isValidStore(Type type, mlir::ptr::AtomicOrdering ordering,
+                               IntegerAttr alignment) const {
+  return mlir::ptr::MemOpValidity::Valid;
+}
+mlir::ptr::MemOpValidity
+AddressSpaceAttr::isValidAtomicOp(mlir::ptr::AtomicBinOp op, Type type,
+                                  mlir::ptr::AtomicOrdering ordering,
+                                  IntegerAttr alignment) const {
+  return mlir::ptr::MemOpValidity::Valid;
+}
+mlir::ptr::MemOpValidity AddressSpaceAttr::isValidAtomicXchg(
+    Type type, mlir::ptr::AtomicOrdering successOrdering,
+    mlir::ptr::AtomicOrdering failureOrdering, IntegerAttr alignment) const {
+  return mlir::ptr::MemOpValidity::Valid;
+}
+
+mlir::ptr::CastValidity AddressSpaceAttr::isValidAddrSpaceCast(Type tgt,
+                                                               Type src) const {
+  return mlir::ptr::CastValidity::Valid;
+}
+
+mlir::ptr::CastValidity
+AddressSpaceAttr::isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy) const {
+  return mlir::ptr::CastValidity::Valid;
+}
+
+//===----------------------------------------------------------------------===//
 // DINodeAttr
 //===----------------------------------------------------------------------===//
 

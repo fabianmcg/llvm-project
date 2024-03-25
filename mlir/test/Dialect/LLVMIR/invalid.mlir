@@ -1422,7 +1422,7 @@ llvm.func @invalid_variadic_call(%arg: i32)  {
 // -----
 
 llvm.func @foo(%arg: !llvm.ptr) {
-  // expected-error@+1 {{type '!llvm.ptr' cannot be indexed (index #1)}}
+  // expected-error@+1 {{type '!ptr.ptr<#llvm.address_space>' cannot be indexed (index #1)}}
   %0 = llvm.getelementptr %arg[0, 4] : (!llvm.ptr) -> !llvm.ptr, !llvm.ptr
   llvm.return
 }
