@@ -9,7 +9,6 @@
 #ifndef PTR_ENUMS
 #define PTR_ENUMS
 
-include "mlir/Dialect/Ptr/IR/PtrDialect.td"
 include "mlir/IR/EnumAttr.td"
 
 //===----------------------------------------------------------------------===//

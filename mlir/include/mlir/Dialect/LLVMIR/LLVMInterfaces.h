@@ -14,18 +14,13 @@
 #define MLIR_DIALECT_LLVMIR_LLVMINTERFACES_H_
 
 #include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
+#include "mlir/Dialect/Ptr/IR/PtrInterfaces.h"
 
 namespace mlir {
 namespace LLVM {
 namespace detail {
-
-/// Verifies the access groups attribute of memory operations that implement the
-/// access group interface.
-LogicalResult verifyAccessGroupOpInterface(Operation *op);
-
-/// Verifies the alias analysis attributes of memory operations that implement
-/// the alias analysis interface.
-LogicalResult verifyAliasAnalysisOpInterface(Operation *op);
+using ptr::detail::verifyAccessGroupOpInterface;
+using ptr::detail::verifyAliasAnalysisOpInterface;
 
 } // namespace detail
 } // namespace LLVM
