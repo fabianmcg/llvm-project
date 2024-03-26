@@ -64,6 +64,14 @@ getPointerDataLayoutEntry(DataLayoutEntryListRef params, PtrType type,
   return std::nullopt;
 }
 
+Dialect *PtrType::getAliasDialect() const {
+  if (auto iface =
+          mlir::dyn_cast_or_null<MemorySpaceAttrInterface>(getMemorySpace()))
+    if (auto dialect = iface.getMemorySpaceDialect())
+      return dialect;
+  return &getDialect();
+}
+
 MemoryModel PtrType::getMemoryModel() const { return getMemorySpace(); }
 
 int64_t PtrType::getAddressSpace() const {

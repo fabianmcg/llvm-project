@@ -143,7 +143,7 @@ def Ptr_AtomicCmpXchgOp : Pointer_Op<"cmpxchg", [
 
     Examples:
     ```mlir
-      %res = ptr.cmpxchg %ptr, %cmp, %val acq_rel acq_rel : !ptr.ptr, i32
+      %res, %status = ptr.cmpxchg %ptr, %cmp, %val acq_rel acq_rel : !ptr.ptr, i32
     ```
   }];
   let arguments = (ins Ptr_PtrType:$ptr,

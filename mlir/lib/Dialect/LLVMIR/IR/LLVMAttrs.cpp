@@ -89,63 +89,89 @@ static bool isTypeCompatibleWithAtomicOp(Type type) {
          *bitWidth == 64;
 }
 
+Dialect *AddressSpaceAttr::getMemorySpaceDialect() const {
+  return &getDialect();
+}
+
 Attribute AddressSpaceAttr::getDefaultMemorySpace() const {
   return AddressSpaceAttr::get(getContext(), 0);
 }
 
 unsigned AddressSpaceAttr::getAddressSpace() const { return getAs(); }
 
-mlir::ptr::MemOpValidity
-AddressSpaceAttr::isValidLoad(Type type, mlir::ptr::AtomicOrdering ordering,
-                              IntegerAttr alignment) const {
+LogicalResult AddressSpaceAttr::isValidLoad(Type type,
+                                            mlir::ptr::AtomicOrdering ordering,
+                                            IntegerAttr alignment,
+                                            Operation *diagnosticOp) const {
   if (!isLoadableType(type))
-    return mlir::ptr::MemOpValidity::InvalidType;
+    return diagnosticOp ? diagnosticOp->emitError(
+                              "type must be LLVM type with size, but got ")
+                              << type
+                        : failure();
   if (ordering != ptr::AtomicOrdering::not_atomic &&
       !isTypeCompatibleWithAtomicOp(type))
-    return ptr::MemOpValidity::InvalidAtomicOrdering;
-  return mlir::ptr::MemOpValidity::Valid;
+    return diagnosticOp ? diagnosticOp->emitError("unsupported type ")
+                              << type << " for atomic access"
+                        : failure();
+  return success();
 }
 
-mlir::ptr::MemOpValidity
-AddressSpaceAttr::isValidStore(Type type, mlir::ptr::AtomicOrdering ordering,
-                               IntegerAttr alignment) const {
+LogicalResult AddressSpaceAttr::isValidStore(Type type,
+                                             mlir::ptr::AtomicOrdering ordering,
+                                             IntegerAttr alignment,
+                                             Operation *diagnosticOp) const {
   if (!isLoadableType(type))
-    return mlir::ptr::MemOpValidity::InvalidType;
+    return diagnosticOp ? diagnosticOp->emitError(
+                              "type must be LLVM type with size, but got ")
+                              << type
+                        : failure();
   if (ordering != ptr::AtomicOrdering::not_atomic &&
       !isTypeCompatibleWithAtomicOp(type))
-    return ptr::MemOpValidity::InvalidAtomicOrdering;
-  return mlir::ptr::MemOpValidity::Valid;
+    return diagnosticOp ? diagnosticOp->emitError("unsupported type ")
+                              << type << " for atomic access"
+                        : failure();
+  return success();
 }
 
-mlir::ptr::MemOpValidity
-AddressSpaceAttr::isValidAtomicOp(mlir::ptr::AtomicBinOp binOp, Type type,
-                                  mlir::ptr::AtomicOrdering ordering,
-                                  IntegerAttr alignment) const {
+LogicalResult AddressSpaceAttr::isValidAtomicOp(
+    mlir::ptr::AtomicBinOp binOp, Type type, mlir::ptr::AtomicOrdering ordering,
+    IntegerAttr alignment, Operation *diagnosticOp) const {
   if (binOp == ptr::AtomicBinOp::fadd || binOp == ptr::AtomicBinOp::fsub ||
       binOp == ptr::AtomicBinOp::fmin || binOp == ptr::AtomicBinOp::fmax) {
     if (!mlir::LLVM::isCompatibleFloatingPointType(type))
-      return mlir::ptr::MemOpValidity::InvalidType;
+      return diagnosticOp ? diagnosticOp->emitError(
+                                "expected LLVM IR floating point type")
+                          : failure();
   } else if (binOp == ptr::AtomicBinOp::xchg) {
     if (!isTypeCompatibleWithAtomicOp(type))
-      return ptr::MemOpValidity::InvalidAtomicOrdering;
+      return diagnosticOp ? diagnosticOp->emitError(
+                                "unexpected LLVM IR type for 'xchg' bin_op")
+                          : failure();
   } else {
     auto intType = llvm::dyn_cast<IntegerType>(type);
     unsigned intBitWidth = intType ? intType.getWidth() : 0;
     if (intBitWidth != 8 && intBitWidth != 16 && intBitWidth != 32 &&
         intBitWidth != 64)
-      return mlir::ptr::MemOpValidity::InvalidType;
+      return diagnosticOp
+                 ? diagnosticOp->emitError("expected LLVM IR integer type")
+                 : failure();
   }
-  return mlir::ptr::MemOpValidity::Valid;
+  return success();
 }
 
-mlir::ptr::MemOpValidity AddressSpaceAttr::isValidAtomicXchg(
+LogicalResult AddressSpaceAttr::isValidAtomicXchg(
     Type type, mlir::ptr::AtomicOrdering successOrdering,
-    mlir::ptr::AtomicOrdering failureOrdering, IntegerAttr alignment) const {
+    mlir::ptr::AtomicOrdering failureOrdering, IntegerAttr alignment,
+    Operation *diagnosticOp) const {
   if (!isLoadableType(type))
-    return mlir::ptr::MemOpValidity::InvalidType;
+    return diagnosticOp ? diagnosticOp->emitError(
+                              "type must be LLVM type with size, but got ")
+                              << type
+                        : failure();
   if (!isTypeCompatibleWithAtomicOp(type))
-    return ptr::MemOpValidity::InvalidAtomicOrdering;
-  return mlir::ptr::MemOpValidity::Valid;
+    return diagnosticOp ? diagnosticOp->emitError("unexpected LLVM IR type")
+                        : failure();
+  return success();
 }
 
 template <typename Ty>
@@ -154,22 +180,28 @@ static bool isScalarOrVectorOf(Type ty) {
                          isa<Ty>(LLVM::getVectorElementType(ty)));
 }
 
-mlir::ptr::CastValidity AddressSpaceAttr::isValidAddrSpaceCast(Type tgt,
-                                                               Type src) const {
+LogicalResult
+AddressSpaceAttr::isValidAddrSpaceCast(Type tgt, Type src,
+                                       Operation *diagnosticOp) const {
   if (!isScalarOrVectorOf<LLVMPointerType>(tgt))
-    return mlir::ptr::CastValidity::InvalidTargetType;
+    return diagnosticOp ? diagnosticOp->emitError("invalid ptr-like operand")
+                        : failure();
   if (!isScalarOrVectorOf<LLVMPointerType>(src))
-    return mlir::ptr::CastValidity::InvalidSourceType;
-  return mlir::ptr::CastValidity::Valid;
+    return diagnosticOp ? diagnosticOp->emitError("invalid ptr-like operand")
+                        : failure();
+  return success();
 }
 
-mlir::ptr::CastValidity
-AddressSpaceAttr::isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy) const {
+LogicalResult
+AddressSpaceAttr::isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy,
+                                    Operation *diagnosticOp) const {
   if (!isScalarOrVectorOf<IntegerType>(intLikeTy))
-    return mlir::ptr::CastValidity::InvalidTargetType;
+    return diagnosticOp ? diagnosticOp->emitError("invalid int-like type")
+                        : failure();
   if (!isScalarOrVectorOf<LLVMPointerType>(ptrLikeTy))
-    return mlir::ptr::CastValidity::InvalidSourceType;
-  return mlir::ptr::CastValidity::Valid;
+    return diagnosticOp ? diagnosticOp->emitError("invalid ptr-like type")
+                        : failure();
+  return success();
 }
 
 //===----------------------------------------------------------------------===//

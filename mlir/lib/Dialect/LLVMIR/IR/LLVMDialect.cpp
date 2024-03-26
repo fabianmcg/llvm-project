@@ -2635,7 +2635,7 @@ LogicalResult LLVM::BitcastOp::verify() {
   // 'llvm.addrspacecast' must be used for this purpose instead.
   if (resultType.getAddressSpace() != sourceType.getAddressSpace())
     return emitOpError("cannot cast pointers of different address spaces, "
-                       "use 'llvm.addrspacecast' instead");
+                       "use 'ptr.addrspacecast' instead");
 
   return success();
 }
@@ -2770,13 +2770,15 @@ struct LLVMOpAsmDialectInterface : public OpAsmDialectInterface {
         .Default([](Type) { return AliasResult::NoAlias; });
   }
 
-  void printDialectAlias(DialectAsmPrinter &printer, Type type) const {
-    return TypeSwitch<Type, void>(type)
+  LogicalResult printDialectAlias(DialectAsmPrinter &printer,
+                                  Type type) const override {
+    return TypeSwitch<Type, LogicalResult>(type)
         .Case<LLVMPointerType>([&](LLVMPointerType type) {
           printer << "ptr";
           type.print(printer);
+          return success();
         })
-        .Default([](Type) {});
+        .Default([](Type) { return failure(); });
   }
 };
 } // namespace

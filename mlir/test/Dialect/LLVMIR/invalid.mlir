@@ -126,7 +126,7 @@ func.func @gep_too_few_dynamic(%base : !llvm.ptr) {
 // -----
 
 func.func @load_non_llvm_type(%foo : memref<f32>) {
-  // expected-error@+1 {{op operand #0 must be LLVM pointer type}}
+  // expected-error@+1 {{'ptr.load' op operand #0 must be pointer type, but got 'memref<f32>'}}
   ptr.load %foo : memref<f32> -> f32
 }
 
@@ -630,16 +630,16 @@ func.func @atomicrmw_expected_int(%f32_ptr : !llvm.ptr, %f32 : f32) {
 // -----
 
 func.func @cmpxchg_mismatched_value_operands(%ptr : !llvm.ptr, %i32 : i32, %i64 : i64) {
-  // expected-error@+1 {{op failed to verify that operand #1 and operand #2 have the same type}}
-  %0 = "ptr.cmpxchg"(%ptr, %i32, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i32, i64) -> !llvm.struct<(i32, i1)>
+  // expected-error@+1 {{'ptr.cmpxchg' op failed to verify that all of {val, cmp, res} have same type}}
+  %0, %1 = "ptr.cmpxchg"(%ptr, %i32, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i32, i64) -> (i32, i1)
   llvm.return
 }
 
 // -----
 
 func.func @cmpxchg_mismatched_result(%ptr : !llvm.ptr, %i64 : i64) {
-  // expected-error@+1 {{op failed to verify that result #0 has an LLVM struct type consisting of the type of operand #2 and a bool}}
-  %0 = "ptr.cmpxchg"(%ptr, %i64, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i64, i64) -> !llvm.struct<(i64, i64)>
+  // expected-error@+1 {{'ptr.cmpxchg' op result #1 must be 1-bit signless integer, but got 'i64'}}
+  %0, %1 = "ptr.cmpxchg"(%ptr, %i64, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i64, i64) -> (i64, i64)
   llvm.return
 }
 
@@ -647,7 +647,7 @@ func.func @cmpxchg_mismatched_result(%ptr : !llvm.ptr, %i64 : i64) {
 
 func.func @cmpxchg_unexpected_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
   // expected-error@+1 {{unexpected LLVM IR type}}
-  %0 = ptr.cmpxchg %i1_ptr, %i1, %i1 monotonic monotonic : !llvm.ptr, i1
+  %0, %1 = ptr.cmpxchg %i1_ptr, %i1, %i1 monotonic monotonic : !llvm.ptr, i1
   llvm.return
 }
 
@@ -655,7 +655,7 @@ func.func @cmpxchg_unexpected_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
 
 func.func @cmpxchg_at_least_monotonic_success(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{ordering must be at least 'monotonic'}}
-  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 unordered monotonic : !llvm.ptr, i32
+  %0, %1 = ptr.cmpxchg %i32_ptr, %i32, %i32 unordered monotonic : !llvm.ptr, i32
   llvm.return
 }
 
@@ -663,7 +663,7 @@ func.func @cmpxchg_at_least_monotonic_success(%i32_ptr : !llvm.ptr, %i32 : i32) 
 
 func.func @cmpxchg_at_least_monotonic_failure(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{ordering must be at least 'monotonic'}}
-  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 monotonic unordered : !llvm.ptr, i32
+  %0, %1 = ptr.cmpxchg %i32_ptr, %i32, %i32 monotonic unordered : !llvm.ptr, i32
   llvm.return
 }
 
@@ -671,7 +671,7 @@ func.func @cmpxchg_at_least_monotonic_failure(%i32_ptr : !llvm.ptr, %i32 : i32) 
 
 func.func @cmpxchg_failure_release(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{failure ordering cannot be 'release' or 'acq_rel'}}
-  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel release : !llvm.ptr, i32
+  %0, %1 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel release : !llvm.ptr, i32
   llvm.return
 }
 
@@ -679,7 +679,7 @@ func.func @cmpxchg_failure_release(%i32_ptr : !llvm.ptr, %i32 : i32) {
 
 func.func @cmpxchg_failure_acq_rel(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{failure ordering cannot be 'release' or 'acq_rel'}}
-  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel acq_rel : !llvm.ptr, i32
+  %0, %1 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel acq_rel : !llvm.ptr, i32
   llvm.return
 }
 
@@ -862,7 +862,7 @@ llvm.mlir.global appending @non_array_type_global_appending_linkage() : i32
 
 module {
   llvm.func @accessGroups(%arg0 : !llvm.ptr) {
-      // expected-error@below {{attribute 'access_groups' failed to satisfy constraint: LLVM dialect access group metadata array}}
+      // expected-error@below {{attribute 'access_groups' failed to satisfy constraint: Ptr dialect access group metadata array}}
       %0 = ptr.load %arg0 { "access_groups" = [@func1] } : !llvm.ptr -> i32
       llvm.return
   }
@@ -875,8 +875,8 @@ module {
 
 module {
   llvm.func @accessGroups(%arg0 : !llvm.ptr, %arg1 : i32, %arg2 : i32) {
-      // expected-error@below {{attribute 'access_groups' failed to satisfy constraint: LLVM dialect access group metadata array}}
-      %0 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "access_groups" = [@metadata::@scope] } : !llvm.ptr, i32
+      // expected-error@below {{custom op 'ptr.cmpxchg' 'ptr.cmpxchg' op attribute 'access_groups' failed to satisfy constraint: Ptr dialect access group metadata array}}
+      %0, %1 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "access_groups" = [@metadata::@scope] } : !llvm.ptr, i32
       llvm.return
   }
   llvm.metadata @metadata {
@@ -888,8 +888,8 @@ module {
 
 module {
   llvm.func @aliasScope(%arg0 : !llvm.ptr, %arg1 : i32, %arg2 : i32) {
-      // expected-error@below {{attribute 'alias_scopes' failed to satisfy constraint: LLVM dialect alias scope array}}
-      %0 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "alias_scopes" = "test" } : !llvm.ptr, i32
+      // expected-error@below {{custom op 'ptr.cmpxchg' 'ptr.cmpxchg' op attribute 'alias_scopes' failed to satisfy constraint: Ptr dialect alias scope array}}
+      %0, %1 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "alias_scopes" = "test" } : !llvm.ptr, i32
       llvm.return
   }
 }
@@ -898,7 +898,7 @@ module {
 
 module {
   llvm.func @noAliasScopes(%arg0 : !llvm.ptr) {
-      // expected-error@below {{attribute 'noalias_scopes' failed to satisfy constraint: LLVM dialect alias scope array}}
+      // expected-error@below {{custom op 'ptr.load' 'ptr.load' op attribute 'noalias_scopes' failed to satisfy constraint: Ptr dialect alias scope array}}
       %0 = ptr.load %arg0 { "noalias_scopes" = "test" } : !llvm.ptr -> i32
       llvm.return
   }
@@ -1310,7 +1310,7 @@ func.func @invalid_target_ext_alloca() {
 // -----
 
 func.func @invalid_target_ext_load(%arg0 : !llvm.ptr) {
-  // expected-error@+1 {{result #0 must be LLVM type with size, but got '!llvm.target<"no_load">'}}
+  // expected-error@+1 {{type must be LLVM type with size, but got '!llvm.target<"no_load">'}}
   %0 = ptr.load %arg0 {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"no_load">
 }
 
@@ -1422,7 +1422,7 @@ llvm.func @invalid_variadic_call(%arg: i32)  {
 // -----
 
 llvm.func @foo(%arg: !llvm.ptr) {
-  // expected-error@+1 {{type '!ptr.ptr<#llvm.address_space>' cannot be indexed (index #1)}}
+  // expected-error@+1 {{type '!llvm.ptr' cannot be indexed (index #1)}}
   %0 = llvm.getelementptr %arg[0, 4] : (!llvm.ptr) -> !llvm.ptr, !llvm.ptr
   llvm.return
 }

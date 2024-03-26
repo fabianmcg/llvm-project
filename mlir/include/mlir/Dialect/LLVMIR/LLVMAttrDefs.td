@@ -29,6 +29,7 @@ class LLVM_Attr<string name, string attrMnemonic,
 
 def AddressSpaceAttr : LLVM_Attr<"AddressSpace", "address_space", [
     DeclareAttrInterfaceMethods<MemorySpaceAttrInterface, [
+      "getMemorySpaceDialect",
       "getDefaultMemorySpace",
       "getAddressSpace",
       "isValidLoad",

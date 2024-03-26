@@ -12,6 +12,7 @@
 include "mlir/Interfaces/DataLayoutInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
+include "mlir/IR/AsmInterfaces.td"
 include "mlir/IR/OpBase.td"
 
 //===----------------------------------------------------------------------===//
@@ -38,9 +39,11 @@ class Ptr_Type<string name, string typeMnemonic, list<Trait> traits = []>
 def Ptr_PtrType : Ptr_Type<"Ptr", "ptr", [
     MemRefElementTypeInterface,
     DeclareTypeInterfaceMethods<DataLayoutTypeInterface, [
-      "areCompatible", "getIndexBitwidth", "verifyEntries"]>
+      "areCompatible", "getIndexBitwidth", "verifyEntries"]>,
+    DeclareTypeInterfaceMethods<TypeAsmAliasTypeInterface, [
+      "getAliasDialect"]>
   ]> {
-  let summary = "Pointer type";
+  let summary = "pointer type";
   let description = [{
     The `ptr` type is an opaque pointer type. This type typically represents
     a reference to an object in memory. Pointers are optionally parameterized

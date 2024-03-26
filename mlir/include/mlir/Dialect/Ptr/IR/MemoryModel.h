@@ -21,68 +21,20 @@
 namespace mlir {
 class Operation;
 namespace ptr {
-/// Memory operation validity.
-enum class MemOpValidity : uint8_t {
-  Valid = 0, /// The operation is valid.
-  InvalidType =
-      1, /// The type is not compatible with the operation and memory space.
-  InvalidAtomicOrdering = 2, /// The atomic ordering is incompatible with the
-                             /// operation and memory space.
-  InvalidAlignment = 4,      /// The provided alignment is invalid.
-};
-
-inline MemOpValidity operator&(MemOpValidity lhs, MemOpValidity rhs) {
-  return static_cast<MemOpValidity>(static_cast<uint8_t>(lhs) &
-                                    static_cast<uint8_t>(rhs));
-}
-inline MemOpValidity operator|(MemOpValidity lhs, MemOpValidity rhs) {
-  return static_cast<MemOpValidity>(static_cast<uint8_t>(lhs) |
-                                    static_cast<uint8_t>(rhs));
-}
-
-/// Checks if a specific cast validity flag is set.
-inline bool isMemValidityFlagSet(MemOpValidity value, MemOpValidity flag) {
-  return (value & flag) == flag;
-}
-
-/// Ptr cast operations validity.
-enum class CastValidity : uint8_t {
-  Valid = 0,                 /// Valid cast operation.
-  InvalidSourceType = 1,     /// Invalid source type.
-  InvalidTargetType = 2,     /// Invalid target type.
-  InvalidVectorRank = 4,     /// One of the operands has an invalid vector rank.
-  InvalidScalableVector = 8, /// One of the operands is a scalable vector.
-  IncompatibleShapes = 16,   /// The types have incompatible shapes.
-};
-
-inline CastValidity operator&(CastValidity lhs, CastValidity rhs) {
-  return static_cast<CastValidity>(static_cast<uint8_t>(lhs) &
-                                   static_cast<uint8_t>(rhs));
-}
-inline CastValidity operator|(CastValidity lhs, CastValidity rhs) {
-  return static_cast<CastValidity>(static_cast<uint8_t>(lhs) |
-                                   static_cast<uint8_t>(rhs));
-}
-
-/// Checks if a specific cast validity flag is set.
-inline bool isCastFlagSet(CastValidity value, CastValidity flag) {
-  return (value & flag) == flag;
-}
-
 /// This method checks if it's valid to perform an `addrspacecast` op in the
 /// memory space.
 /// Compatible types are:
 /// Vectors of rank 1, or scalars of `ptr` type.
-CastValidity isValidAddrSpaceCastImpl(Type tgt, Type src);
+LogicalResult isValidAddrSpaceCastImpl(Type tgt, Type src,
+                                       Operation *diagnosticOp);
 
 /// This method checks if it's valid to perform a `ptrtoint` or `inttoptr` op in
-/// the memory space. `CastValidity::InvalidSourceType` always refers to the
-/// 'ptr-like' type and `CastValidity::InvalidTargetType` always refers to the
-/// `int-like` type.
+/// the memory space.
 /// Compatible types are:
 /// IntLikeTy: Vectors of rank 1, or scalars of integer types or `index` type.
 /// PtrLikeTy: Vectors of rank 1, or scalars of `ptr` type.
-CastValidity isValidPtrIntCastImpl(Type intLikeTy, Type ptrLikeTy);
+LogicalResult isValidPtrIntCastImpl(Type intLikeTy, Type ptrLikeTy,
+                                    Operation *diagnosticOp);
 
 enum class AtomicBinOp : uint64_t;
 enum class AtomicOrdering : uint64_t;
@@ -135,55 +87,64 @@ public:
   /// This method checks if it's valid to load a value from the memory space
   /// with a specific type, alignment, and atomic ordering. The default model
   /// assumes all values are loadable.
-  MemOpValidity isValidLoad(Type type, AtomicOrdering ordering,
-                            IntegerAttr alignment) const {
-    return memorySpace ? memorySpace.isValidLoad(type, ordering, alignment)
-                       : MemOpValidity::Valid;
+  LogicalResult isValidLoad(Type type, AtomicOrdering ordering,
+                            IntegerAttr alignment,
+                            Operation *diagnosticOp = nullptr) const {
+    return memorySpace ? memorySpace.isValidLoad(type, ordering, alignment,
+                                                 diagnosticOp)
+                       : success();
   }
 
   /// This method checks if it's valid to store a value in the memory space with
   /// a specific type, alignment, and atomic ordering. The default model assumes
   /// all values are loadable.
-  MemOpValidity isValidStore(Type type, AtomicOrdering ordering,
-                             IntegerAttr alignment) const {
-    return memorySpace ? memorySpace.isValidStore(type, ordering, alignment)
-                       : MemOpValidity::Valid;
+  LogicalResult isValidStore(Type type, AtomicOrdering ordering,
+                             IntegerAttr alignment,
+                             Operation *diagnosticOp = nullptr) const {
+    return memorySpace ? memorySpace.isValidStore(type, ordering, alignment,
+                                                  diagnosticOp)
+                       : success();
   }
 
   /// This method checks if it's valid to perform an atomic operation in the
   /// memory space with a specific type, alignment, and atomic ordering.
-  MemOpValidity isValidAtomicOp(AtomicBinOp op, Type type,
-                                AtomicOrdering ordering,
-                                IntegerAttr alignment) const {
-    return memorySpace
-               ? memorySpace.isValidAtomicOp(op, type, ordering, alignment)
-               : MemOpValidity::Valid;
+  LogicalResult isValidAtomicOp(AtomicBinOp op, Type type,
+                                AtomicOrdering ordering, IntegerAttr alignment,
+                                Operation *diagnosticOp = nullptr) const {
+    return memorySpace ? memorySpace.isValidAtomicOp(op, type, ordering,
+                                                     alignment, diagnosticOp)
+                       : success();
   }
 
   /// This method checks if it's valid to perform an atomic operation in the
   /// memory space with a specific type, alignment, and atomic ordering.
-  MemOpValidity isValidAtomicXchg(Type type, AtomicOrdering successOrdering,
+  LogicalResult isValidAtomicXchg(Type type, AtomicOrdering successOrdering,
                                   AtomicOrdering failureOrdering,
-                                  IntegerAttr alignment) const {
-    return memorySpace ? memorySpace.isValidAtomicXchg(
-                             type, successOrdering, failureOrdering, alignment)
-                       : MemOpValidity::Valid;
+                                  IntegerAttr alignment,
+                                  Operation *diagnosticOp = nullptr) const {
+    return memorySpace ? memorySpace.isValidAtomicXchg(type, successOrdering,
+                                                       failureOrdering,
+                                                       alignment, diagnosticOp)
+                       : success();
   }
 
   /// This method checks if it's valid to perform an `addrspacecast` op in the
   /// memory space.
-  CastValidity isValidAddrSpaceCast(Type tgt, Type src) const {
-    return memorySpace ? memorySpace.isValidAddrSpaceCast(tgt, src)
-                       : isValidAddrSpaceCastImpl(tgt, src);
+  LogicalResult isValidAddrSpaceCast(Type tgt, Type src,
+                                     Operation *diagnosticOp = nullptr) const {
+    return memorySpace
+               ? memorySpace.isValidAddrSpaceCast(tgt, src, diagnosticOp)
+               : isValidAddrSpaceCastImpl(tgt, src, diagnosticOp);
   }
 
   /// This method checks if it's valid to perform a `ptrtoint` or `inttoptr` op
-  /// in the memory space. `CastValidity::InvalidSourceType` always refers to
-  /// the 'ptr-like' type and `CastValidity::InvalidTargetType` always refers to
-  /// the `int-like` type.
-  CastValidity isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy) const {
-    return memorySpace ? memorySpace.isValidPtrIntCast(intLikeTy, ptrLikeTy)
-                       : isValidPtrIntCastImpl(intLikeTy, ptrLikeTy);
+  /// in the memory space.
+  LogicalResult isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy,
+                                  Operation *diagnosticOp = nullptr) const {
+    return memorySpace
+               ? memorySpace.isValidPtrIntCast(intLikeTy, ptrLikeTy,
+                                               diagnosticOp)
+               : isValidPtrIntCastImpl(intLikeTy, ptrLikeTy, diagnosticOp);
   }
 
 protected:

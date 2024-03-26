@@ -33,9 +33,19 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
   let methods = [
     InterfaceMethod<
       /*desc=*/        [{
+        Returns the dialect implementing the memory space.
+      }],
+      /*returnType=*/  "::mlir::Dialect*",
+      /*methodName=*/  "getMemorySpaceDialect",
+      /*args=*/        (ins),
+      /*methodBody=*/  [{}],
+      /*defaultImpl=*/ [{ return nullptr; }]
+    >,
+    InterfaceMethod<
+      /*desc=*/        [{
         Returns the default memory space as an attribute.
       }],
-      /*returnType=*/  "Attribute",
+      /*returnType=*/  "::mlir::Attribute",
       /*methodName=*/  "getDefaultMemorySpace",
       /*args=*/        (ins),
       /*methodBody=*/  [{}],
@@ -55,56 +65,64 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
       /*desc=*/        [{
         This method checks if it's valid to load a value from the memory space
         with a specific type, alignment, and atomic ordering.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::MemOpValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidLoad",
-      /*args=*/        (ins "Type":$type,
-                            "mlir::ptr::AtomicOrdering":$ordering,
-                            "IntegerAttr":$alignment),
+      /*args=*/        (ins "::mlir::Type":$type,
+                            "::mlir::ptr::AtomicOrdering":$ordering,
+                            "::mlir::IntegerAttr":$alignment,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
+      /*defaultImpl=*/ [{}]
     >,
     InterfaceMethod<
       /*desc=*/        [{
         This method checks if it's valid to store a value in the memory space
         with a specific type, alignment, and atomic ordering.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::MemOpValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidStore",
-      /*args=*/        (ins "Type":$type,
-                            "mlir::ptr::AtomicOrdering":$ordering,
-                            "IntegerAttr":$alignment),
+      /*args=*/        (ins "::mlir::Type":$type,
+                            "::mlir::ptr::AtomicOrdering":$ordering,
+                            "::mlir::IntegerAttr":$alignment,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
+      /*defaultImpl=*/ [{}]
     >,
     InterfaceMethod<
       /*desc=*/        [{
         This method checks if it's valid to perform an atomic operation in the
         memory space with a specific type, alignment, and atomic ordering.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::MemOpValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidAtomicOp",
-      /*args=*/        (ins "mlir::ptr::AtomicBinOp":$op,
-                            "Type":$type,
-                            "mlir::ptr::AtomicOrdering":$ordering,
-                            "IntegerAttr":$alignment),
+      /*args=*/        (ins "::mlir::ptr::AtomicBinOp":$op,
+                            "::mlir::Type":$type,
+                            "::mlir::ptr::AtomicOrdering":$ordering,
+                            "::mlir::IntegerAttr":$alignment,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
+      /*defaultImpl=*/ [{}]
     >,
     InterfaceMethod<
       /*desc=*/        [{
         This method checks if it's valid to perform an atomic exchange operation
         in the memory space with a specific type, alignment, and atomic
         orderings.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::MemOpValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidAtomicXchg",
-      /*args=*/        (ins "Type":$type,
-                            "mlir::ptr::AtomicOrdering":$successOrdering,
-                            "mlir::ptr::AtomicOrdering":$failureOrdering,
-                            "IntegerAttr":$alignment),
+      /*args=*/        (ins "::mlir::Type":$type,
+                            "::mlir::ptr::AtomicOrdering":$successOrdering,
+                            "::mlir::ptr::AtomicOrdering":$failureOrdering,
+                            "::mlir::IntegerAttr":$alignment,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return MemOpValidity::Valid; }]
+      /*defaultImpl=*/ [{}]
     >,
     InterfaceMethod<
       /*desc=*/        [{
@@ -112,12 +130,15 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         in the memory space.
         Both types are expected to be vectors of rank 1, or scalars of `ptr`
         type.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::CastValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidAddrSpaceCast",
-      /*args=*/        (ins "Type":$tgt, "Type":$src),
+      /*args=*/        (ins "::mlir::Type":$tgt,
+                            "::mlir::Type":$src,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return isValidAddrSpaceCastImpl(tgt, src); }]
+      /*defaultImpl=*/ [{}]
     >,
     InterfaceMethod<
       /*desc=*/        [{
@@ -127,12 +148,15 @@ def MemorySpaceAttrInterface : AttrInterface<"MemorySpaceAttrInterface"> {
         refers to the `int-like` type.
         The first type is expected to be integer-like, while the second must be a
         ptr-like type.
+        If `diagnosticOp` is non-null then the method might emit diagnostics.
       }],
-      /*returnType=*/  "mlir::ptr::CastValidity",
+      /*returnType=*/  "::mlir::LogicalResult",
       /*methodName=*/  "isValidPtrIntCast",
-      /*args=*/        (ins "Type":$intLikeTy, "Type":$ptrLikeTy),
+      /*args=*/        (ins "::mlir::Type":$intLikeTy,
+                            "::mlir::Type":$ptrLikeTy,
+                            "::mlir::Operation*":$diagnosticOp),
       /*methodBody=*/  [{}],
-      /*defaultImpl=*/ [{ return isValidPtrIntCastImpl(intLikeTy, ptrLikeTy); }]
+      /*defaultImpl=*/ [{}]
     >,
   ];
 }

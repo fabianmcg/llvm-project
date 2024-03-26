@@ -84,40 +84,48 @@ static std::pair<Type, int64_t> getVecOrScalarInfo(Type ty) {
   return {ty, 0};
 }
 
-CastValidity mlir::ptr::isValidAddrSpaceCastImpl(Type tgt, Type src) {
+LogicalResult mlir::ptr::isValidAddrSpaceCastImpl(Type tgt, Type src,
+                                                  Operation *op) {
   std::pair<Type, int64_t> tgtInfo = getVecOrScalarInfo(tgt);
   std::pair<Type, int64_t> srcInfo = getVecOrScalarInfo(src);
   if (!isa<PtrType>(tgtInfo.first) || !isa<PtrType>(srcInfo.first))
-    return CastValidity::InvalidTargetType | CastValidity::InvalidSourceType;
+    return op ? op->emitError("invalid ptr-like operand") : failure();
   // Check shape validity.
   if (tgtInfo.second == -1 || srcInfo.second == -1)
-    return CastValidity::InvalidVectorRank;
+    return op ? op->emitError("vectors of rank != 1 are not supported")
+              : failure();
   if (tgtInfo.second == -2 || srcInfo.second == -2)
-    return CastValidity::InvalidScalableVector;
+    return op ? op->emitError(
+                    "vectors with scalable dimensions are not supported")
+              : failure();
   if (tgtInfo.second != srcInfo.second)
-    return CastValidity::IncompatibleShapes;
-  return CastValidity::Valid;
+    return op ? op->emitError("incompatible operand shapes") : failure();
+  return success();
 }
 
-CastValidity mlir::ptr::isValidPtrIntCastImpl(Type intLikeTy, Type ptrLikeTy) {
+LogicalResult mlir::ptr::isValidPtrIntCastImpl(Type intLikeTy, Type ptrLikeTy,
+                                               Operation *op) {
   // Check int-like type.
   std::pair<Type, int64_t> intInfo = getVecOrScalarInfo(intLikeTy);
   if (!intInfo.first.isSignlessIntOrIndex())
     /// The int-like operand is invalid.
-    return CastValidity::InvalidTargetType;
+    return op ? op->emitError("invalid int-like type") : failure();
   // Check ptr-like type.
   std::pair<Type, int64_t> ptrInfo = getVecOrScalarInfo(ptrLikeTy);
   if (!isa<PtrType>(ptrInfo.first))
     /// The pointer-like operand is invalid.
-    return CastValidity::InvalidSourceType;
+    return op ? op->emitError("invalid ptr-like type") : failure();
   // Check shape validity.
   if (intInfo.second == -1 || ptrInfo.second == -1)
-    return CastValidity::InvalidVectorRank;
+    return op ? op->emitError("vectors of rank != 1 are not supported")
+              : failure();
   if (intInfo.second == -2 || ptrInfo.second == -2)
-    return CastValidity::InvalidScalableVector;
+    return op ? op->emitError(
+                    "vectors with scalable dimensions are not supported")
+              : failure();
   if (intInfo.second != ptrInfo.second)
-    return CastValidity::IncompatibleShapes;
-  return CastValidity::Valid;
+    return op ? op->emitError("incompatible operand shapes") : failure();
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
@@ -149,40 +157,20 @@ void printIntType(OpAsmPrinter &p, Operation *op, Type ty) {
     p << " : " << ty;
 }
 
-/// Verifies the validity of a memory operation.
-LogicalResult verifyMemOpValidity(Operation *op, Type valueType,
-                                  MemOpValidity validity, StringRef typeError) {
-  if (isMemValidityFlagSet(validity, MemOpValidity::InvalidType |
-                                         MemOpValidity::InvalidAtomicOrdering))
-    return op->emitError("unsupported type ")
-           << valueType << " for atomic access";
-  if (isMemValidityFlagSet(validity, MemOpValidity::InvalidType))
-    return op->emitError(typeError);
-  if (isMemValidityFlagSet(validity, MemOpValidity::InvalidAtomicOrdering))
-    return op->emitError("incompatible atomic ordering");
-  if (isMemValidityFlagSet(validity, MemOpValidity::InvalidAlignment))
-    return op->emitError("incompatible alignment");
-  return success();
-}
-
 /// Verifies the attributes and the type of atomic memory access operations.
 template <typename OpTy>
 LogicalResult verifyAtomicMemOp(OpTy memOp, Type valueType,
                                 ArrayRef<AtomicOrdering> unsupportedOrderings) {
   if (memOp.getOrdering() != AtomicOrdering::not_atomic) {
-    // if (!isTypeCompatibleWithAtomicOp(valueType,
-    //                                   /*isPointerTypeAllowed=*/true))
-    //   return memOp.emitOpError("unsupported type ")
-    //          << valueType << " for atomic access";
     if (llvm::is_contained(unsupportedOrderings, memOp.getOrdering()))
-      return memOp.emitOpError("unsupported ordering '")
+      return memOp.emitError("unsupported ordering '")
              << stringifyAtomicOrdering(memOp.getOrdering()) << "'";
     if (!memOp.getAlignment())
-      return memOp.emitOpError("expected alignment for atomic access");
+      return memOp.emitError("expected alignment for atomic access");
     return success();
   }
   if (memOp.getSyncscope())
-    return memOp.emitOpError(
+    return memOp.emitError(
         "expected syncscope to be null for non-atomic access");
   return success();
 }
@@ -212,17 +200,15 @@ MemoryModel AtomicRMWOp::getMemoryModel() {
 
 LogicalResult AtomicRMWOp::verify() {
   Type valueType = getVal().getType();
-  if (failed(verifyMemOpValidity(
-          *this, valueType,
-          getMemoryModel().isValidAtomicOp(getBinOp(), valueType, getOrdering(),
-                                           getAlignmentAttr()),
-          "type is invalid")))
+  if (failed(getMemoryModel().isValidAtomicOp(getBinOp(), valueType,
+                                              getOrdering(), getAlignmentAttr(),
+                                              getOperation())))
     return failure();
   if (static_cast<unsigned>(getOrdering()) <
       static_cast<unsigned>(AtomicOrdering::monotonic))
-    return emitOpError() << "expected at least '"
-                         << stringifyAtomicOrdering(AtomicOrdering::monotonic)
-                         << "' ordering";
+    return emitError() << "expected at least '"
+                       << stringifyAtomicOrdering(AtomicOrdering::monotonic)
+                       << "' ordering";
   return success();
 }
 
@@ -251,18 +237,16 @@ MemoryModel AtomicCmpXchgOp::getMemoryModel() {
 
 LogicalResult AtomicCmpXchgOp::verify() {
   Type valueType = getVal().getType();
-  if (failed(verifyMemOpValidity(*this, valueType,
-                                 getMemoryModel().isValidAtomicXchg(
-                                     valueType, getSuccessOrdering(),
-                                     getFailureOrdering(), getAlignmentAttr()),
-                                 "type is invalid")))
+  if (failed(getMemoryModel().isValidAtomicXchg(
+          valueType, getSuccessOrdering(), getFailureOrdering(),
+          getAlignmentAttr(), getOperation())))
     return failure();
   if (getSuccessOrdering() < AtomicOrdering::monotonic ||
       getFailureOrdering() < AtomicOrdering::monotonic)
-    return emitOpError("ordering must be at least 'monotonic'");
+    return emitError("ordering must be at least 'monotonic'");
   if (getFailureOrdering() == AtomicOrdering::release ||
       getFailureOrdering() == AtomicOrdering::acq_rel)
-    return emitOpError("failure ordering cannot be 'release' or 'acq_rel'");
+    return emitError("failure ordering cannot be 'release' or 'acq_rel'");
   return success();
 }
 
@@ -307,11 +291,8 @@ SmallVector<Value> LoadOp::getAccessedOperands() { return {getAddr()}; }
 
 LogicalResult LoadOp::verify() {
   Type valueType = getRes().getType();
-  if (failed(
-          verifyMemOpValidity(*this, valueType,
-                              getMemoryModel().isValidLoad(
-                                  valueType, getOrdering(), getAlignmentAttr()),
-                              "type is not loadable")))
+  if (failed(getMemoryModel().isValidLoad(valueType, getOrdering(),
+                                          getAlignmentAttr(), getOperation())))
     return failure();
   return verifyAtomicMemOp(*this, valueType,
                            {AtomicOrdering::release, AtomicOrdering::acq_rel});
@@ -358,11 +339,8 @@ MemoryModel StoreOp::getMemoryModel() {
 
 LogicalResult StoreOp::verify() {
   Type valueType = getValue().getType();
-  if (failed(
-          verifyMemOpValidity(*this, valueType,
-                              getMemoryModel().isValidStore(
-                                  valueType, getOrdering(), getAlignmentAttr()),
-                              "type is not storable")))
+  if (failed(getMemoryModel().isValidStore(valueType, getOrdering(),
+                                           getAlignmentAttr(), getOperation())))
     return failure();
   return verifyAtomicMemOp(*this, valueType,
                            {AtomicOrdering::acquire, AtomicOrdering::acq_rel});
@@ -390,18 +368,8 @@ OpFoldResult AddrSpaceCastOp::fold(FoldAdaptor adaptor) {
 }
 
 LogicalResult AddrSpaceCastOp::verify() {
-  CastValidity validity = getMemoryModel().isValidAddrSpaceCast(
-      getRes().getType(), getArg().getType());
-  if (isCastFlagSet(validity, CastValidity::InvalidSourceType) ||
-      isCastFlagSet(validity, CastValidity::InvalidTargetType))
-    return emitError() << "invalid ptr-like operand";
-  if (isCastFlagSet(validity, CastValidity::InvalidVectorRank))
-    return emitError() << "vectors of rank != 1 are not supported";
-  if (isCastFlagSet(validity, CastValidity::InvalidScalableVector))
-    return emitError() << "vectors with scalable dimensions are not supported";
-  if (isCastFlagSet(validity, CastValidity::IncompatibleShapes))
-    return emitError() << "incompatible operand shapes";
-  return success();
+  return getMemoryModel().isValidAddrSpaceCast(
+      getRes().getType(), getArg().getType(), getOperation());
 }
 
 //===----------------------------------------------------------------------===//
@@ -415,19 +383,8 @@ MemoryModel IntToPtrOp::getMemoryModel() {
 }
 
 LogicalResult IntToPtrOp::verify() {
-  CastValidity validity = getMemoryModel().isValidPtrIntCast(
-      getArg().getType(), getRes().getType());
-  if (isCastFlagSet(validity, CastValidity::InvalidSourceType))
-    return emitError() << "invalid int-like type";
-  if (isCastFlagSet(validity, CastValidity::InvalidTargetType))
-    return emitError() << "invalid ptr-like type";
-  if (isCastFlagSet(validity, CastValidity::InvalidVectorRank))
-    return emitError() << "vectors of rank != 1 are not supported";
-  if (isCastFlagSet(validity, CastValidity::InvalidScalableVector))
-    return emitError() << "vectors with scalable dimensions are not supported";
-  if (isCastFlagSet(validity, CastValidity::IncompatibleShapes))
-    return emitError() << "incompatible operand shapes";
-  return success();
+  return getMemoryModel().isValidPtrIntCast(getArg().getType(),
+                                            getRes().getType(), getOperation());
 }
 
 //===----------------------------------------------------------------------===//
@@ -441,19 +398,8 @@ MemoryModel PtrToIntOp::getMemoryModel() {
 }
 
 LogicalResult PtrToIntOp::verify() {
-  CastValidity validity = getMemoryModel().isValidPtrIntCast(
-      getRes().getType(), getArg().getType());
-  if (isCastFlagSet(validity, CastValidity::InvalidSourceType))
-    return emitError() << "invalid int-like type";
-  if (isCastFlagSet(validity, CastValidity::InvalidTargetType))
-    return emitError() << "invalid ptr-like type";
-  if (isCastFlagSet(validity, CastValidity::InvalidVectorRank))
-    return emitError() << "vectors of rank != 1 are not supported";
-  if (isCastFlagSet(validity, CastValidity::InvalidScalableVector))
-    return emitError() << "vectors with scalable dimensions are not supported";
-  if (isCastFlagSet(validity, CastValidity::IncompatibleShapes))
-    return emitError() << "incompatible operand shapes";
-  return success();
+  return getMemoryModel().isValidPtrIntCast(getRes().getType(),
+                                            getArg().getType(), getOperation());
 }
 
 //===----------------------------------------------------------------------===//
@@ -518,7 +464,7 @@ template <class AttrT>
 static LogicalResult isArrayOf(Operation *op, ArrayAttr array) {
   for (Attribute iter : array)
     if (!isa<AttrT>(iter))
-      return op->emitOpError("expected op to return array of ")
+      return op->emitError("expected op to return array of ")
              << AttrT::getMnemonic() << " attributes";
   return success();
 }

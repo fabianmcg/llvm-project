@@ -502,7 +502,7 @@ atomic {
 func.func @foo(%lb : index, %ub : index, %step : index, %mem : memref<1xf32>) {
   %c1 = arith.constant 1 : i32
 
-  // expected-error @below {{expected accumulator ('memref<1xf32>') to be the same type as reduction declaration ('!ptr.ptr<#llvm.address_space>')}}
+  // expected-error @below {{expected accumulator ('memref<1xf32>') to be the same type as reduction declaration ('!llvm.ptr')}}
   omp.wsloop reduction(@add_f32 %mem -> %prv : memref<1xf32>)
   for (%iv) : index = (%lb) to (%ub) step (%step) {
     %2 = arith.constant 2.0 : f32
@@ -1382,7 +1382,7 @@ atomic {
 }
 
 func.func @omp_task(%mem: memref<1xf32>) {
-  // expected-error @below {{op expected accumulator ('memref<1xf32>') to be the same type as reduction declaration ('!ptr.ptr<#llvm.address_space>')}}
+  // expected-error @below {{op expected accumulator ('memref<1xf32>') to be the same type as reduction declaration ('!llvm.ptr')}}
   omp.task in_reduction(@add_i32 -> %mem : memref<1xf32>) {
     // CHECK: "test.foo"() : () -> ()
     "test.foo"() : () -> ()
@@ -1869,7 +1869,7 @@ omp.private {type = firstprivate} @x.privatizer : f32 alloc {
 // -----
 
 func.func @private_type_mismatch(%arg0: index) {
-// expected-error @below {{type mismatch between a private variable and its privatizer op, var type: 'index' vs. privatizer op type: '!ptr.ptr<#llvm.address_space>'}}
+// expected-error @below {{type mismatch between a private variable and its privatizer op, var type: 'index' vs. privatizer op type: '!llvm.ptr'}}
   omp.parallel private(@var1.privatizer %arg0 -> %arg2 : index) {
     omp.terminator
   }
@@ -1885,7 +1885,7 @@ omp.private {type = private} @var1.privatizer : !llvm.ptr alloc {
 // -----
 
 func.func @firstprivate_type_mismatch(%arg0: index) {
-  // expected-error @below {{type mismatch between a firstprivate variable and its privatizer op, var type: 'index' vs. privatizer op type: '!ptr.ptr<#llvm.address_space>'}}
+  // expected-error @below {{type mismatch between a firstprivate variable and its privatizer op, var type: 'index' vs. privatizer op type: '!llvm.ptr'}}
   omp.parallel private(@var1.privatizer %arg0 -> %arg2 : index) {
     omp.terminator
   }
