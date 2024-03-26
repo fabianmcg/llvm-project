@@ -185,6 +185,18 @@ DeletionKind LLVM::DbgDeclareOp::removeBlockingUses(
   return DeletionKind::Delete;
 }
 
+bool LLVM::DbgDeclareOp::requiresVisitingMutatedDefs() { return true; }
+
+void LLVM::DbgDeclareOp::visitMutatedDefs(
+    ArrayRef<std::pair<Operation *, Value>> definitions,
+    RewriterBase &rewriter) {
+  for (auto [op, value] : definitions) {
+    rewriter.setInsertionPointAfter(op);
+    rewriter.create<LLVM::DbgValueOp>(getLoc(), value, getVarInfo(),
+                                      getLocationExpr());
+  }
+}
+
 bool LLVM::DbgValueOp::canUsesBeRemoved(
     const SmallPtrSetImpl<OpOperand *> &blockingUses,
     SmallVectorImpl<OpOperand *> &newBlockingUses,
