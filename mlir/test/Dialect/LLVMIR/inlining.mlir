@@ -21,7 +21,7 @@ func.func @inner_func_inlinable(%ptr : !llvm.ptr) -> i32 {
   "llvm.intr.assume"(%true) : (i1) -> ()
   llvm.fence release
   %2 = ptr.atomicrmw add %ptr, %0 monotonic : !llvm.ptr, i32
-  %3 = ptr.cmpxchg %ptr, %0, %1 acq_rel monotonic : !llvm.ptr, i32
+  %3, %4 = ptr.cmpxchg %ptr, %0, %1 acq_rel monotonic : !llvm.ptr, i32
   llvm.inline_asm has_side_effects "foo", "bar" : () -> ()
   llvm.cond_br %true, ^bb1, ^bb2
 ^bb1:

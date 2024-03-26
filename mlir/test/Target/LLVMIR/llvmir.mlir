@@ -1512,16 +1512,12 @@ llvm.func @atomicrmw(
 // CHECK-LABEL: @cmpxchg
 llvm.func @cmpxchg(%ptr : !llvm.ptr, %cmp : i32, %val: i32) {
   // CHECK: cmpxchg ptr %{{.*}}, i32 %{{.*}}, i32 %{{.*}} acq_rel monotonic
-  %0 = ptr.cmpxchg %ptr, %cmp, %val acq_rel monotonic : !llvm.ptr, i32
-  // CHECK: %{{[0-9]+}} = extractvalue { i32, i1 } %{{[0-9]+}}, 0
-  %1 = llvm.extractvalue %0[0] : !llvm.struct<(i32, i1)>
-  // CHECK: %{{[0-9]+}} = extractvalue { i32, i1 } %{{[0-9]+}}, 1
-  %2 = llvm.extractvalue %0[1] : !llvm.struct<(i32, i1)>
+  %0, %1 = ptr.cmpxchg %ptr, %cmp, %val acq_rel monotonic : !llvm.ptr, i32
 
   // CHECK:  cmpxchg weak volatile
   // CHECK-SAME:  syncscope("singlethread")
   // CHECK-SAME:  align 8
-  %3 = ptr.cmpxchg weak volatile %ptr, %cmp, %val syncscope("singlethread") acq_rel monotonic {alignment = 8 : i64} : !llvm.ptr, i32
+  %2, %3 = ptr.cmpxchg weak volatile %ptr, %cmp, %val syncscope("singlethread") acq_rel monotonic {alignment = 8 : i64} : !llvm.ptr, i32
   llvm.return
 }
 

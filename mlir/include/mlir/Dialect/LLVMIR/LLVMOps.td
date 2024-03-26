@@ -1488,7 +1488,9 @@ def LLVM_ConstantOp
 def LLVM_FenceOp : LLVM_Op<"fence">, LLVM_MemOpPatterns {
   let arguments = (ins AtomicOrdering:$ordering,
                    OptionalAttr<StrAttr>:$syncscope);
-  let assemblyFormat = "(`syncscope` `(` $syncscope^ `)`)? $ordering attr-dict";
+  let assemblyFormat = [{
+    (`syncscope` `(` $syncscope^ `)`)? custom<AtomicOrdering>($ordering) attr-dict
+  }];
   string llvmInstName = "Fence";
   let llvmBuilder = [{
     auto *inst = builder.CreateFence(convertAtomicOrderingToLLVM($ordering));

@@ -429,10 +429,8 @@ func.func @generic_atomic_rmw(%I : memref<10xi32>, %i : index) {
 // CHECK:        %[[INIT:.*]] = ptr.load %{{.*}} : !llvm.ptr -> i32
 // CHECK-NEXT:   llvm.br ^bb1(%[[INIT]] : i32)
 // CHECK-NEXT: ^bb1(%[[LOADED:.*]]: i32):
-// CHECK-NEXT:   %[[PAIR:.*]] = ptr.cmpxchg %{{.*}}, %[[LOADED]], %[[LOADED]]
+// CHECK-NEXT:   %[[NEW:.*]], %[[OK:.*]] = ptr.cmpxchg %{{.*}}, %[[LOADED]], %[[LOADED]]
 // CHECK-SAME:                      acq_rel monotonic : !llvm.ptr, i32
-// CHECK-NEXT:   %[[NEW:.*]] = llvm.extractvalue %[[PAIR]][0]
-// CHECK-NEXT:   %[[OK:.*]] = llvm.extractvalue %[[PAIR]][1]
 // CHECK-NEXT:   llvm.cond_br %[[OK]], ^bb2, ^bb1(%[[NEW]] : i32)
 
 // -----
@@ -455,10 +453,8 @@ func.func @generic_atomic_rmw_in_alloca_scope(){
 // CHECK:        %[[INIT:.*]] = ptr.load %[[BUF:.*]] : !llvm.ptr -> i32
 // CHECK-NEXT:   llvm.br ^bb2(%[[INIT]] : i32)
 // CHECK-NEXT: ^bb2(%[[LOADED:.*]]: i32):
-// CHECK-NEXT:   %[[PAIR:.*]] = ptr.cmpxchg %[[BUF]], %[[LOADED]], %[[LOADED]]
+// CHECK-NEXT:   %[[NEW:.*]], %[[OK:.*]] = ptr.cmpxchg %[[BUF]], %[[LOADED]], %[[LOADED]]
 // CHECK-SAME:     acq_rel monotonic : !llvm.ptr, i32
-// CHECK-NEXT:   %[[NEW:.*]] = llvm.extractvalue %[[PAIR]][0]
-// CHECK-NEXT:   %[[OK:.*]] = llvm.extractvalue %[[PAIR]][1]
 // CHECK-NEXT:   llvm.cond_br %[[OK]], ^bb3, ^bb2(%[[NEW]] : i32)
 // CHECK-NEXT: ^bb3:
 // CHECK-NEXT:   llvm.intr.stackrestore %[[STACK_SAVE]] : !llvm.ptr

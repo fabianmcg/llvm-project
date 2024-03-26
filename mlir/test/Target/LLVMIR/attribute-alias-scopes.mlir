@@ -19,7 +19,7 @@ llvm.func @alias_scopes(%arg1 : !llvm.ptr) {
   // CHECK:  atomicrmw {{.*}}, !alias.scope ![[SCOPES3:[0-9]+]], !noalias ![[SCOPES12:[0-9]+]]
   %2 = ptr.atomicrmw add %arg1, %0 monotonic {alias_scopes = [#alias_scope3], noalias_scopes = [#alias_scope1, #alias_scope2]} : !llvm.ptr, i32
   // CHECK:  cmpxchg {{.*}}, !alias.scope ![[SCOPES3]]
-  %3 = ptr.cmpxchg %arg1, %1, %2 acq_rel monotonic {alias_scopes = [#alias_scope3]} : !llvm.ptr, i32
+  %3, %4 = ptr.cmpxchg %arg1, %1, %2 acq_rel monotonic {alias_scopes = [#alias_scope3]} : !llvm.ptr, i32
   %5 = llvm.mlir.constant(42 : i8) : i8
   // CHECK:  llvm.memcpy{{.*}}, !alias.scope ![[SCOPES3]]
   "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {alias_scopes = [#alias_scope3]} : (!llvm.ptr, !llvm.ptr, i32) -> ()

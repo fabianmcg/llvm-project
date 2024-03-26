@@ -131,6 +131,8 @@ def Ptr_AtomicRMWOp : Pointer_Op<"atomicrmw", [
 def Ptr_AtomicCmpXchgType : AnyTypeOf<[AnySignlessInteger, Ptr_PtrType]>;
 def Ptr_AtomicCmpXchgOp : Pointer_Op<"cmpxchg", [
     AllTypesMatch<["val", "cmp", "res"]>,
+    DeclareOpInterfaceMethods<AccessGroupOpInterface>,
+    DeclareOpInterfaceMethods<AliasAnalysisOpInterface>,
     DeclareOpInterfaceMethods<MemoryModelOpInterface>
   ]> {
   let summary = "Atomic compare exchange operation";

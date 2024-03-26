@@ -55,6 +55,40 @@ void LLVMDialect::registerAttributes() {
 // AddressSpaceAttr
 //===----------------------------------------------------------------------===//
 
+static bool isLoadableType(Type type) {
+  return /*LLVM_PrimitiveType*/ (
+             LLVM::isCompatibleOuterType(type) &&
+             !isa<LLVM::LLVMVoidType, LLVM::LLVMFunctionType>(type)) &&
+         /*LLVM_OpaqueStruct*/
+         !(isa<LLVM::LLVMStructType>(type) &&
+           cast<LLVM::LLVMStructType>(type).isOpaque()) &&
+         /*LLVM_AnyTargetExt*/
+         !(isa<LLVM::LLVMTargetExtType>(type) &&
+           !cast<LLVM::LLVMTargetExtType>(type).supportsMemOps());
+}
+
+/// Returns true if the given type is supported by atomic operations. All
+/// integer and float types with limited bit width are supported. Additionally,
+/// depending on the operation pointers may be supported as well.
+static bool isTypeCompatibleWithAtomicOp(Type type) {
+  if (llvm::isa<LLVMPointerType>(type))
+    return true;
+
+  std::optional<unsigned> bitWidth;
+  if (auto floatType = llvm::dyn_cast<FloatType>(type)) {
+    if (!isCompatibleFloatingPointType(type))
+      return false;
+    bitWidth = floatType.getWidth();
+  }
+  if (auto integerType = llvm::dyn_cast<IntegerType>(type))
+    bitWidth = integerType.getWidth();
+  // The type is neither an integer, float, or pointer type.
+  if (!bitWidth)
+    return false;
+  return *bitWidth == 8 || *bitWidth == 16 || *bitWidth == 32 ||
+         *bitWidth == 64;
+}
+
 Attribute AddressSpaceAttr::getDefaultMemorySpace() const {
   return AddressSpaceAttr::get(getContext(), 0);
 }
@@ -64,33 +98,77 @@ unsigned AddressSpaceAttr::getAddressSpace() const { return getAs(); }
 mlir::ptr::MemOpValidity
 AddressSpaceAttr::isValidLoad(Type type, mlir::ptr::AtomicOrdering ordering,
                               IntegerAttr alignment) const {
+  if (!isLoadableType(type))
+    return mlir::ptr::MemOpValidity::InvalidType;
+  if (ordering != ptr::AtomicOrdering::not_atomic &&
+      !isTypeCompatibleWithAtomicOp(type))
+    return ptr::MemOpValidity::InvalidAtomicOrdering;
   return mlir::ptr::MemOpValidity::Valid;
 }
 
 mlir::ptr::MemOpValidity
 AddressSpaceAttr::isValidStore(Type type, mlir::ptr::AtomicOrdering ordering,
                                IntegerAttr alignment) const {
+  if (!isLoadableType(type))
+    return mlir::ptr::MemOpValidity::InvalidType;
+  if (ordering != ptr::AtomicOrdering::not_atomic &&
+      !isTypeCompatibleWithAtomicOp(type))
+    return ptr::MemOpValidity::InvalidAtomicOrdering;
   return mlir::ptr::MemOpValidity::Valid;
 }
+
 mlir::ptr::MemOpValidity
-AddressSpaceAttr::isValidAtomicOp(mlir::ptr::AtomicBinOp op, Type type,
+AddressSpaceAttr::isValidAtomicOp(mlir::ptr::AtomicBinOp binOp, Type type,
                                   mlir::ptr::AtomicOrdering ordering,
                                   IntegerAttr alignment) const {
+  if (binOp == ptr::AtomicBinOp::fadd || binOp == ptr::AtomicBinOp::fsub ||
+      binOp == ptr::AtomicBinOp::fmin || binOp == ptr::AtomicBinOp::fmax) {
+    if (!mlir::LLVM::isCompatibleFloatingPointType(type))
+      return mlir::ptr::MemOpValidity::InvalidType;
+  } else if (binOp == ptr::AtomicBinOp::xchg) {
+    if (!isTypeCompatibleWithAtomicOp(type))
+      return ptr::MemOpValidity::InvalidAtomicOrdering;
+  } else {
+    auto intType = llvm::dyn_cast<IntegerType>(type);
+    unsigned intBitWidth = intType ? intType.getWidth() : 0;
+    if (intBitWidth != 8 && intBitWidth != 16 && intBitWidth != 32 &&
+        intBitWidth != 64)
+      return mlir::ptr::MemOpValidity::InvalidType;
+  }
   return mlir::ptr::MemOpValidity::Valid;
 }
+
 mlir::ptr::MemOpValidity AddressSpaceAttr::isValidAtomicXchg(
     Type type, mlir::ptr::AtomicOrdering successOrdering,
     mlir::ptr::AtomicOrdering failureOrdering, IntegerAttr alignment) const {
+  if (!isLoadableType(type))
+    return mlir::ptr::MemOpValidity::InvalidType;
+  if (!isTypeCompatibleWithAtomicOp(type))
+    return ptr::MemOpValidity::InvalidAtomicOrdering;
   return mlir::ptr::MemOpValidity::Valid;
+}
+
+template <typename Ty>
+static bool isScalarOrVectorOf(Type ty) {
+  return isa<Ty>(ty) || (LLVM::isCompatibleVectorType(ty) &&
+                         isa<Ty>(LLVM::getVectorElementType(ty)));
 }
 
 mlir::ptr::CastValidity AddressSpaceAttr::isValidAddrSpaceCast(Type tgt,
                                                                Type src) const {
+  if (!isScalarOrVectorOf<LLVMPointerType>(tgt))
+    return mlir::ptr::CastValidity::InvalidTargetType;
+  if (!isScalarOrVectorOf<LLVMPointerType>(src))
+    return mlir::ptr::CastValidity::InvalidSourceType;
   return mlir::ptr::CastValidity::Valid;
 }
 
 mlir::ptr::CastValidity
 AddressSpaceAttr::isValidPtrIntCast(Type intLikeTy, Type ptrLikeTy) const {
+  if (!isScalarOrVectorOf<IntegerType>(intLikeTy))
+    return mlir::ptr::CastValidity::InvalidTargetType;
+  if (!isScalarOrVectorOf<LLVMPointerType>(ptrLikeTy))
+    return mlir::ptr::CastValidity::InvalidSourceType;
   return mlir::ptr::CastValidity::Valid;
 }
 

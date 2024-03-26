@@ -360,8 +360,8 @@ llvm.func @supported_operations(%arg0: !llvm.ptr {llvm.noalias}, %arg1: !llvm.pt
   "llvm.intr.memcpy.inline"(%arg0, %arg1) <{ isVolatile = false, len = 4 : i32}> : (!llvm.ptr, !llvm.ptr) -> ()
   %2 = llvm.trunc %0 : i32 to i8
   "llvm.intr.memset"(%arg0, %2, %1) <{ isVolatile = false}> : (!llvm.ptr, i8, i32) -> ()
-  %3 = ptr.cmpxchg %arg0, %0, %1 seq_cst seq_cst : !llvm.ptr, i32
-  %4 = ptr.atomicrmw add %arg0, %0 seq_cst : !llvm.ptr, i32
+  %3, %4 = ptr.cmpxchg %arg0, %0, %1 seq_cst seq_cst : !llvm.ptr, i32
+  %5 = ptr.atomicrmw add %arg0, %0 seq_cst : !llvm.ptr, i32
   llvm.return
 }
 

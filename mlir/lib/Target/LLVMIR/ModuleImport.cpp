@@ -1202,7 +1202,7 @@ FailureOr<Value> ModuleImport::convertValue(llvm::Value *value) {
   // Return the mapped value if it has been converted before.
   auto it = valueMapping.find(value);
   if (it != valueMapping.end())
-    return it->getSecond();
+    return it->getSecond().first;
 
   // Convert constants such as immediate values that have no mapping yet.
   if (auto *constant = dyn_cast<llvm::Constant>(value))
@@ -1228,7 +1228,7 @@ FailureOr<Value> ModuleImport::convertMetadataValue(llvm::Value *value) {
   // Return the mapped value if it has been converted before.
   auto it = valueMapping.find(value);
   if (it != valueMapping.end())
-    return it->getSecond();
+    return it->getSecond().first;
 
   // Convert constants such as immediate values that have no mapping yet.
   if (auto *constant = dyn_cast<llvm::Constant>(value))
@@ -2086,7 +2086,7 @@ LogicalResult ModuleImport::processBasicBlock(llvm::BasicBlock *bb,
     // Set the non-debug metadata attributes on the imported operation and emit
     // a warning if an instruction other than a phi instruction is dropped
     // during the import.
-    if (Operation *op = lookupOperation(&inst)) {
+    if (Operation *op = lookupOperation(&inst, true)) {
       setNonDebugMetadataAttrs(&inst, op);
     } else if (inst.getOpcode() != llvm::Instruction::PHI) {
       if (emitExpensiveWarnings) {

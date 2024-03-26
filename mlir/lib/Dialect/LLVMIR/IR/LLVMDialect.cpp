@@ -46,6 +46,12 @@ using namespace mlir::LLVM;
 using mlir::LLVM::cconv::getMaxEnumValForCConv;
 using mlir::LLVM::linkage::getMaxEnumValForLinkage;
 
+static ParseResult parseAtomicOrdering(OpAsmParser &parser,
+                                       ptr::AtomicOrderingAttr &attr);
+
+static void printAtomicOrdering(OpAsmPrinter &p, Operation *op,
+                                ptr::AtomicOrderingAttr attr);
+
 #include "mlir/Dialect/LLVMIR/LLVMOpsDialect.cpp.inc"
 
 static constexpr const char kElemTypeAttrName[] = "elem_type";
@@ -2482,6 +2488,32 @@ OpFoldResult LLVM::ConstantOp::fold(FoldAdaptor) { return getValue(); }
 //===----------------------------------------------------------------------===//
 // FenceOp
 //===----------------------------------------------------------------------===//
+
+static ParseResult parseAtomicOrdering(OpAsmParser &parser,
+                                       ptr::AtomicOrderingAttr &attr) {
+  StringRef orderingStr;
+  auto loc = parser.getCurrentLocation();
+  if (failed(parser.parseOptionalKeyword(
+          &orderingStr, {"not_atomic", "unordered", "monotonic", "acquire",
+                         "release", "acq_rel", "seq_cst"}))) {
+    return parser.emitError(
+        loc, "expected string or keyword containing one of the following "
+             "enum values for attribute 'ordering' [not_atomic, unordered, "
+             "monotonic, acquire, release, acq_rel, seq_cst]");
+  }
+  auto ordering = ptr::symbolizeAtomicOrdering(orderingStr);
+  if (!ordering)
+    return parser.emitError(loc, "invalid ")
+           << "ordering attribute specification: \"" << orderingStr << '"';
+  attr =
+      ptr::AtomicOrderingAttr::get(parser.getBuilder().getContext(), *ordering);
+  return success();
+}
+
+static void printAtomicOrdering(OpAsmPrinter &p, Operation *op,
+                                ptr::AtomicOrderingAttr attr) {
+  p << attr.getValue();
+}
 
 void FenceOp::build(OpBuilder &builder, OperationState &state,
                     AtomicOrdering ordering, StringRef syncscope) {

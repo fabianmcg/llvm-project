@@ -726,24 +726,22 @@ def LLVM_AliasScopeAttr :
   let convertFromStorage = "$_self";
 }
 
-def LLVM_AliasScopeArrayAttr : TypedArrayAttrBase<
-    Attr<CPred<"::llvm::isa<::mlir::ptr::AliasScopeAttr>($_self)">,
-        "LLVM dialect access group metadata">,
-    "LLVM dialect access group metadata array"> {
+def LLVM_AliasScopeArrayAttr : TypedArrayAttrBase<LLVM_AliasScopeAttr,
+    "LLVM dialect alias scope array"> {
   let constBuilderCall = ?;
 }
 
 def LLVM_AccessGroupArrayAttr : TypedArrayAttrBase<
     Attr<CPred<"::llvm::isa<::mlir::ptr::AccessGroupAttr>($_self)">,
-        "LLVM dialect alias scope">,
-    "LLVM dialect alias scope"> {
+        "LLVM access group metadata">,
+    "LLVM access group metadata array"> {
   let constBuilderCall = ?;
 }
 
 def LLVM_TBAATagArrayAttr : TypedArrayAttrBase<
     Attr<CPred<"::llvm::isa<::mlir::ptr::TBAATagAttr>($_self)">,
         "LLVM dialect TBAA tag metadata">,
-    "LLVM dialect TBAA tag metadata"> {
+    "LLVM dialect TBAA tag metadata array"> {
   let constBuilderCall = ?;
 }
 

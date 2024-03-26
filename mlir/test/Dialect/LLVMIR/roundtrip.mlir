@@ -402,9 +402,9 @@ func.func @atomicrmw(%ptr : !llvm.ptr, %val : f32) {
 // CHECK-LABEL: @cmpxchg
 func.func @cmpxchg(%ptr : !llvm.ptr, %cmp : i32, %new : i32) {
   // CHECK: ptr.cmpxchg %{{.*}}, %{{.*}}, %{{.*}} acq_rel monotonic : !llvm.ptr, i32
-  %0 = ptr.cmpxchg %ptr, %cmp, %new acq_rel monotonic : !llvm.ptr, i32
+  %0, %1 = ptr.cmpxchg %ptr, %cmp, %new acq_rel monotonic : !llvm.ptr, i32
   // CHECK: ptr.cmpxchg weak volatile %{{.*}}, %{{.*}}, %{{.*}} syncscope("singlethread") acq_rel monotonic {alignment = 16 : i64} : !llvm.ptr, i32
-  %1 = ptr.cmpxchg weak volatile %ptr, %cmp, %new syncscope("singlethread") acq_rel monotonic {alignment = 16 : i64} : !llvm.ptr, i32
+  %2, %3 = ptr.cmpxchg weak volatile %ptr, %cmp, %new syncscope("singlethread") acq_rel monotonic {alignment = 16 : i64} : !llvm.ptr, i32
   llvm.return
 }
 

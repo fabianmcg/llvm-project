@@ -135,7 +135,10 @@ convertAtomicCmpXchgOp(AtomicCmpXchgOp op, llvm::IRBuilderBase &builder,
       moduleTranslation.lookupValue(op.getVal()), llvm::MaybeAlign(),
       convertAtomicOrderingToLLVM(op.getSuccessOrdering()),
       convertAtomicOrderingToLLVM(op.getFailureOrdering()));
-  moduleTranslation.mapValue(op.getRes()) = inst;
+  moduleTranslation.mapValue(op.getRes()) =
+      builder.CreateExtractValue(inst, {0});
+  moduleTranslation.mapValue(op.getStatus()) =
+      builder.CreateExtractValue(inst, {1});
   inst->setWeak(op.getWeak());
   // Set volatile flag.
   inst->setVolatile(op.getVolatile_());

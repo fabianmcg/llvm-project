@@ -100,13 +100,6 @@ void LLVM::AllocaOp::handleDestructuringComplete(
   rewriter.eraseOp(*this);
 }
 
-/// Checks if `slot` can be accessed through the provided access type.
-static bool isValidAccessType(const MemorySlot &slot, Type accessType,
-                              const DataLayout &dataLayout) {
-  return dataLayout.getTypeSize(accessType) <=
-         dataLayout.getTypeSize(slot.elemType);
-}
-
 //===----------------------------------------------------------------------===//
 // Interfaces for discardable OPs
 //===----------------------------------------------------------------------===//

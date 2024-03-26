@@ -153,7 +153,7 @@ LogicalResult convertAtomicCmpXchg(OpBuilder &builder, llvm::Instruction *inst,
                                             llvm::ArrayRef<int64_t>{0});
   res = builder.create<LLVM::InsertValueOp>(res.getLoc(), res, op.getStatus(),
                                             llvm::ArrayRef<int64_t>{1});
-  moduleImport.mapValue(inst) = res;
+  moduleImport.mapOp(inst) = {res, op};
   return success();
 }
 

@@ -66,7 +66,7 @@ llvm.func @tbaa2(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
   // CHECK: atomicrmw add ptr %{{.*}}, i32 %{{.*}} !tbaa ![[STAG]]
   %6 = ptr.atomicrmw add %5, %4 monotonic {tbaa = [#tbaa_tag_7]} : !llvm.ptr, i32
   // CHECK: cmpxchg ptr %{{.*}}, i32 %{{.*}}, i32 %{{.*}} !tbaa ![[STAG]]
-  %7 = ptr.cmpxchg %5, %6, %4 acq_rel monotonic {tbaa = [#tbaa_tag_7]} : !llvm.ptr, i32
+  %7, %8 = ptr.cmpxchg %5, %6, %4 acq_rel monotonic {tbaa = [#tbaa_tag_7]} : !llvm.ptr, i32
   %9 = llvm.mlir.constant(42 : i8) : i8
   // CHECK: llvm.memcpy{{.*}} !tbaa ![[STAG]]
   "llvm.intr.memcpy"(%arg1, %arg1, %0) <{isVolatile = false}> {tbaa = [#tbaa_tag_7]} : (!llvm.ptr, !llvm.ptr, i32) -> ()

@@ -243,6 +243,8 @@ void AtomicCmpXchgOp::build(OpBuilder &builder, OperationState &state,
         /*alias_scopes=*/nullptr, /*noalias_scopes=*/nullptr, /*tbaa=*/nullptr);
 }
 
+SmallVector<Value> AtomicCmpXchgOp::getAccessedOperands() { return {getPtr()}; }
+
 MemoryModel AtomicCmpXchgOp::getMemoryModel() {
   return getPtr().getType().getMemoryModel();
 }
