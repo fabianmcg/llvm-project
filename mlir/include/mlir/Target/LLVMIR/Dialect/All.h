@@ -15,6 +15,7 @@
 #define MLIR_TARGET_LLVMIR_DIALECT_ALL_H
 
 #include "mlir/Target/LLVMIR/Dialect/AMX/AMXToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/Arith/ArithToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/ArmNeon/ArmNeonToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/ArmSME/ArmSMEToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/ArmSVE/ArmSVEToLLVMIRTranslation.h"
@@ -41,6 +42,7 @@ static inline void registerAllToLLVMIRTranslations(DialectRegistry &registry) {
   registerAMXDialectTranslation(registry);
   registerArmSMEDialectTranslation(registry);
   registerArmSVEDialectTranslation(registry);
+  registerArithDialectTranslation(registry);
   registerBuiltinDialectTranslation(registry);
   registerGPUDialectTranslation(registry);
   registerLLVMDialectTranslation(registry);
@@ -63,6 +65,7 @@ static inline void
 registerAllGPUToLLVMIRTranslations(DialectRegistry &registry) {
   registerBuiltinDialectTranslation(registry);
   registerGPUDialectTranslation(registry);
+  registerArithDialectTranslation(registry);
   registerLLVMDialectTranslation(registry);
   registerNVVMDialectTranslation(registry);
   registerROCDLDialectTranslation(registry);

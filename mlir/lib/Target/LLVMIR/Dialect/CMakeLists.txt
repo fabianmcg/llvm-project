@@ -1,4 +1,5 @@
 add_subdirectory(ArmNeon)
+add_subdirectory(Arith)
 add_subdirectory(ArmSME)
 add_subdirectory(ArmSVE)
 add_subdirectory(AMX)
