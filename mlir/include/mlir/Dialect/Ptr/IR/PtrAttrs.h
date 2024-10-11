@@ -15,9 +15,27 @@
 
 #include "mlir/IR/OpImplementation.h"
 
-#define GET_ATTRDEF_CLASSES
-#include "mlir/Dialect/Ptr/IR/PtrOpsAttrs.h.inc"
+namespace mlir {
+namespace ptr {
+/// Base class for Ptr attributes participating in the TBAA graph.
+class TBAANodeAttr : public Attribute {
+public:
+  using Attribute::Attribute;
+
+  /// Support LLVM type casting.
+  static bool classof(Attribute attr);
+
+  /// Required by DenseMapInfo to create empty and tombstone key.
+  static TBAANodeAttr getFromOpaquePointer(const void *pointer) {
+    return TBAANodeAttr(reinterpret_cast<const ImplType *>(pointer));
+  }
+};
+} // namespace ptr
+} // namespace mlir
 
 #include "mlir/Dialect/Ptr/IR/PtrOpsEnums.h.inc"
+
+#define GET_ATTRDEF_CLASSES
+#include "mlir/Dialect/Ptr/IR/PtrOpsAttrs.h.inc"
 
 #endif // MLIR_DIALECT_PTR_IR_PTRATTRS_H
