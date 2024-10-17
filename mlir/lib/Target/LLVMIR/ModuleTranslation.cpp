@@ -69,6 +69,72 @@ extern llvm::cl::opt<bool> UseNewDbgInfoFormat;
 #include "mlir/Dialect/LLVMIR/LLVMConversionEnumsToLLVM.inc"
 
 namespace {
+::llvm::AtomicRMWInst::BinOp convertAtomicBinOpToLLVM(AtomicBinOp value) {
+  switch (value) {
+  case AtomicBinOp::xchg:
+    return ::llvm::AtomicRMWInst::BinOp::Xchg;
+  case AtomicBinOp::add:
+    return ::llvm::AtomicRMWInst::BinOp::Add;
+  case AtomicBinOp::sub:
+    return ::llvm::AtomicRMWInst::BinOp::Sub;
+  case AtomicBinOp::_and:
+    return ::llvm::AtomicRMWInst::BinOp::And;
+  case AtomicBinOp::nand:
+    return ::llvm::AtomicRMWInst::BinOp::Nand;
+  case AtomicBinOp::_or:
+    return ::llvm::AtomicRMWInst::BinOp::Or;
+  case AtomicBinOp::_xor:
+    return ::llvm::AtomicRMWInst::BinOp::Xor;
+  case AtomicBinOp::max:
+    return ::llvm::AtomicRMWInst::BinOp::Max;
+  case AtomicBinOp::min:
+    return ::llvm::AtomicRMWInst::BinOp::Min;
+  case AtomicBinOp::umax:
+    return ::llvm::AtomicRMWInst::BinOp::UMax;
+  case AtomicBinOp::umin:
+    return ::llvm::AtomicRMWInst::BinOp::UMin;
+  case AtomicBinOp::fadd:
+    return ::llvm::AtomicRMWInst::BinOp::FAdd;
+  case AtomicBinOp::fsub:
+    return ::llvm::AtomicRMWInst::BinOp::FSub;
+  case AtomicBinOp::fmax:
+    return ::llvm::AtomicRMWInst::BinOp::FMax;
+  case AtomicBinOp::fmin:
+    return ::llvm::AtomicRMWInst::BinOp::FMin;
+  case AtomicBinOp::uinc_wrap:
+    return ::llvm::AtomicRMWInst::BinOp::UIncWrap;
+  case AtomicBinOp::udec_wrap:
+    return ::llvm::AtomicRMWInst::BinOp::UDecWrap;
+  case AtomicBinOp::usub_cond:
+    return ::llvm::AtomicRMWInst::BinOp::USubCond;
+  case AtomicBinOp::usub_sat:
+    return ::llvm::AtomicRMWInst::BinOp::USubSat;
+  }
+  llvm_unreachable("unknown AtomicBinOp type");
+}
+
+::llvm::AtomicOrdering convertAtomicOrderingToLLVM(AtomicOrdering value) {
+  switch (value) {
+  case AtomicOrdering::not_atomic:
+    return ::llvm::AtomicOrdering::NotAtomic;
+  case AtomicOrdering::unordered:
+    return ::llvm::AtomicOrdering::Unordered;
+  case AtomicOrdering::monotonic:
+    return ::llvm::AtomicOrdering::Monotonic;
+  case AtomicOrdering::acquire:
+    return ::llvm::AtomicOrdering::Acquire;
+  case AtomicOrdering::release:
+    return ::llvm::AtomicOrdering::Release;
+  case AtomicOrdering::acq_rel:
+    return ::llvm::AtomicOrdering::AcquireRelease;
+  case AtomicOrdering::seq_cst:
+    return ::llvm::AtomicOrdering::SequentiallyConsistent;
+  }
+  llvm_unreachable("unknown AtomicOrdering type");
+}
+} // namespace
+
+namespace {
 /// A customized inserter for LLVM's IRBuilder that captures all LLVM IR
 /// instructions that are created for future reference.
 ///

@@ -48,6 +48,75 @@ using namespace mlir::LLVM::detail;
 
 #include "mlir/Dialect/LLVMIR/LLVMConversionEnumsFromLLVM.inc"
 
+static LLVM_ATTRIBUTE_UNUSED AtomicBinOp
+convertAtomicBinOpFromLLVM(::llvm::AtomicRMWInst::BinOp value) {
+  switch (value) {
+  case ::llvm::AtomicRMWInst::BinOp::Xchg:
+    return AtomicBinOp::xchg;
+  case ::llvm::AtomicRMWInst::BinOp::Add:
+    return AtomicBinOp::add;
+  case ::llvm::AtomicRMWInst::BinOp::Sub:
+    return AtomicBinOp::sub;
+  case ::llvm::AtomicRMWInst::BinOp::And:
+    return AtomicBinOp::_and;
+  case ::llvm::AtomicRMWInst::BinOp::Nand:
+    return AtomicBinOp::nand;
+  case ::llvm::AtomicRMWInst::BinOp::Or:
+    return AtomicBinOp::_or;
+  case ::llvm::AtomicRMWInst::BinOp::Xor:
+    return AtomicBinOp::_xor;
+  case ::llvm::AtomicRMWInst::BinOp::Max:
+    return AtomicBinOp::max;
+  case ::llvm::AtomicRMWInst::BinOp::Min:
+    return AtomicBinOp::min;
+  case ::llvm::AtomicRMWInst::BinOp::UMax:
+    return AtomicBinOp::umax;
+  case ::llvm::AtomicRMWInst::BinOp::UMin:
+    return AtomicBinOp::umin;
+  case ::llvm::AtomicRMWInst::BinOp::FAdd:
+    return AtomicBinOp::fadd;
+  case ::llvm::AtomicRMWInst::BinOp::FSub:
+    return AtomicBinOp::fsub;
+  case ::llvm::AtomicRMWInst::BinOp::FMax:
+    return AtomicBinOp::fmax;
+  case ::llvm::AtomicRMWInst::BinOp::FMin:
+    return AtomicBinOp::fmin;
+  case ::llvm::AtomicRMWInst::BinOp::UIncWrap:
+    return AtomicBinOp::uinc_wrap;
+  case ::llvm::AtomicRMWInst::BinOp::UDecWrap:
+    return AtomicBinOp::udec_wrap;
+  case ::llvm::AtomicRMWInst::BinOp::USubCond:
+    return AtomicBinOp::usub_cond;
+  case ::llvm::AtomicRMWInst::BinOp::USubSat:
+    return AtomicBinOp::usub_sat;
+  case ::llvm::AtomicRMWInst::BinOp::BAD_BINOP:
+    llvm_unreachable(
+        "unsupported case ::llvm::AtomicRMWInst::BinOp::BAD_BINOP");
+  }
+  llvm_unreachable("unknown ::llvm::AtomicRMWInst::BinOp type");
+}
+
+LLVM_ATTRIBUTE_UNUSED static AtomicOrdering
+convertAtomicOrderingFromLLVM(::llvm::AtomicOrdering value) {
+  switch (value) {
+  case ::llvm::AtomicOrdering::NotAtomic:
+    return AtomicOrdering::not_atomic;
+  case ::llvm::AtomicOrdering::Unordered:
+    return AtomicOrdering::unordered;
+  case ::llvm::AtomicOrdering::Monotonic:
+    return AtomicOrdering::monotonic;
+  case ::llvm::AtomicOrdering::Acquire:
+    return AtomicOrdering::acquire;
+  case ::llvm::AtomicOrdering::Release:
+    return AtomicOrdering::release;
+  case ::llvm::AtomicOrdering::AcquireRelease:
+    return AtomicOrdering::acq_rel;
+  case ::llvm::AtomicOrdering::SequentiallyConsistent:
+    return AtomicOrdering::seq_cst;
+  }
+  llvm_unreachable("unknown ::llvm::AtomicOrdering type");
+}
+
 // Utility to print an LLVM value as a string for passing to emitError().
 // FIXME: Diagnostic should be able to natively handle types that have
 // operator << (raw_ostream&) defined.

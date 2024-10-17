@@ -13,6 +13,6 @@ using namespace mlir;
 
 mlir::LLVMConversionTarget::LLVMConversionTarget(MLIRContext &ctx)
     : ConversionTarget(ctx) {
-  this->addLegalDialect<LLVM::LLVMDialect>();
+  this->addLegalDialect<LLVM::LLVMDialect, ptr::PtrDialect>();
   this->addLegalOp<UnrealizedConversionCastOp>();
 }

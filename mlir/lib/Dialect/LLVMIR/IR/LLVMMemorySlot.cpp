@@ -107,27 +107,6 @@ LLVM::AllocaOp::handleDestructuringComplete(
   return std::nullopt;
 }
 
-//===----------------------------------------------------------------------===//
-// Interfaces for LoadOp/StoreOp
-//===----------------------------------------------------------------------===//
-
-bool LLVM::LoadOp::loadsFrom(const MemorySlot &slot) {
-  return getAddr() == slot.ptr;
-}
-
-bool LLVM::LoadOp::storesTo(const MemorySlot &slot) { return false; }
-
-Value LLVM::LoadOp::getStored(const MemorySlot &slot, OpBuilder &builder,
-                              Value reachingDef, const DataLayout &dataLayout) {
-  llvm_unreachable("getStored should not be called on LoadOp");
-}
-
-bool LLVM::StoreOp::loadsFrom(const MemorySlot &slot) { return false; }
-
-bool LLVM::StoreOp::storesTo(const MemorySlot &slot) {
-  return getAddr() == slot.ptr;
-}
-
 /// Checks if `type` can be used in any kind of conversion sequences.
 static bool isSupportedTypeForConversion(Type type) {
   // Aggregate types are not bitcastable.
@@ -338,87 +317,11 @@ static Value createInsertAndCast(OpBuilder &builder, Location loc,
                                      reachingDef.getType());
 }
 
-Value LLVM::StoreOp::getStored(const MemorySlot &slot, OpBuilder &builder,
-                               Value reachingDef,
-                               const DataLayout &dataLayout) {
-  assert(reachingDef && reachingDef.getType() == slot.elemType &&
-         "expected the reaching definition's type to match the slot's type");
-  return createInsertAndCast(builder, getLoc(), getValue(), reachingDef,
-                             dataLayout);
-}
-
-bool LLVM::LoadOp::canUsesBeRemoved(
-    const MemorySlot &slot, const SmallPtrSetImpl<OpOperand *> &blockingUses,
-    SmallVectorImpl<OpOperand *> &newBlockingUses,
-    const DataLayout &dataLayout) {
-  if (blockingUses.size() != 1)
-    return false;
-  Value blockingUse = (*blockingUses.begin())->get();
-  // If the blocking use is the slot ptr itself, there will be enough
-  // context to reconstruct the result of the load at removal time, so it can
-  // be removed (provided it is not volatile).
-  return blockingUse == slot.ptr && getAddr() == slot.ptr &&
-         areConversionCompatible(dataLayout, getResult().getType(),
-                                 slot.elemType, /*narrowingConversion=*/true) &&
-         !getVolatile_();
-}
-
-DeletionKind LLVM::LoadOp::removeBlockingUses(
-    const MemorySlot &slot, const SmallPtrSetImpl<OpOperand *> &blockingUses,
-    OpBuilder &builder, Value reachingDefinition,
-    const DataLayout &dataLayout) {
-  // `canUsesBeRemoved` checked this blocking use must be the loaded slot
-  // pointer.
-  Value newResult = createExtractAndCast(builder, getLoc(), reachingDefinition,
-                                         getResult().getType(), dataLayout);
-  getResult().replaceAllUsesWith(newResult);
-  return DeletionKind::Delete;
-}
-
-bool LLVM::StoreOp::canUsesBeRemoved(
-    const MemorySlot &slot, const SmallPtrSetImpl<OpOperand *> &blockingUses,
-    SmallVectorImpl<OpOperand *> &newBlockingUses,
-    const DataLayout &dataLayout) {
-  if (blockingUses.size() != 1)
-    return false;
-  Value blockingUse = (*blockingUses.begin())->get();
-  // If the blocking use is the slot ptr itself, dropping the store is
-  // fine, provided we are currently promoting its target value. Don't allow a
-  // store OF the slot pointer, only INTO the slot pointer.
-  return blockingUse == slot.ptr && getAddr() == slot.ptr &&
-         getValue() != slot.ptr &&
-         areConversionCompatible(dataLayout, slot.elemType,
-                                 getValue().getType(),
-                                 /*narrowingConversion=*/false) &&
-         !getVolatile_();
-}
-
-DeletionKind LLVM::StoreOp::removeBlockingUses(
-    const MemorySlot &slot, const SmallPtrSetImpl<OpOperand *> &blockingUses,
-    OpBuilder &builder, Value reachingDefinition,
-    const DataLayout &dataLayout) {
-  return DeletionKind::Delete;
-}
-
 /// Checks if `slot` can be accessed through the provided access type.
 static bool isValidAccessType(const MemorySlot &slot, Type accessType,
                               const DataLayout &dataLayout) {
   return dataLayout.getTypeSize(accessType) <=
          dataLayout.getTypeSize(slot.elemType);
-}
-
-LogicalResult LLVM::LoadOp::ensureOnlySafeAccesses(
-    const MemorySlot &slot, SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
-    const DataLayout &dataLayout) {
-  return success(getAddr() != slot.ptr ||
-                 isValidAccessType(slot, getType(), dataLayout));
-}
-
-LogicalResult LLVM::StoreOp::ensureOnlySafeAccesses(
-    const MemorySlot &slot, SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
-    const DataLayout &dataLayout) {
-  return success(getAddr() != slot.ptr ||
-                 isValidAccessType(slot, getValue().getType(), dataLayout));
 }
 
 /// Returns the subslot's type at the requested index.
@@ -432,77 +335,6 @@ static Type getTypeAtIndex(const DestructurableMemorySlot &slot,
 
   // Note: Returns a null-type when no entry was found.
   return subelementIndexMap->lookup(index);
-}
-
-bool LLVM::LoadOp::canRewire(const DestructurableMemorySlot &slot,
-                             SmallPtrSetImpl<Attribute> &usedIndices,
-                             SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
-                             const DataLayout &dataLayout) {
-  if (getVolatile_())
-    return false;
-
-  // A load always accesses the first element of the destructured slot.
-  auto index = IntegerAttr::get(IntegerType::get(getContext(), 32), 0);
-  Type subslotType = getTypeAtIndex(slot, index);
-  if (!subslotType)
-    return false;
-
-  // The access can only be replaced when the subslot is read within its bounds.
-  if (dataLayout.getTypeSize(getType()) > dataLayout.getTypeSize(subslotType))
-    return false;
-
-  usedIndices.insert(index);
-  return true;
-}
-
-DeletionKind LLVM::LoadOp::rewire(const DestructurableMemorySlot &slot,
-                                  DenseMap<Attribute, MemorySlot> &subslots,
-                                  OpBuilder &builder,
-                                  const DataLayout &dataLayout) {
-  auto index = IntegerAttr::get(IntegerType::get(getContext(), 32), 0);
-  auto it = subslots.find(index);
-  assert(it != subslots.end());
-
-  getAddrMutable().set(it->getSecond().ptr);
-  return DeletionKind::Keep;
-}
-
-bool LLVM::StoreOp::canRewire(const DestructurableMemorySlot &slot,
-                              SmallPtrSetImpl<Attribute> &usedIndices,
-                              SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
-                              const DataLayout &dataLayout) {
-  if (getVolatile_())
-    return false;
-
-  // Storing the pointer to memory cannot be dealt with.
-  if (getValue() == slot.ptr)
-    return false;
-
-  // A store always accesses the first element of the destructured slot.
-  auto index = IntegerAttr::get(IntegerType::get(getContext(), 32), 0);
-  Type subslotType = getTypeAtIndex(slot, index);
-  if (!subslotType)
-    return false;
-
-  // The access can only be replaced when the subslot is read within its bounds.
-  if (dataLayout.getTypeSize(getValue().getType()) >
-      dataLayout.getTypeSize(subslotType))
-    return false;
-
-  usedIndices.insert(index);
-  return true;
-}
-
-DeletionKind LLVM::StoreOp::rewire(const DestructurableMemorySlot &slot,
-                                   DenseMap<Attribute, MemorySlot> &subslots,
-                                   OpBuilder &builder,
-                                   const DataLayout &dataLayout) {
-  auto index = IntegerAttr::get(IntegerType::get(getContext(), 32), 0);
-  auto it = subslots.find(index);
-  assert(it != subslots.end());
-
-  getAddrMutable().set(it->getSecond().ptr);
-  return DeletionKind::Keep;
 }
 
 //===----------------------------------------------------------------------===//
@@ -526,18 +358,6 @@ bool LLVM::BitcastOp::canUsesBeRemoved(
 }
 
 DeletionKind LLVM::BitcastOp::removeBlockingUses(
-    const SmallPtrSetImpl<OpOperand *> &blockingUses, OpBuilder &builder) {
-  return DeletionKind::Delete;
-}
-
-bool LLVM::AddrSpaceCastOp::canUsesBeRemoved(
-    const SmallPtrSetImpl<OpOperand *> &blockingUses,
-    SmallVectorImpl<OpOperand *> &newBlockingUses,
-    const DataLayout &dataLayout) {
-  return forwardToUsers(*this, newBlockingUses);
-}
-
-DeletionKind LLVM::AddrSpaceCastOp::removeBlockingUses(
     const SmallPtrSetImpl<OpOperand *> &blockingUses, OpBuilder &builder) {
   return DeletionKind::Delete;
 }

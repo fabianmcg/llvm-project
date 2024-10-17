@@ -312,7 +312,7 @@ public:
     populateSPIRVToLLVMTypeConversion(typeConverter);
 
     ConversionTarget target(*context);
-    target.addLegalDialect<LLVM::LLVMDialect>();
+    target.addLegalDialect<LLVM::LLVMDialect, ptr::PtrDialect>();
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
       signalPassFailure();
 

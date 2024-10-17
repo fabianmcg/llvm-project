@@ -539,7 +539,7 @@ static LogicalResult applyPatterns(ModuleOp module, unsigned numThreads) {
   ConversionTarget target(*module.getContext());
   target.addIllegalOp<scf::ReduceOp, scf::ReduceReturnOp, scf::ParallelOp>();
   target.addLegalDialect<omp::OpenMPDialect, LLVM::LLVMDialect,
-                         memref::MemRefDialect>();
+                         memref::MemRefDialect, ptr::PtrDialect>();
 
   RewritePatternSet patterns(module.getContext());
   patterns.add<ParallelOpLowering>(module.getContext(), numThreads);

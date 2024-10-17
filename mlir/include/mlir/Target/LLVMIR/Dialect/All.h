@@ -81,7 +81,7 @@ registerAllGPUToLLVMIRTranslations(DialectRegistry &registry) {
 static inline void
 registerAllFromLLVMIRTranslations(DialectRegistry &registry) {
   registerLLVMDialectImport(registry);
-  // registerPtrDialectImport(registry);
+  registerPtrDialectImport(registry);
   registerNVVMDialectImport(registry);
 }
 } // namespace mlir

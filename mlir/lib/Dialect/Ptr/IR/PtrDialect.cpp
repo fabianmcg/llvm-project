@@ -274,15 +274,26 @@ LogicalResult StoreOp::verify() {
 // AddrSpaceCastOp
 //===----------------------------------------------------------------------===//
 
-OpFoldResult AddrSpaceCastOp::fold(FoldAdaptor adaptor) {
-  // addrcast(x : T0, T0) -> x
-  if (getArg().getType() == getType())
-    return getArg();
-  // addrcast(addrcast(x : T0, T1), T0) -> x
-  if (auto prev = getArg().getDefiningOp<AddrSpaceCastOp>())
-    if (prev.getArg().getType() == getType())
+/// Folds a cast op that can be chained.
+template <typename T>
+static OpFoldResult foldChainableCast(T castOp,
+                                      typename T::FoldAdaptor adaptor) {
+  // cast(x : T0, T0) -> x
+  if (castOp.getArg().getType() == castOp.getType())
+    return castOp.getArg();
+  if (auto prev = castOp.getArg().template getDefiningOp<T>()) {
+    // cast(cast(x : T0, T1), T0) -> x
+    if (prev.getArg().getType() == castOp.getType())
       return prev.getArg();
+    // cast(cast(x : T0, T1), T2) -> cast(x: T0, T2)
+    castOp.getArgMutable().set(prev.getArg());
+    return Value{castOp};
+  }
   return {};
+}
+
+OpFoldResult AddrSpaceCastOp::fold(FoldAdaptor adaptor) {
+  return foldChainableCast(*this, adaptor);
 }
 
 Value AddrSpaceCastOp::getViewSource() { return getArg(); }

@@ -1765,6 +1765,8 @@ public:
   virtual AliasResult getAlias(Type type, raw_ostream &os) const {
     return AliasResult::NoAlias;
   }
+  virtual void initTypeAliases(
+      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>> &aliases) const {}
 
   //===--------------------------------------------------------------------===//
   // Resources

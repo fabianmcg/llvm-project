@@ -15,6 +15,10 @@ def LLVM_Dialect : Dialect {
   let name = "llvm";
   let cppNamespace = "::mlir::LLVM";
 
+  let dependentDialects = [
+    "::mlir::ptr::PtrDialect"
+  ];
+
   let hasConstantMaterializer = 1;
   let useDefaultAttributePrinterParser = 1;
   let hasRegionArgAttrVerify = 1;

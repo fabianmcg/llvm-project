@@ -1815,15 +1815,21 @@ public:
   explicit AsmStateImpl(Operation *op, const OpPrintingFlags &printerFlags,
                         AsmState::LocationMap *locationMap)
       : interfaces(op->getContext()), nameState(op, printerFlags),
-        printerFlags(printerFlags), locationMap(locationMap) {}
+        printerFlags(printerFlags), locationMap(locationMap) {
+          initialize();
+        }
   explicit AsmStateImpl(MLIRContext *ctx, const OpPrintingFlags &printerFlags,
                         AsmState::LocationMap *locationMap)
-      : interfaces(ctx), printerFlags(printerFlags), locationMap(locationMap) {}
+      : interfaces(ctx), printerFlags(printerFlags), locationMap(locationMap) {
+        initialize();
+      }
 
   /// Initialize the alias state to enable the printing of aliases.
   void initializeAliases(Operation *op) {
     aliasState.initialize(op, printerFlags, interfaces);
   }
+
+  void initialize();
 
   /// Get the state used for aliases.
   AliasState &getAliasState() { return aliasState; }
@@ -1867,6 +1873,8 @@ public:
 
   void popCyclicPrinting() { cyclicPrintingStack.pop_back(); }
 
+  Dialect &getTypeDialect(Type type);
+
 private:
   /// Collection of OpAsm interfaces implemented in the context.
   DialectInterfaceCollection<OpAsmDialectInterface> interfaces;
@@ -1898,6 +1906,10 @@ private:
 
   // Allow direct access to the impl fields.
   friend AsmState;
+
+  /// Type dialect aliases.
+  DenseMap<TypeID, SmallVector<function_ref<Dialect *(Type)>>>
+      typeDialectAliases;
 };
 
 template <typename Range>
@@ -2758,8 +2770,30 @@ void AsmPrinter::Impl::printDialectAttribute(Attribute attr) {
   printDialectSymbol(os, "#", dialect.getNamespace(), attrName);
 }
 
+void mlir::detail::AsmStateImpl::initialize() {
+  for (const OpAsmDialectInterface& iface : interfaces) {
+    SmallVector<std::pair<TypeID, function_ref<Dialect *(Type)>>> aliases;
+    iface.initTypeAliases(aliases);
+    for (auto [id, fn] : aliases) {
+      if (fn)
+        typeDialectAliases[id].push_back(fn);
+    }
+  }
+}
+
+Dialect &mlir::detail::AsmStateImpl::getTypeDialect(Type type) {
+  auto it = typeDialectAliases.find(type.getTypeID());
+  if (it == typeDialectAliases.end())
+    return type.getDialect();
+  for (function_ref<Dialect *(Type)> fn : it->second) {
+    if (Dialect *dialect = fn(type))
+      return *dialect;
+  }
+  return type.getDialect();
+}
+
 void AsmPrinter::Impl::printDialectType(Type type) {
-  auto &dialect = type.getDialect();
+  auto &dialect = state.getTypeDialect(type);
 
   // Ask the dialect to serialize the type to a string.
   std::string typeName;

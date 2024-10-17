@@ -883,26 +883,6 @@ LogicalResult LLVM::GEPOp::verify() {
                              [&] { return emitOpError(); });
 }
 
-//===----------------------------------------------------------------------===//
-// LoadOp
-//===----------------------------------------------------------------------===//
-
-void LoadOp::getEffects(
-    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
-        &effects) {
-  effects.emplace_back(MemoryEffects::Read::get(), &getAddrMutable());
-  // Volatile operations can have target-specific read-write effects on
-  // memory besides the one referred to by the pointer operand.
-  // Similarly, atomic operations that are monotonic or stricter cause
-  // synchronization that from a language point-of-view, are arbitrary
-  // read-writes into memory.
-  if (getVolatile_() || (getOrdering() != AtomicOrdering::not_atomic &&
-                         getOrdering() != AtomicOrdering::unordered)) {
-    effects.emplace_back(MemoryEffects::Write::get());
-    effects.emplace_back(MemoryEffects::Read::get());
-  }
-}
-
 /// Returns true if the given type is supported by atomic operations. All
 /// integer, float, and pointer types with a power-of-two bitsize and a minimal
 /// size of 8 bits are supported.
@@ -939,63 +919,6 @@ LogicalResult verifyAtomicMemOp(OpTy memOp, Type valueType,
     return memOp.emitOpError(
         "expected syncscope to be null for non-atomic access");
   return success();
-}
-
-LogicalResult LoadOp::verify() {
-  Type valueType = getResult().getType();
-  return verifyAtomicMemOp(*this, valueType,
-                           {AtomicOrdering::release, AtomicOrdering::acq_rel});
-}
-
-void LoadOp::build(OpBuilder &builder, OperationState &state, Type type,
-                   Value addr, unsigned alignment, bool isVolatile,
-                   bool isNonTemporal, bool isInvariant,
-                   AtomicOrdering ordering, StringRef syncscope) {
-  build(builder, state, type, addr,
-        alignment ? builder.getI64IntegerAttr(alignment) : nullptr, isVolatile,
-        isNonTemporal, isInvariant, ordering,
-        syncscope.empty() ? nullptr : builder.getStringAttr(syncscope),
-        /*access_groups=*/nullptr,
-        /*alias_scopes=*/nullptr, /*noalias_scopes=*/nullptr,
-        /*tbaa=*/nullptr);
-}
-
-//===----------------------------------------------------------------------===//
-// StoreOp
-//===----------------------------------------------------------------------===//
-
-void StoreOp::getEffects(
-    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
-        &effects) {
-  effects.emplace_back(MemoryEffects::Write::get(), &getAddrMutable());
-  // Volatile operations can have target-specific read-write effects on
-  // memory besides the one referred to by the pointer operand.
-  // Similarly, atomic operations that are monotonic or stricter cause
-  // synchronization that from a language point-of-view, are arbitrary
-  // read-writes into memory.
-  if (getVolatile_() || (getOrdering() != AtomicOrdering::not_atomic &&
-                         getOrdering() != AtomicOrdering::unordered)) {
-    effects.emplace_back(MemoryEffects::Write::get());
-    effects.emplace_back(MemoryEffects::Read::get());
-  }
-}
-
-LogicalResult StoreOp::verify() {
-  Type valueType = getValue().getType();
-  return verifyAtomicMemOp(*this, valueType,
-                           {AtomicOrdering::acquire, AtomicOrdering::acq_rel});
-}
-
-void StoreOp::build(OpBuilder &builder, OperationState &state, Value value,
-                    Value addr, unsigned alignment, bool isVolatile,
-                    bool isNonTemporal, AtomicOrdering ordering,
-                    StringRef syncscope) {
-  build(builder, state, value, addr,
-        alignment ? builder.getI64IntegerAttr(alignment) : nullptr, isVolatile,
-        isNonTemporal, ordering,
-        syncscope.empty() ? nullptr : builder.getStringAttr(syncscope),
-        /*access_groups=*/nullptr,
-        /*alias_scopes=*/nullptr, /*noalias_scopes=*/nullptr, /*tbaa=*/nullptr);
 }
 
 //===----------------------------------------------------------------------===//
@@ -3011,102 +2934,12 @@ ConstantOp LLVM::ConstantOp::materialize(OpBuilder &builder, Attribute value,
 OpFoldResult LLVM::ConstantOp::fold(FoldAdaptor) { return getValue(); }
 
 //===----------------------------------------------------------------------===//
-// AtomicRMWOp
-//===----------------------------------------------------------------------===//
-
-void AtomicRMWOp::build(OpBuilder &builder, OperationState &state,
-                        AtomicBinOp binOp, Value ptr, Value val,
-                        AtomicOrdering ordering, StringRef syncscope,
-                        unsigned alignment, bool isVolatile) {
-  build(builder, state, val.getType(), binOp, ptr, val, ordering,
-        !syncscope.empty() ? builder.getStringAttr(syncscope) : nullptr,
-        alignment ? builder.getI64IntegerAttr(alignment) : nullptr, isVolatile,
-        /*access_groups=*/nullptr,
-        /*alias_scopes=*/nullptr, /*noalias_scopes=*/nullptr, /*tbaa=*/nullptr);
-}
-
-LogicalResult AtomicRMWOp::verify() {
-  auto valType = getVal().getType();
-  if (getBinOp() == AtomicBinOp::fadd || getBinOp() == AtomicBinOp::fsub ||
-      getBinOp() == AtomicBinOp::fmin || getBinOp() == AtomicBinOp::fmax) {
-    if (isCompatibleVectorType(valType)) {
-      if (isScalableVectorType(valType))
-        return emitOpError("expected LLVM IR fixed vector type");
-      Type elemType = getVectorElementType(valType);
-      if (!isCompatibleFloatingPointType(elemType))
-        return emitOpError(
-            "expected LLVM IR floating point type for vector element");
-    } else if (!isCompatibleFloatingPointType(valType)) {
-      return emitOpError("expected LLVM IR floating point type");
-    }
-  } else if (getBinOp() == AtomicBinOp::xchg) {
-    DataLayout dataLayout = DataLayout::closest(*this);
-    if (!isTypeCompatibleWithAtomicOp(valType, dataLayout))
-      return emitOpError("unexpected LLVM IR type for 'xchg' bin_op");
-  } else {
-    auto intType = llvm::dyn_cast<IntegerType>(valType);
-    unsigned intBitWidth = intType ? intType.getWidth() : 0;
-    if (intBitWidth != 8 && intBitWidth != 16 && intBitWidth != 32 &&
-        intBitWidth != 64)
-      return emitOpError("expected LLVM IR integer type");
-  }
-
-  if (static_cast<unsigned>(getOrdering()) <
-      static_cast<unsigned>(AtomicOrdering::monotonic))
-    return emitOpError() << "expected at least '"
-                         << stringifyAtomicOrdering(AtomicOrdering::monotonic)
-                         << "' ordering";
-
-  return success();
-}
-
-//===----------------------------------------------------------------------===//
-// AtomicCmpXchgOp
-//===----------------------------------------------------------------------===//
-
-/// Returns an LLVM struct type that contains a value type and a boolean type.
-static LLVMStructType getValAndBoolStructType(Type valType) {
-  auto boolType = IntegerType::get(valType.getContext(), 1);
-  return LLVMStructType::getLiteral(valType.getContext(), {valType, boolType});
-}
-
-void AtomicCmpXchgOp::build(OpBuilder &builder, OperationState &state,
-                            Value ptr, Value cmp, Value val,
-                            AtomicOrdering successOrdering,
-                            AtomicOrdering failureOrdering, StringRef syncscope,
-                            unsigned alignment, bool isWeak, bool isVolatile) {
-  build(builder, state, getValAndBoolStructType(val.getType()), ptr, cmp, val,
-        successOrdering, failureOrdering,
-        !syncscope.empty() ? builder.getStringAttr(syncscope) : nullptr,
-        alignment ? builder.getI64IntegerAttr(alignment) : nullptr, isWeak,
-        isVolatile, /*access_groups=*/nullptr,
-        /*alias_scopes=*/nullptr, /*noalias_scopes=*/nullptr, /*tbaa=*/nullptr);
-}
-
-LogicalResult AtomicCmpXchgOp::verify() {
-  auto ptrType = llvm::cast<LLVM::LLVMPointerType>(getPtr().getType());
-  if (!ptrType)
-    return emitOpError("expected LLVM IR pointer type for operand #0");
-  auto valType = getVal().getType();
-  DataLayout dataLayout = DataLayout::closest(*this);
-  if (!isTypeCompatibleWithAtomicOp(valType, dataLayout))
-    return emitOpError("unexpected LLVM IR type");
-  if (getSuccessOrdering() < AtomicOrdering::monotonic ||
-      getFailureOrdering() < AtomicOrdering::monotonic)
-    return emitOpError("ordering must be at least 'monotonic'");
-  if (getFailureOrdering() == AtomicOrdering::release ||
-      getFailureOrdering() == AtomicOrdering::acq_rel)
-    return emitOpError("failure ordering cannot be 'release' or 'acq_rel'");
-  return success();
-}
-
-//===----------------------------------------------------------------------===//
 // FenceOp
 //===----------------------------------------------------------------------===//
 
 void FenceOp::build(OpBuilder &builder, OperationState &state,
                     AtomicOrdering ordering, StringRef syncscope) {
-  build(builder, state, ordering,
+  build(builder, state, builder.getAttr<ptr::AtomicOrderingAttr>(ordering),
         syncscope.empty() ? nullptr : builder.getStringAttr(syncscope));
 }
 
@@ -3236,16 +3069,6 @@ LogicalResult LLVM::BitcastOp::verify() {
 
   return success();
 }
-
-//===----------------------------------------------------------------------===//
-// Folder for LLVM::AddrSpaceCastOp
-//===----------------------------------------------------------------------===//
-
-OpFoldResult LLVM::AddrSpaceCastOp::fold(FoldAdaptor adaptor) {
-  return foldChainableCast(*this, adaptor);
-}
-
-Value LLVM::AddrSpaceCastOp::getViewSource() { return getArg(); }
 
 //===----------------------------------------------------------------------===//
 // Folder for LLVM::GEPOp
@@ -3381,6 +3204,13 @@ void CallIntrinsicOp::build(OpBuilder &builder, OperationState &state,
 // OpAsmDialectInterface
 //===----------------------------------------------------------------------===//
 
+static Dialect* getPtrDialect(Type type) {
+  auto ty = dyn_cast<LLVMPointerType>(type);
+  if (!ty)
+    return nullptr;
+  return &ty.getMemorySpace().getDialect();
+}
+
 namespace {
 struct LLVMOpAsmDialectInterface : public OpAsmDialectInterface {
   using OpAsmDialectInterface::OpAsmDialectInterface;
@@ -3404,6 +3234,10 @@ struct LLVMOpAsmDialectInterface : public OpAsmDialectInterface {
         })
         .Default([](Attribute) { return AliasResult::NoAlias; });
   }
+  void initTypeAliases(
+      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>> &aliases) const {
+        aliases.push_back({TypeID::get<ptr::PtrType>(), getPtrDialect});
+      }
 };
 } // namespace
 

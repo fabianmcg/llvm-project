@@ -52,6 +52,143 @@ void LLVMDialect::registerAttributes() {
 }
 
 //===----------------------------------------------------------------------===//
+// AddressSpaceAttr
+//===----------------------------------------------------------------------===//
+
+static bool isLoadableType(Type type) {
+  return /*LLVM_PrimitiveType*/ (
+             LLVM::isCompatibleOuterType(type) &&
+             !isa<LLVM::LLVMVoidType, LLVM::LLVMFunctionType>(type)) &&
+         /*LLVM_OpaqueStruct*/
+         !(isa<LLVM::LLVMStructType>(type) &&
+           cast<LLVM::LLVMStructType>(type).isOpaque()) &&
+         /*LLVM_AnyTargetExt*/
+         !(isa<LLVM::LLVMTargetExtType>(type) &&
+           !cast<LLVM::LLVMTargetExtType>(type).supportsMemOps());
+}
+
+/// Returns true if the given type is supported by atomic operations. All
+/// integer and float types with limited bit width are supported. Additionally,
+/// depending on the operation pointers may be supported as well.
+static bool isTypeCompatibleWithAtomicOp(Type type) {
+  if (llvm::isa<LLVMPointerType>(type))
+    return true;
+
+  std::optional<unsigned> bitWidth;
+  if (auto floatType = llvm::dyn_cast<FloatType>(type)) {
+    if (!isCompatibleFloatingPointType(type))
+      return false;
+    bitWidth = floatType.getWidth();
+  }
+  if (auto integerType = llvm::dyn_cast<IntegerType>(type))
+    bitWidth = integerType.getWidth();
+  // The type is neither an integer, float, or pointer type.
+  if (!bitWidth)
+    return false;
+  return *bitWidth == 8 || *bitWidth == 16 || *bitWidth == 32 ||
+         *bitWidth == 64;
+}
+
+ptr::MemorySpaceAttrInterface AddressSpaceAttr::getDefaultMemorySpace() const {
+  return AddressSpaceAttr::get(getContext(), 0);
+}
+
+LogicalResult AddressSpaceAttr::isValidLoad(
+    Type type, mlir::ptr::AtomicOrdering ordering, IntegerAttr alignment,
+    function_ref<InFlightDiagnostic()> emitError) const {
+  if (!isLoadableType(type))
+    return emitError
+               ? (emitError() << "type must be LLVM type with size, but got ")
+                     << type
+               : failure();
+  if (ordering != ptr::AtomicOrdering::not_atomic &&
+      !isTypeCompatibleWithAtomicOp(type))
+    return emitError ? (emitError()
+                        << "unsupported type " << type << " for atomic access")
+                     : failure();
+  return success();
+}
+
+LogicalResult AddressSpaceAttr::isValidStore(
+    Type type, mlir::ptr::AtomicOrdering ordering, IntegerAttr alignment,
+    function_ref<InFlightDiagnostic()> emitError) const {
+  if (!isLoadableType(type))
+    return emitError
+               ? (emitError() << "type must be LLVM type with size, but got ")
+                     << type
+               : failure();
+  if (ordering != ptr::AtomicOrdering::not_atomic &&
+      !isTypeCompatibleWithAtomicOp(type))
+    return emitError ? (emitError() << "unsupported type ")
+                           << type << " for atomic access"
+                     : failure();
+  return success();
+}
+
+LogicalResult AddressSpaceAttr::isValidAtomicOp(
+    mlir::ptr::AtomicBinOp binOp, Type type, mlir::ptr::AtomicOrdering ordering,
+    IntegerAttr alignment, function_ref<InFlightDiagnostic()> emitError) const {
+  if (binOp == ptr::AtomicBinOp::fadd || binOp == ptr::AtomicBinOp::fsub ||
+      binOp == ptr::AtomicBinOp::fmin || binOp == ptr::AtomicBinOp::fmax) {
+    if (!mlir::LLVM::isCompatibleFloatingPointType(type))
+      return emitError ? (emitError() << "expected LLVM IR floating point type")
+                       : failure();
+  } else if (binOp == ptr::AtomicBinOp::xchg) {
+    if (!isTypeCompatibleWithAtomicOp(type))
+      return emitError
+                 ? (emitError() << "unexpected LLVM IR type for 'xchg' bin_op")
+                 : failure();
+  } else {
+    auto intType = llvm::dyn_cast<IntegerType>(type);
+    unsigned intBitWidth = intType ? intType.getWidth() : 0;
+    if (intBitWidth != 8 && intBitWidth != 16 && intBitWidth != 32 &&
+        intBitWidth != 64)
+      return emitError ? (emitError() << "expected LLVM IR integer type")
+                       : failure();
+  }
+  return success();
+}
+
+LogicalResult AddressSpaceAttr::isValidAtomicXchg(
+    Type type, mlir::ptr::AtomicOrdering successOrdering,
+    mlir::ptr::AtomicOrdering failureOrdering, IntegerAttr alignment,
+    function_ref<InFlightDiagnostic()> emitError) const {
+  if (!isLoadableType(type))
+    return emitError
+               ? (emitError() << "type must be LLVM type with size, but got ")
+                     << type
+               : failure();
+  if (!isTypeCompatibleWithAtomicOp(type))
+    return emitError ? (emitError() << "unexpected LLVM IR type") : failure();
+  return success();
+}
+
+template <typename Ty>
+static bool isScalarOrVectorOf(Type ty) {
+  return isa<Ty>(ty) || (LLVM::isCompatibleVectorType(ty) &&
+                         isa<Ty>(LLVM::getVectorElementType(ty)));
+}
+
+LogicalResult AddressSpaceAttr::isValidAddrSpaceCast(
+    Type tgt, Type src, function_ref<InFlightDiagnostic()> emitError) const {
+  if (!isScalarOrVectorOf<LLVMPointerType>(tgt))
+    return emitError ? (emitError() << "invalid ptr-like operand") : failure();
+  if (!isScalarOrVectorOf<LLVMPointerType>(src))
+    return emitError ? (emitError() << "invalid ptr-like operand") : failure();
+  return success();
+}
+
+LogicalResult AddressSpaceAttr::isValidPtrIntCast(
+    Type intLikeTy, Type ptrLikeTy,
+    function_ref<InFlightDiagnostic()> emitError) const {
+  if (!isScalarOrVectorOf<IntegerType>(intLikeTy))
+    return emitError ? (emitError() << "invalid int-like type") : failure();
+  if (!isScalarOrVectorOf<LLVMPointerType>(ptrLikeTy))
+    return emitError ? (emitError() << "invalid ptr-like type") : failure();
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // DINodeAttr
 //===----------------------------------------------------------------------===//
 
@@ -101,14 +238,6 @@ bool DITypeAttr::classof(Attribute attr) {
   return llvm::isa<DINullTypeAttr, DIBasicTypeAttr, DICompositeTypeAttr,
                    DIDerivedTypeAttr, DIStringTypeAttr, DISubroutineTypeAttr>(
       attr);
-}
-
-//===----------------------------------------------------------------------===//
-// TBAANodeAttr
-//===----------------------------------------------------------------------===//
-
-bool TBAANodeAttr::classof(Attribute attr) {
-  return llvm::isa<TBAATypeDescriptorAttr, TBAARootAttr>(attr);
 }
 
 //===----------------------------------------------------------------------===//
