@@ -122,7 +122,7 @@ public:
     os << "===" << std::string(73, '-') << "===\n";
 
     // Print the total time followed by the section headers.
-    os << llvm::format("  Total Execution Time: %.4f seconds\n\n", total.wall);
+    os << llvm::format("  Total Execution Time: %.8f seconds\n\n", total.wall);
     if (total.user != total.wall)
       os << "  ----User Time----";
     os << "  ----Wall Time----  ----Name----\n";
@@ -132,10 +132,10 @@ public:
 
   void printTime(const TimeRecord &time, const TimeRecord &total) override {
     if (total.user != total.wall) {
-      os << llvm::format("  %8.4f (%5.1f%%)", time.user,
+      os << llvm::format("  %8.8f (%5.1f%%)", time.user,
                          100.0 * time.user / total.user);
     }
-    os << llvm::format("  %8.4f (%5.1f%%)  ", time.wall,
+    os << llvm::format("  %8.8f (%5.1f%%)  ", time.wall,
                        100.0 * time.wall / total.wall);
   }
 
@@ -168,13 +168,13 @@ public:
   void printTime(const TimeRecord &time, const TimeRecord &total) override {
     if (total.user != total.wall) {
       os << "\"user\": {";
-      os << "\"duration\": " << llvm::format("%8.4f", time.user) << ", ";
+      os << "\"duration\": " << llvm::format("%8.8f", time.user) << ", ";
       os << "\"percentage\": "
          << llvm::format("%5.1f", 100.0 * time.user / total.user);
       os << "}, ";
     }
     os << "\"wall\": {";
-    os << "\"duration\": " << llvm::format("%8.4f", time.wall) << ", ";
+    os << "\"duration\": " << llvm::format("%8.8f", time.wall) << ", ";
     os << "\"percentage\": "
        << llvm::format("%5.1f", 100.0 * time.wall / total.wall);
     os << "}";
@@ -350,7 +350,7 @@ public:
   void dump(raw_ostream &os, unsigned indent = 0, unsigned markThreadId = 0) {
     auto time = getTimeRecord();
     os << std::string(indent * 2, ' ') << name << " [" << threadId << "]"
-       << llvm::format("  %7.4f / %7.4f", time.user, time.wall);
+       << llvm::format("  %7.8f / %7.8f", time.user, time.wall);
     if (threadId != markThreadId && markThreadId != 0)
       os << " (*)";
     os << "\n";

@@ -19,6 +19,9 @@
 #include "llvm/IR/DebugProgramInstruction.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/Format.h"
+
+#include <chrono>
 
 extern llvm::cl::opt<bool> WriteNewDbgInfoFormat;
 
@@ -30,9 +33,19 @@ void registerToLLVMIRTranslation() {
       "mlir-to-llvmir", "Translate MLIR to LLVMIR",
       [](Operation *op, raw_ostream &output) {
         llvm::LLVMContext llvmContext;
+        std::chrono::time_point<std::chrono::steady_clock> startTime =
+            std::chrono::steady_clock::now();
         auto llvmModule = translateModuleToLLVMIR(op, llvmContext);
+        std::chrono::time_point<std::chrono::steady_clock> stopTime =
+            std::chrono::steady_clock::now();
+        double eTime =
+            std::chrono::duration_cast<std::chrono::duration<double>>(stopTime -
+                                                                      startTime)
+                .count();
         if (!llvmModule)
           return failure();
+        llvm::errs() << llvm::format(
+            "  Translation to MLIR-LLVMIR: %.8f seconds\n\n", eTime);
 
         // When printing LLVM IR, we should convert the module to the debug info
         // format that LLVM expects us to print.
