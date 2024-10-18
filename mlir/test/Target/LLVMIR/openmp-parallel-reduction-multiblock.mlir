@@ -5,7 +5,7 @@
 omp.declare_reduction @add_reduction_byref_box_heap_i32 : !llvm.ptr init {
 ^bb0(%arg0: !llvm.ptr):
   %7 = llvm.mlir.constant(0 : i64) : i64
-  %16 = llvm.ptrtoint %arg0 : !llvm.ptr to i64
+  %16 = ptr.ptrtoint %arg0 : !llvm.ptr to i64
   %17 = llvm.icmp "eq" %16, %7 : i64
   llvm.cond_br %17, ^bb1, ^bb2
 ^bb1:  // pred: ^bb0

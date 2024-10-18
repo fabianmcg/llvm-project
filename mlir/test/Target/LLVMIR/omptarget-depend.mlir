@@ -14,7 +14,7 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
     omp.task {
       %14 = llvm.mlir.constant(1 : i64) : i64
       %15 = llvm.alloca %14 x i32 {bindc_name = "i", pinned} : (i64) -> !llvm.ptr
-      %16 = llvm.load %8 : !llvm.ptr -> i32
+      %16 = ptr.load %8 : !llvm.ptr -> i32
       %17 = llvm.sext %16 : i32 to i64
       %18 = llvm.trunc %2 : i64 to i32
       llvm.br ^bb1(%18, %17 : i32, i64)
@@ -22,8 +22,8 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %21 = llvm.icmp "sgt" %20, %1 : i64
       llvm.cond_br %21, ^bb2, ^bb3
     ^bb2:  // pred: ^bb1
-      llvm.store %19, %15 : i32, !llvm.ptr
-      %22 = llvm.load %15 : !llvm.ptr -> i32
+      ptr.store %19, %15 : i32, !llvm.ptr
+      %22 = ptr.load %15 : !llvm.ptr -> i32
       %23 = llvm.sext %22 : i32 to i64
       %24 = llvm.mlir.constant(1 : i64) : i64
       %25 = llvm.mlir.constant(0 : i64) : i64
@@ -33,13 +33,13 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %29 = llvm.add %28, %25 overflow<nsw> : i64
       %30 = llvm.mul %24, %3 overflow<nsw> : i64
       %31 = llvm.getelementptr %4[%29] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-      llvm.store %22, %31 : i32, !llvm.ptr
-      %32 = llvm.load %15 : !llvm.ptr -> i32
+      ptr.store %22, %31 : i32, !llvm.ptr
+      %32 = ptr.load %15 : !llvm.ptr -> i32
       %33 = llvm.add %32, %18 : i32
       %34 = llvm.sub %20, %2 : i64
       llvm.br ^bb1(%33, %34 : i32, i64)
     ^bb3:  // pred: ^bb1
-      llvm.store %19, %15 : i32, !llvm.ptr
+      ptr.store %19, %15 : i32, !llvm.ptr
       omp.terminator
     }
     %9 = omp.map.bounds lower_bound(%1 : i64) upper_bound(%0 : i64) extent(%3 : i64) stride(%2 : i64) start_idx(%2 : i64)
@@ -52,7 +52,7 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %15 = llvm.mlir.constant(10 : i32) : i32
       %16 = llvm.mlir.constant(1 : index) : i64
       %17 = llvm.mlir.constant(40 : index) : i64
-      %18 = llvm.load %arg3 : !llvm.ptr -> i32
+      %18 = ptr.load %arg3 : !llvm.ptr -> i32
       %19 = llvm.sext %18 : i32 to i64
       %20 = llvm.trunc %16 : i64 to i32
       llvm.br ^bb1(%20, %19 : i32, i64)
@@ -60,8 +60,8 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %23 = llvm.icmp "sgt" %22, %14 : i64
       llvm.cond_br %23, ^bb2, ^bb3
     ^bb2:  // pred: ^bb1
-      llvm.store %21, %arg2 : i32, !llvm.ptr
-      %24 = llvm.load %arg2 : !llvm.ptr -> i32
+      ptr.store %21, %arg2 : i32, !llvm.ptr
+      %24 = ptr.load %arg2 : !llvm.ptr -> i32
       %25 = llvm.sext %24 : i32 to i64
       %26 = llvm.mlir.constant(1 : i64) : i64
       %27 = llvm.mlir.constant(0 : i64) : i64
@@ -71,7 +71,7 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %31 = llvm.add %30, %27 overflow<nsw> : i64
       %32 = llvm.mul %26, %17 overflow<nsw> : i64
       %33 = llvm.getelementptr %arg0[%31] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-      %34 = llvm.load %33 : !llvm.ptr -> i32
+      %34 = ptr.load %33 : !llvm.ptr -> i32
       %35 = llvm.add %34, %15 : i32
       %36 = llvm.mlir.constant(1 : i64) : i64
       %37 = llvm.mlir.constant(0 : i64) : i64
@@ -81,13 +81,13 @@ module attributes {omp.is_target_device = false, omp.target_triples = ["amdgcn-a
       %41 = llvm.add %40, %37 overflow<nsw> : i64
       %42 = llvm.mul %36, %17 overflow<nsw> : i64
       %43 = llvm.getelementptr %arg1[%41] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-      llvm.store %35, %43 : i32, !llvm.ptr
-      %44 = llvm.load %arg2 : !llvm.ptr -> i32
+      ptr.store %35, %43 : i32, !llvm.ptr
+      %44 = ptr.load %arg2 : !llvm.ptr -> i32
       %45 = llvm.add %44, %20 : i32
       %46 = llvm.sub %22, %16 : i64
       llvm.br ^bb1(%45, %46 : i32, i64)
     ^bb3:  // pred: ^bb1
-      llvm.store %21, %arg2 : i32, !llvm.ptr
+      ptr.store %21, %arg2 : i32, !llvm.ptr
       omp.terminator
     }
     llvm.return

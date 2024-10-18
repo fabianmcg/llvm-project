@@ -667,15 +667,15 @@ alloc {
 init {
 ^bb0(%arg: !llvm.ptr):
   %cst = arith.constant 1.0 : f32
-  llvm.store %cst, %arg : f32, !llvm.ptr
+  ptr.store %cst, %arg : f32, !llvm.ptr
   omp.yield (%arg : !llvm.ptr)
 }
 combiner {
 ^bb1(%arg0: !llvm.ptr, %arg1: !llvm.ptr):
-  %0 = llvm.load %arg0 : !llvm.ptr -> f32
-  %1 = llvm.load %arg1 : !llvm.ptr -> f32
+  %0 = ptr.load %arg0 : !llvm.ptr -> f32
+  %1 = ptr.load %arg1 : !llvm.ptr -> f32
   %2 = arith.addf %0, %1 : f32
-  llvm.store %2, %arg0 : f32, !llvm.ptr
+  ptr.store %2, %arg0 : f32, !llvm.ptr
   omp.yield (%arg0 : !llvm.ptr)
 }
 
@@ -739,8 +739,8 @@ combiner {
 }
 atomic {
 ^bb2(%arg2: !llvm.ptr, %arg3: !llvm.ptr):
-  %2 = llvm.load %arg3 : !llvm.ptr -> f32
-  llvm.atomicrmw fadd %arg2, %2 monotonic : !llvm.ptr, f32
+  %2 = ptr.load %arg3 : !llvm.ptr -> f32
+  ptr.atomicrmw fadd %arg2, %2 monotonic : !llvm.ptr, f32
   omp.yield
 }
 
@@ -1692,8 +1692,8 @@ combiner {
 }
 atomic {
 ^bb2(%arg2: !llvm.ptr, %arg3: !llvm.ptr):
-  %2 = llvm.load %arg3 : !llvm.ptr -> i32
-  llvm.atomicrmw add %arg2, %2 monotonic : !llvm.ptr, i32
+  %2 = ptr.load %arg3 : !llvm.ptr -> i32
+  ptr.atomicrmw add %arg2, %2 monotonic : !llvm.ptr, i32
   omp.yield
 }
 

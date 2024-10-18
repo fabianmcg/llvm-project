@@ -11,7 +11,7 @@ module attributes {dlti.dl_spec = #dlti.dl_spec<#dlti.dl_entry<"dlti.alloca_memo
       omp.wsloop {
         omp.loop_nest (%loop_cnt) : i32 = (%loop_lb) to (%loop_ub) inclusive step (%loop_step) {
           %gep = llvm.getelementptr %arg0[0, %loop_cnt] : (!llvm.ptr, i32) -> !llvm.ptr, !llvm.array<10 x i32>
-          llvm.store %loop_cnt, %gep : i32, !llvm.ptr
+          ptr.store %loop_cnt, %gep : i32, !llvm.ptr
           omp.yield
         }
       }

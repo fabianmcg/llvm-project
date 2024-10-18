@@ -7,7 +7,7 @@ module {
   omp.declare_reduction @add_reduction_byref_box_Uxf64 : !llvm.ptr init {
   ^bb0(%arg0: !llvm.ptr):
 // test usage of %arg0:
-    %11 = llvm.load %arg0 : !llvm.ptr -> !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
+    %11 = ptr.load %arg0 : !llvm.ptr -> !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
     omp.yield(%arg0 : !llvm.ptr)
   } combiner {
   ^bb0(%arg0: !llvm.ptr, %arg1: !llvm.ptr):

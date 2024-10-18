@@ -592,7 +592,7 @@ llvm.func @rocdl_atomic_attrs(%ptr: !llvm.ptr<1>, %data: f32) {
   // CHECK-SAME: !amdgpu.ignore.denormal.mode
   // CHECK-SAME: !amdgpu.no.fine.grained.memory
   // CHECK-SAME: !amdgpu.no.remote.memory
-  llvm.atomicrmw fadd %ptr, %data monotonic {
+  ptr.atomicrmw fadd %ptr, %data monotonic {
     rocdl.ignore_denormal_mode,
     rocdl.no_fine_grained_memory,
     rocdl.no_remote_memory} : !llvm.ptr<1>, f32
@@ -604,7 +604,7 @@ llvm.func @rocdl_last_use(%ptr: !llvm.ptr<1>) -> i32 {
   // CHECK: %[[ret:.+]] = load
   // CHECK-SAME: !amdgpu.last.use
   // CHECK: ret i32 %[[ret]]
-  %ret = llvm.load %ptr {rocdl.last_use} : !llvm.ptr<1> -> i32
+  %ret = ptr.load %ptr {rocdl.last_use} : !llvm.ptr<1> -> i32
   llvm.return %ret : i32
 }
 

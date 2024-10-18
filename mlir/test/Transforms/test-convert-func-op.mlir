@@ -22,7 +22,7 @@ func.func @byval(%arg0: !test.smpla {llvm.byval = !test.smpla}) -> !test.smpla {
 }
 
 // CHECK-SAME: (%[[ARG0:.*]]: !llvm.ptr {llvm.byval = !llvm.struct<(i8, i8)>}) -> !llvm.struct<(i8, i8)>
-//      CHECK: %[[LD:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> !llvm.struct<(i8, i8)>
+//      CHECK: %[[LD:.*]] = ptr.load %[[ARG0]] : !llvm.ptr -> !llvm.struct<(i8, i8)>
 //      CHECK: llvm.return %[[LD]] : !llvm.struct<(i8, i8)>
 
 // -----
@@ -36,5 +36,5 @@ func.func @byref(%arg0: !test.smpla {llvm.byref = !test.smpla}) -> !test.smpla {
 }
 
 // CHECK-SAME: (%[[ARG0:.*]]: !llvm.ptr {llvm.byref = !llvm.struct<(i8, i8)>}) -> !llvm.struct<(i8, i8)>
-//      CHECK: %[[LD:.*]] = llvm.load %[[ARG0]] : !llvm.ptr -> !llvm.struct<(i8, i8)>
+//      CHECK: %[[LD:.*]] = ptr.load %[[ARG0]] : !llvm.ptr -> !llvm.struct<(i8, i8)>
 //      CHECK: llvm.return %[[LD]] : !llvm.struct<(i8, i8)>

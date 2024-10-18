@@ -10,7 +10,7 @@ module attributes {omp.is_target_device = false} {
     %5 = omp.map.info var_ptr(%4 : !llvm.ptr, !llvm.array<40 x i32>) map_clauses(from) capture(ByRef) bounds(%3) -> !llvm.ptr {name = "a"}
     omp.target depend(taskdependin -> %4 : !llvm.ptr) map_entries(%5 -> %arg0 : !llvm.ptr) {
       %6 = llvm.mlir.constant(100 : index) : i32
-      llvm.store %6, %arg0 : i32, !llvm.ptr
+      ptr.store %6, %arg0 : i32, !llvm.ptr
       omp.terminator
     }
     llvm.return

@@ -1766,7 +1766,8 @@ public:
     return AliasResult::NoAlias;
   }
   virtual void initTypeAliases(
-      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>> &aliases) const {}
+      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>>
+          &aliases) const {}
 
   //===--------------------------------------------------------------------===//
   // Resources

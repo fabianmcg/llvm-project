@@ -1816,13 +1816,13 @@ public:
                         AsmState::LocationMap *locationMap)
       : interfaces(op->getContext()), nameState(op, printerFlags),
         printerFlags(printerFlags), locationMap(locationMap) {
-          initialize();
-        }
+    initialize();
+  }
   explicit AsmStateImpl(MLIRContext *ctx, const OpPrintingFlags &printerFlags,
                         AsmState::LocationMap *locationMap)
       : interfaces(ctx), printerFlags(printerFlags), locationMap(locationMap) {
-        initialize();
-      }
+    initialize();
+  }
 
   /// Initialize the alias state to enable the printing of aliases.
   void initializeAliases(Operation *op) {
@@ -2771,7 +2771,7 @@ void AsmPrinter::Impl::printDialectAttribute(Attribute attr) {
 }
 
 void mlir::detail::AsmStateImpl::initialize() {
-  for (const OpAsmDialectInterface& iface : interfaces) {
+  for (const OpAsmDialectInterface &iface : interfaces) {
     SmallVector<std::pair<TypeID, function_ref<Dialect *(Type)>>> aliases;
     iface.initTypeAliases(aliases);
     for (auto [id, fn] : aliases) {

@@ -176,10 +176,10 @@ llvm.func @blocks_with_args() {
   // CHECK  llvm.return
   llvm.cond_br %1, ^bb7(%0 : !llvm.ptr), ^bb1(%0 : !llvm.ptr)
 ^bb1(%5: !llvm.ptr):
-  llvm.store %5, %0 : !llvm.ptr, !llvm.ptr
+  ptr.store %5, %0 : !llvm.ptr, !llvm.ptr
   llvm.cond_br %1, ^bb2(%3 : i64), ^bb4(%3 : i64)
 ^bb7(%6: !llvm.ptr):
-  llvm.store %6, %0 : !llvm.ptr, !llvm.ptr
+  ptr.store %6, %0 : !llvm.ptr, !llvm.ptr
   llvm.cond_br %1, ^bb2(%4 : i64), ^bb4(%4 : i64)
 ^bb2(%7: i64):
   llvm.call @foo(%7) : (i64) -> ()

@@ -5,7 +5,7 @@
 
 llvm.func @parallel_op_1_private(%arg0: !llvm.ptr) {
   omp.parallel private(@x.privatizer %arg0 -> %arg2 : !llvm.ptr) {
-    %0 = llvm.load %arg2 : !llvm.ptr -> f32
+    %0 = ptr.load %arg2 : !llvm.ptr -> f32
     omp.terminator
   }
   llvm.return
@@ -36,8 +36,8 @@ llvm.func @parallel_op_1_private(%arg0: !llvm.ptr) {
 
 llvm.func @parallel_op_2_privates(%arg0: !llvm.ptr, %arg1: !llvm.ptr) {
   omp.parallel private(@x.privatizer %arg0 -> %arg2, @y.privatizer %arg1 -> %arg3 : !llvm.ptr, !llvm.ptr) {
-    %0 = llvm.load %arg2 : !llvm.ptr -> f32
-    %1 = llvm.load %arg3 : !llvm.ptr -> i32
+    %0 = ptr.load %arg2 : !llvm.ptr -> f32
+    %1 = ptr.load %arg3 : !llvm.ptr -> i32
     omp.terminator
   }
   llvm.return
@@ -76,8 +76,8 @@ omp.private {type = private} @x.privatizer : !llvm.ptr alloc {
 ^bb0(%arg0: !llvm.ptr):
   %c1 = llvm.mlir.constant(1 : i32) : i32
   %0 = llvm.alloca %c1 x f32 : (i32) -> !llvm.ptr
-  %1 = llvm.load %arg0 : !llvm.ptr -> f32
-  llvm.store %1, %0 : f32, !llvm.ptr
+  %1 = ptr.load %arg0 : !llvm.ptr -> f32
+  ptr.store %1, %0 : f32, !llvm.ptr
   omp.yield(%0 : !llvm.ptr)
 }
 
@@ -85,8 +85,8 @@ omp.private {type = private} @y.privatizer : !llvm.ptr alloc {
 ^bb0(%arg0: !llvm.ptr):
   %c1 = llvm.mlir.constant(1 : i32) : i32
   %0 = llvm.alloca %c1 x i32 : (i32) -> !llvm.ptr
-  %1 = llvm.load %arg0 : !llvm.ptr -> i32
-  llvm.store %1, %0 : i32, !llvm.ptr
+  %1 = ptr.load %arg0 : !llvm.ptr -> i32
+  ptr.store %1, %0 : i32, !llvm.ptr
   omp.yield(%0 : !llvm.ptr)
 }
 
@@ -94,7 +94,7 @@ omp.private {type = private} @y.privatizer : !llvm.ptr alloc {
 
 llvm.func @parallel_op_private_multi_block(%arg0: !llvm.ptr) {
   omp.parallel private(@multi_block.privatizer %arg0 -> %arg2 : !llvm.ptr) {
-    %0 = llvm.load %arg2 : !llvm.ptr -> f32
+    %0 = ptr.load %arg2 : !llvm.ptr -> f32
     omp.terminator
   }
   llvm.return
@@ -139,8 +139,8 @@ omp.private {type = private} @multi_block.privatizer : !llvm.ptr alloc {
   llvm.br ^bb1(%arg0, %0 : !llvm.ptr, !llvm.ptr)
 
 ^bb1(%arg1: !llvm.ptr, %arg2: !llvm.ptr):
-  %1 = llvm.load %arg1 : !llvm.ptr -> f32
-  llvm.store %1, %arg2 : f32, !llvm.ptr
+  %1 = ptr.load %arg1 : !llvm.ptr -> f32
+  ptr.store %1, %arg2 : f32, !llvm.ptr
   omp.yield(%arg2 : !llvm.ptr)
 }
 
@@ -209,9 +209,9 @@ llvm.func @private_and_reduction_() attributes {fir.internal_name = "_QPprivate_
   %1 = llvm.alloca %0 x !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)> : (i64) -> !llvm.ptr
   %2 = llvm.alloca %0 x f32 {bindc_name = "to_priv"} : (i64) -> !llvm.ptr
   omp.parallel private(@privatizer.part %2 -> %arg1 : !llvm.ptr) reduction(byref @reducer.part %1 -> %arg0 : !llvm.ptr) {
-    %3 = llvm.load %arg0 : !llvm.ptr -> !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
+    %3 = ptr.load %arg0 : !llvm.ptr -> !llvm.struct<(ptr, i64, i32, i8, i8, i8, i8, array<1 x array<3 x i64>>)>
     %4 = llvm.mlir.constant(8.000000e+00 : f32) : f32
-    llvm.store %4, %arg1 : f32, !llvm.ptr
+    ptr.store %4, %arg1 : f32, !llvm.ptr
     omp.terminator
   }
   llvm.return
@@ -248,7 +248,7 @@ llvm.func @_QPequivalence() {
   %3 = llvm.getelementptr %1[0, %2] : (!llvm.ptr, i64) -> !llvm.ptr, !llvm.array<4 x i8>
   omp.parallel private(@_QFequivalenceEx_firstprivate_ptr_f32 %3 -> %arg0 : !llvm.ptr) {
     %4 = llvm.mlir.constant(3.140000e+00 : f32) : f32
-    llvm.store %4, %arg0 : f32, !llvm.ptr
+    ptr.store %4, %arg0 : f32, !llvm.ptr
     omp.terminator
   }
   llvm.return
@@ -261,8 +261,8 @@ omp.private {type = firstprivate} @_QFequivalenceEx_firstprivate_ptr_f32 : !llvm
   omp.yield(%1 : !llvm.ptr)
 } copy {
 ^bb0(%arg0: !llvm.ptr, %arg1: !llvm.ptr):
-  %0 = llvm.load %arg0 : !llvm.ptr -> f32
-  llvm.store %0, %arg1 : f32, !llvm.ptr
+  %0 = ptr.load %arg0 : !llvm.ptr -> f32
+  ptr.store %0, %arg1 : f32, !llvm.ptr
   omp.yield(%arg1 : !llvm.ptr)
 }
 

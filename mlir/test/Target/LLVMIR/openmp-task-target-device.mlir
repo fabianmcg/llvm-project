@@ -8,17 +8,17 @@ module attributes {omp.is_target_device = true } {
     %0 = llvm.mlir.constant(0 : i32) : i32
     %1 = llvm.mlir.constant(1 : i64) : i64
     %2 = llvm.alloca %1 x i32 {bindc_name = "a"} : (i64) -> !llvm.ptr<5>
-    %3 = llvm.addrspacecast %2 : !llvm.ptr<5> to !llvm.ptr
+    %3 = ptr.addrspacecast %2 : !llvm.ptr<5> to !llvm.ptr
     omp.task {
-      llvm.store %0, %3 : i32, !llvm.ptr
+      ptr.store %0, %3 : i32, !llvm.ptr
       omp.terminator
     }
     %4 = omp.map.info var_ptr(%3 : !llvm.ptr, i32) map_clauses(tofrom) capture(ByRef) -> !llvm.ptr {name = "a"}
     omp.target map_entries(%4 -> %arg0 : !llvm.ptr) {
       %5 = llvm.mlir.constant(5 : i32) : i32
-      %6 = llvm.load %arg0  : !llvm.ptr -> i32
+      %6 = ptr.load %arg0  : !llvm.ptr -> i32
       %7 = llvm.add %6, %5  : i32
-      llvm.store %7, %arg0  : i32, !llvm.ptr
+      ptr.store %7, %arg0  : i32, !llvm.ptr
       omp.terminator
     }
     llvm.return

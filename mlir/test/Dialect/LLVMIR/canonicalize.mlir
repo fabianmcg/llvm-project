@@ -123,7 +123,7 @@ llvm.func @fold_bitcast_chain(%x : i32) -> vector<2xi16> {
 // CHECK-SAME: %[[ARG:[[:alnum:]]+]]
 // CHECK-NEXT: llvm.return %[[ARG]]
 llvm.func @fold_addrcast(%x : !llvm.ptr) -> !llvm.ptr {
-  %c = llvm.addrspacecast %x : !llvm.ptr to !llvm.ptr
+  %c = ptr.addrspacecast %x : !llvm.ptr to !llvm.ptr
   llvm.return %c : !llvm.ptr
 }
 
@@ -133,8 +133,8 @@ llvm.func @fold_addrcast(%x : !llvm.ptr) -> !llvm.ptr {
 // CHECK-SAME: %[[ARG:[[:alnum:]]+]]
 // CHECK-NEXT: llvm.return %[[ARG]]
 llvm.func @fold_addrcast2(%x : !llvm.ptr) -> !llvm.ptr {
-  %c = llvm.addrspacecast %x : !llvm.ptr to !llvm.ptr<5>
-  %d = llvm.addrspacecast %c : !llvm.ptr<5> to !llvm.ptr
+  %c = ptr.addrspacecast %x : !llvm.ptr to !llvm.ptr<5>
+  %d = ptr.addrspacecast %c : !llvm.ptr<5> to !llvm.ptr
   llvm.return %d : !llvm.ptr
 }
 
@@ -143,9 +143,9 @@ llvm.func @fold_addrcast2(%x : !llvm.ptr) -> !llvm.ptr {
 // CHECK-LABEL: fold_addrcast_chain
 // CHECK-SAME: %[[ARG:[[:alnum:]]+]]
 llvm.func @fold_addrcast_chain(%x : !llvm.ptr) -> !llvm.ptr<2> {
-  %c = llvm.addrspacecast %x : !llvm.ptr to !llvm.ptr<1>
-  %d = llvm.addrspacecast %c : !llvm.ptr<1> to !llvm.ptr<2>
-  // CHECK: %[[ADDRCAST:.*]] = llvm.addrspacecast %[[ARG]] : !llvm.ptr to !llvm.ptr<2>
+  %c = ptr.addrspacecast %x : !llvm.ptr to !llvm.ptr<1>
+  %d = ptr.addrspacecast %c : !llvm.ptr<1> to !llvm.ptr<2>
+  // CHECK: %[[ADDRCAST:.*]] = ptr.addrspacecast %[[ARG]] : !llvm.ptr to !llvm.ptr<2>
   // CHECK: llvm.return %[[ADDRCAST]]
   llvm.return %d : !llvm.ptr<2>
 }
@@ -207,7 +207,7 @@ llvm.func @llvm_constant() -> i32 {
 // CHECK-LABEL: load_dce
 // CHECK-NEXT: llvm.return
 llvm.func @load_dce(%x : !llvm.ptr) {
-  %0 = llvm.load %x : !llvm.ptr -> i8
+  %0 = ptr.load %x : !llvm.ptr -> i8
   llvm.return
 }
 
@@ -238,14 +238,14 @@ llvm.func @alloca_dce() {
 llvm.func @volatile_load(%x : !llvm.ptr) {
   // A volatile load may have side-effects such as a write operation to arbitrary memory.
   // Make sure it is not removed.
-  // CHECK: llvm.load volatile
-  %0 = llvm.load volatile %x : !llvm.ptr -> i8
+  // CHECK: ptr.load volatile
+  %0 = ptr.load volatile %x : !llvm.ptr -> i8
   // Same with monotonic atomics and any stricter modes.
-  // CHECK: llvm.load %{{.*}} atomic monotonic
-  %2 = llvm.load %x atomic monotonic { alignment = 1 } : !llvm.ptr -> i8
+  // CHECK: ptr.load %{{.*}} atomic monotonic
+  %2 = ptr.load %x atomic monotonic { alignment = 1 } : !llvm.ptr -> i8
   // But not unordered!
-  // CHECK-NOT: llvm.load %{{.*}} atomic unordered
-  %3 = llvm.load %x  atomic unordered { alignment = 1 } : !llvm.ptr -> i8
+  // CHECK-NOT: ptr.load %{{.*}} atomic unordered
+  %3 = ptr.load %x  atomic unordered { alignment = 1 } : !llvm.ptr -> i8
   llvm.return
 }
 

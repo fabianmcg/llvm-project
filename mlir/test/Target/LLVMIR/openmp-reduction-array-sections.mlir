@@ -11,7 +11,7 @@ omp.declare_reduction @add_reduction_byref_box_Uxf32 : !llvm.ptr alloc {
 } init {
 ^bb0(%arg0: !llvm.ptr, %alloc: !llvm.ptr):
   %0 = llvm.mlir.constant(1 : i64) : i64
-  llvm.store %0, %alloc : i64, !llvm.ptr
+  ptr.store %0, %alloc : i64, !llvm.ptr
   omp.yield(%alloc : !llvm.ptr)
 } combiner {
 ^bb0(%arg0: !llvm.ptr, %arg1: !llvm.ptr):
@@ -30,7 +30,7 @@ omp.declare_reduction @add_reduction_byref_box_Uxf32 : !llvm.ptr alloc {
 }  cleanup {
 ^bb0(%arg0: !llvm.ptr):
   %0 = llvm.mlir.constant(0 : i64) : i64
-  %1 = llvm.ptrtoint %arg0 : !llvm.ptr to i64
+  %1 = ptr.ptrtoint %arg0 : !llvm.ptr to i64
   %2 = llvm.icmp "ne" %1, %0 : i64
   llvm.cond_br %2, ^bb1, ^bb2
 ^bb1:  // pred: ^bb0

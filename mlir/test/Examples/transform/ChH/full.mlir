@@ -380,7 +380,7 @@ module attributes { transform.with_named_sequence } {
 
 // CHECK:      %[[R0:.+]] = llvm.mlir.undef : !llvm.array<5 x vector<64xf32>>
 
-// CHECK:      %[[V:.+]] = llvm.load %{{.*}} : !llvm.ptr -> !llvm.array<5 x vector<64xf32>>
+// CHECK:      %[[V:.+]] = ptr.load %{{.*}} : !llvm.ptr -> !llvm.array<5 x vector<64xf32>>
 // CHECK-NEXT: %[[LINE0:.+]] = llvm.extractvalue %[[V]][0] : !llvm.array<5 x vector<64xf32>>
 // CHECK-NEXT: %[[FMA0:.+]] = llvm.intr.fma(%{{.*}}, %{{.*}}, %[[LINE0]])
 // CHECK-SAME: -> vector<64xf32>

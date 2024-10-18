@@ -26,8 +26,8 @@ module attributes {omp.is_target_device = true } {
       %map1 = omp.map.info var_ptr(%arg0 : !llvm.ptr, !llvm.ptr)   map_clauses(tofrom) capture(ByRef) -> !llvm.ptr {name = ""}
       omp.target map_entries(%map1 -> %arg1 : !llvm.ptr){
         %1 = llvm.mlir.constant(999 : i32) : i32
-        %2 = llvm.load %arg1 : !llvm.ptr -> !llvm.ptr
-        llvm.store %1, %2 : i32, !llvm.ptr
+        %2 = ptr.load %arg1 : !llvm.ptr -> !llvm.ptr
+        ptr.store %1, %2 : i32, !llvm.ptr
         omp.terminator
       }
       omp.terminator

@@ -11,13 +11,13 @@ llvm.func @target_map_single_private() attributes {fir.internal_name = "_QPtarge
   %1 = llvm.alloca %0 x i32 {bindc_name = "simple_var"} : (i64) -> !llvm.ptr
   %3 = llvm.alloca %0 x i32 {bindc_name = "a"} : (i64) -> !llvm.ptr
   %4 = llvm.mlir.constant(2 : i32) : i32
-  llvm.store %4, %3 : i32, !llvm.ptr
+  ptr.store %4, %3 : i32, !llvm.ptr
   %5 = omp.map.info var_ptr(%3 : !llvm.ptr, i32) map_clauses(to) capture(ByRef) -> !llvm.ptr {name = "a"}
   omp.target map_entries(%5 -> %arg0 : !llvm.ptr) private(@simple_var.privatizer %1 -> %arg1 : !llvm.ptr) {
     %6 = llvm.mlir.constant(10 : i32) : i32
-    %7 = llvm.load %arg0 : !llvm.ptr -> i32
+    %7 = ptr.load %arg0 : !llvm.ptr -> i32
     %8 = llvm.add %7, %6 : i32
-    llvm.store %8, %arg1 : i32, !llvm.ptr
+    ptr.store %8, %arg1 : i32, !llvm.ptr
     omp.terminator
   }
   llvm.return
@@ -40,18 +40,18 @@ llvm.func @target_map_2_privates() attributes {fir.internal_name = "_QPtarget_ma
   %3 = llvm.alloca %0 x f32 {bindc_name = "n"} : (i64) -> !llvm.ptr
   %5 = llvm.alloca %0 x i32 {bindc_name = "a"} : (i64) -> !llvm.ptr
   %6 = llvm.mlir.constant(2 : i32) : i32
-  llvm.store %6, %5 : i32, !llvm.ptr
+  ptr.store %6, %5 : i32, !llvm.ptr
   %7 = omp.map.info var_ptr(%5 : !llvm.ptr, i32) map_clauses(to) capture(ByRef) -> !llvm.ptr {name = "a"}
   omp.target map_entries(%7 -> %arg0 : !llvm.ptr) private(@simple_var.privatizer %1 -> %arg1, @n.privatizer %3 -> %arg2 : !llvm.ptr, !llvm.ptr) {
     %8 = llvm.mlir.constant(1.100000e+01 : f32) : f32
     %9 = llvm.mlir.constant(10 : i32) : i32
-    %10 = llvm.load %arg0 : !llvm.ptr -> i32
+    %10 = ptr.load %arg0 : !llvm.ptr -> i32
     %11 = llvm.add %10, %9 : i32
-    llvm.store %11, %arg1 : i32, !llvm.ptr
-    %12 = llvm.load %arg1 : !llvm.ptr -> i32
+    ptr.store %11, %arg1 : i32, !llvm.ptr
+    %12 = ptr.load %arg1 : !llvm.ptr -> i32
     %13 = llvm.sitofp %12 : i32 to f32
     %14 = llvm.fadd %13, %8  {fastmathFlags = #llvm.fastmath<contract>} : f32
-    llvm.store %14, %arg2 : f32, !llvm.ptr
+    ptr.store %14, %arg2 : f32, !llvm.ptr
     omp.terminator
   }
   llvm.return
@@ -84,7 +84,7 @@ omp.private {type = private} @multi_block.privatizer : !llvm.ptr alloc {
 
 llvm.func @target_op_private_multi_block(%arg0: !llvm.ptr) {
   omp.target private(@multi_block.privatizer %arg0 -> %arg2 : !llvm.ptr) {
-    %0 = llvm.load %arg2 : !llvm.ptr -> f32
+    %0 = ptr.load %arg2 : !llvm.ptr -> f32
     omp.terminator
   }
   llvm.return

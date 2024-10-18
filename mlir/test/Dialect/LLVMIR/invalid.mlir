@@ -127,91 +127,91 @@ func.func @gep_too_few_dynamic(%base : !llvm.ptr) {
 
 func.func @load_non_llvm_type(%foo : memref<f32>) {
   // expected-error@+1 {{op operand #0 must be LLVM pointer type}}
-  llvm.load %foo : memref<f32> -> f32
+  ptr.load %foo : memref<f32> -> f32
 }
 
 // -----
 
 func.func @load_syncscope(%ptr : !llvm.ptr) {
   // expected-error@below {{expected syncscope to be null for non-atomic access}}
-  %1 = "llvm.load"(%ptr) {syncscope = "singlethread"} : (!llvm.ptr) -> (f32)
+  %1 = "ptr.load"(%ptr) {syncscope = "singlethread"} : (!llvm.ptr) -> (f32)
 }
 
 // -----
 
 func.func @load_unsupported_ordering(%ptr : !llvm.ptr) {
   // expected-error@below {{unsupported ordering 'release'}}
-  %1 = llvm.load %ptr atomic release {alignment = 4 : i64} : !llvm.ptr -> f32
+  %1 = ptr.load %ptr atomic release {alignment = 4 : i64} : !llvm.ptr -> f32
 }
 
 // -----
 
 func.func @load_unsupported_type(%ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'f80' for atomic access}}
-  %1 = llvm.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> f80
+  %1 = ptr.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> f80
 }
 
 // -----
 
 func.func @load_unsupported_type(%ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'i1' for atomic access}}
-  %1 = llvm.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> i1
+  %1 = ptr.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> i1
 }
 
 // -----
 
 func.func @load_unsupported_type(%ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'i33' for atomic access}}
-  %1 = llvm.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> i33
+  %1 = ptr.load %ptr atomic monotonic {alignment = 16 : i64} : !llvm.ptr -> i33
 }
 
 // -----
 
 func.func @load_unaligned_atomic(%ptr : !llvm.ptr) {
   // expected-error@below {{expected alignment for atomic access}}
-  %1 = llvm.load %ptr atomic monotonic : !llvm.ptr -> f32
+  %1 = ptr.load %ptr atomic monotonic : !llvm.ptr -> f32
 }
 
 // -----
 
 func.func @store_syncscope(%val : f32, %ptr : !llvm.ptr) {
   // expected-error@below {{expected syncscope to be null for non-atomic access}}
-  "llvm.store"(%val, %ptr) {syncscope = "singlethread"} : (f32, !llvm.ptr) -> ()
+  "ptr.store"(%val, %ptr) {syncscope = "singlethread"} : (f32, !llvm.ptr) -> ()
 }
 
 // -----
 
 func.func @store_unsupported_ordering(%val : f32, %ptr : !llvm.ptr) {
   // expected-error@below {{unsupported ordering 'acquire'}}
-  llvm.store %val, %ptr atomic acquire {alignment = 4 : i64} : f32, !llvm.ptr
+  ptr.store %val, %ptr atomic acquire {alignment = 4 : i64} : f32, !llvm.ptr
 }
 
 // -----
 
 func.func @store_unsupported_type(%val : f80, %ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'f80' for atomic access}}
-  llvm.store %val, %ptr atomic monotonic {alignment = 16 : i64} : f80, !llvm.ptr
+  ptr.store %val, %ptr atomic monotonic {alignment = 16 : i64} : f80, !llvm.ptr
 }
 
 // -----
 
 func.func @store_unsupported_type(%val : i1, %ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'i1' for atomic access}}
-  llvm.store %val, %ptr atomic monotonic {alignment = 16 : i64} : i1, !llvm.ptr
+  ptr.store %val, %ptr atomic monotonic {alignment = 16 : i64} : i1, !llvm.ptr
 }
 
 // -----
 
 func.func @store_unsupported_type(%val : i48, %ptr : !llvm.ptr) {
   // expected-error@below {{unsupported type 'i48' for atomic access}}
-  llvm.store %val, %ptr atomic monotonic {alignment = 16 : i64} : i48, !llvm.ptr
+  ptr.store %val, %ptr atomic monotonic {alignment = 16 : i64} : i48, !llvm.ptr
 }
 
 // -----
 
 func.func @store_unaligned_atomic(%val : f32, %ptr : !llvm.ptr) {
   // expected-error@below {{expected alignment for atomic access}}
-  llvm.store %val, %ptr atomic monotonic : f32, !llvm.ptr
+  ptr.store %val, %ptr atomic monotonic : f32, !llvm.ptr
 }
 
 // -----
@@ -629,7 +629,7 @@ func.func @nvvm_invalid_mma_8(%a0 : i32, %a1 : i32,
 
 func.func @atomicrmw_mismatched_operands(%f32_ptr : !llvm.ptr, %f32 : f32) {
   // expected-error@+1 {{op failed to verify that result #0 and operand #1 have the same type}}
-  %0 = "llvm.atomicrmw"(%f32_ptr, %f32) {bin_op=11, ordering=1} : (!llvm.ptr, f32) -> i32
+  %0 = "ptr.atomicrmw"(%f32_ptr, %f32) {bin_op=11, ordering=1} : (!llvm.ptr, f32) -> i32
   llvm.return
 }
 
@@ -637,7 +637,7 @@ func.func @atomicrmw_mismatched_operands(%f32_ptr : !llvm.ptr, %f32 : f32) {
 
 func.func @atomicrmw_expected_float(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{expected LLVM IR floating point type}}
-  %0 = llvm.atomicrmw fadd %i32_ptr, %i32 unordered : !llvm.ptr, i32
+  %0 = ptr.atomicrmw fadd %i32_ptr, %i32 unordered : !llvm.ptr, i32
   llvm.return
 }
 
@@ -645,14 +645,14 @@ func.func @atomicrmw_expected_float(%i32_ptr : !llvm.ptr, %i32 : i32) {
 
 func.func @atomicrmw_scalable_vector(%ptr : !llvm.ptr, %f32_vec : vector<[2]xf32>) {
   // expected-error@+1 {{'val' must be floating point LLVM type or LLVM pointer type or signless integer or LLVM dialect-compatible fixed-length vector type}}
-  %0 = llvm.atomicrmw fadd %ptr, %f32_vec unordered : !llvm.ptr, vector<[2]xf32>
+  %0 = ptr.atomicrmw fadd %ptr, %f32_vec unordered : !llvm.ptr, vector<[2]xf32>
   llvm.return
 }
 // -----
 
 func.func @atomicrmw_vector_expected_float(%ptr : !llvm.ptr, %i32_vec : vector<3xi32>) {
   // expected-error@+1 {{expected LLVM IR floating point type for vector element}}
-  %0 = llvm.atomicrmw fadd %ptr, %i32_vec unordered : !llvm.ptr, vector<3xi32>
+  %0 = ptr.atomicrmw fadd %ptr, %i32_vec unordered : !llvm.ptr, vector<3xi32>
   llvm.return
 }
 
@@ -660,7 +660,7 @@ func.func @atomicrmw_vector_expected_float(%ptr : !llvm.ptr, %i32_vec : vector<3
 
 func.func @atomicrmw_unexpected_xchg_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
   // expected-error@+1 {{unexpected LLVM IR type for 'xchg' bin_op}}
-  %0 = llvm.atomicrmw xchg %i1_ptr, %i1 unordered : !llvm.ptr, i1
+  %0 = ptr.atomicrmw xchg %i1_ptr, %i1 unordered : !llvm.ptr, i1
   llvm.return
 }
 
@@ -668,7 +668,7 @@ func.func @atomicrmw_unexpected_xchg_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
 
 func.func @atomicrmw_expected_int(%f32_ptr : !llvm.ptr, %f32 : f32) {
   // expected-error@+1 {{expected LLVM IR integer type}}
-  %0 = llvm.atomicrmw max %f32_ptr, %f32 unordered : !llvm.ptr, f32
+  %0 = ptr.atomicrmw max %f32_ptr, %f32 unordered : !llvm.ptr, f32
   llvm.return
 }
 
@@ -676,7 +676,7 @@ func.func @atomicrmw_expected_int(%f32_ptr : !llvm.ptr, %f32 : f32) {
 
 func.func @cmpxchg_mismatched_value_operands(%ptr : !llvm.ptr, %i32 : i32, %i64 : i64) {
   // expected-error@+1 {{op failed to verify that operand #1 and operand #2 have the same type}}
-  %0 = "llvm.cmpxchg"(%ptr, %i32, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i32, i64) -> !llvm.struct<(i32, i1)>
+  %0 = "ptr.cmpxchg"(%ptr, %i32, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i32, i64) -> !llvm.struct<(i32, i1)>
   llvm.return
 }
 
@@ -684,7 +684,7 @@ func.func @cmpxchg_mismatched_value_operands(%ptr : !llvm.ptr, %i32 : i32, %i64 
 
 func.func @cmpxchg_mismatched_result(%ptr : !llvm.ptr, %i64 : i64) {
   // expected-error@+1 {{op failed to verify that result #0 has an LLVM struct type consisting of the type of operand #2 and a bool}}
-  %0 = "llvm.cmpxchg"(%ptr, %i64, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i64, i64) -> !llvm.struct<(i64, i64)>
+  %0 = "ptr.cmpxchg"(%ptr, %i64, %i64) {success_ordering=2,failure_ordering=2} : (!llvm.ptr, i64, i64) -> !llvm.struct<(i64, i64)>
   llvm.return
 }
 
@@ -692,7 +692,7 @@ func.func @cmpxchg_mismatched_result(%ptr : !llvm.ptr, %i64 : i64) {
 
 func.func @cmpxchg_unexpected_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
   // expected-error@+1 {{unexpected LLVM IR type}}
-  %0 = llvm.cmpxchg %i1_ptr, %i1, %i1 monotonic monotonic : !llvm.ptr, i1
+  %0 = ptr.cmpxchg %i1_ptr, %i1, %i1 monotonic monotonic : !llvm.ptr, i1
   llvm.return
 }
 
@@ -700,7 +700,7 @@ func.func @cmpxchg_unexpected_type(%i1_ptr : !llvm.ptr, %i1 : i1) {
 
 func.func @cmpxchg_at_least_monotonic_success(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{ordering must be at least 'monotonic'}}
-  %0 = llvm.cmpxchg %i32_ptr, %i32, %i32 unordered monotonic : !llvm.ptr, i32
+  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 unordered monotonic : !llvm.ptr, i32
   llvm.return
 }
 
@@ -708,7 +708,7 @@ func.func @cmpxchg_at_least_monotonic_success(%i32_ptr : !llvm.ptr, %i32 : i32) 
 
 func.func @cmpxchg_at_least_monotonic_failure(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{ordering must be at least 'monotonic'}}
-  %0 = llvm.cmpxchg %i32_ptr, %i32, %i32 monotonic unordered : !llvm.ptr, i32
+  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 monotonic unordered : !llvm.ptr, i32
   llvm.return
 }
 
@@ -716,7 +716,7 @@ func.func @cmpxchg_at_least_monotonic_failure(%i32_ptr : !llvm.ptr, %i32 : i32) 
 
 func.func @cmpxchg_failure_release(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{failure ordering cannot be 'release' or 'acq_rel'}}
-  %0 = llvm.cmpxchg %i32_ptr, %i32, %i32 acq_rel release : !llvm.ptr, i32
+  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel release : !llvm.ptr, i32
   llvm.return
 }
 
@@ -724,7 +724,7 @@ func.func @cmpxchg_failure_release(%i32_ptr : !llvm.ptr, %i32 : i32) {
 
 func.func @cmpxchg_failure_acq_rel(%i32_ptr : !llvm.ptr, %i32 : i32) {
   // expected-error@+1 {{failure ordering cannot be 'release' or 'acq_rel'}}
-  %0 = llvm.cmpxchg %i32_ptr, %i32, %i32 acq_rel acq_rel : !llvm.ptr, i32
+  %0 = ptr.cmpxchg %i32_ptr, %i32, %i32 acq_rel acq_rel : !llvm.ptr, i32
   llvm.return
 }
 
@@ -908,7 +908,7 @@ llvm.mlir.global appending @non_array_type_global_appending_linkage() : i32
 module {
   llvm.func @accessGroups(%arg0 : !llvm.ptr) {
       // expected-error@below {{attribute 'access_groups' failed to satisfy constraint: LLVM dialect access group metadata array}}
-      %0 = llvm.load %arg0 { "access_groups" = [@func1] } : !llvm.ptr -> i32
+      %0 = ptr.load %arg0 { "access_groups" = [@func1] } : !llvm.ptr -> i32
       llvm.return
   }
   llvm.func @func1() {
@@ -921,7 +921,7 @@ module {
 module {
   llvm.func @accessGroups(%arg0 : !llvm.ptr, %arg1 : i32, %arg2 : i32) {
       // expected-error@below {{attribute 'access_groups' failed to satisfy constraint: LLVM dialect access group metadata array}}
-      %0 = llvm.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "access_groups" = [@metadata::@scope] } : !llvm.ptr, i32
+      %0 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "access_groups" = [@metadata::@scope] } : !llvm.ptr, i32
       llvm.return
   }
   llvm.metadata @metadata {
@@ -934,7 +934,7 @@ module {
 module {
   llvm.func @aliasScope(%arg0 : !llvm.ptr, %arg1 : i32, %arg2 : i32) {
       // expected-error@below {{attribute 'alias_scopes' failed to satisfy constraint: LLVM dialect alias scope array}}
-      %0 = llvm.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "alias_scopes" = "test" } : !llvm.ptr, i32
+      %0 = ptr.cmpxchg %arg0, %arg1, %arg2 acq_rel monotonic { "alias_scopes" = "test" } : !llvm.ptr, i32
       llvm.return
   }
 }
@@ -944,7 +944,7 @@ module {
 module {
   llvm.func @noAliasScopes(%arg0 : !llvm.ptr) {
       // expected-error@below {{attribute 'noalias_scopes' failed to satisfy constraint: LLVM dialect alias scope array}}
-      %0 = llvm.load %arg0 { "noalias_scopes" = "test" } : !llvm.ptr -> i32
+      %0 = ptr.load %arg0 { "noalias_scopes" = "test" } : !llvm.ptr -> i32
       llvm.return
   }
 }
@@ -1217,7 +1217,7 @@ llvm.mlir.global internal @side_effecting_global() : !llvm.struct<(i8)> {
   %0 = llvm.mlir.constant(1 : i64) : i64
   // expected-error@below {{ops with side effects not allowed in global initializers}}
   %1 = llvm.alloca %0 x !llvm.struct<(i8)> : (i64) -> !llvm.ptr
-  %2 = llvm.load %1 : !llvm.ptr -> !llvm.struct<(i8)>
+  %2 = ptr.load %1 : !llvm.ptr -> !llvm.struct<(i8)>
   llvm.return %2 : !llvm.struct<(i8)>
 }
 
@@ -1333,14 +1333,14 @@ func.func @invalid_bitcast_ptr_to_vec(%arg : !llvm.ptr) {
 // -----
 
 func.func @invalid_bitcast_addr_cast(%arg : !llvm.ptr<1>) {
-  // expected-error@+1 {{cannot cast pointers of different address spaces, use 'llvm.addrspacecast' instead}}
+  // expected-error@+1 {{cannot cast pointers of different address spaces, use 'ptr.addrspacecast' instead}}
   %0 = llvm.bitcast %arg : !llvm.ptr<1> to !llvm.ptr
 }
 
 // -----
 
 func.func @invalid_bitcast_addr_cast_vec(%arg : !llvm.vec<4 x ptr<1>>) {
-  // expected-error@+1 {{cannot cast pointers of different address spaces, use 'llvm.addrspacecast' instead}}
+  // expected-error@+1 {{cannot cast pointers of different address spaces, use 'ptr.addrspacecast' instead}}
   %0 = llvm.bitcast %arg : !llvm.vec<4 x ptr<1>> to !llvm.vec<4 x ptr>
 }
 
@@ -1356,14 +1356,14 @@ func.func @invalid_target_ext_alloca() {
 
 func.func @invalid_target_ext_load(%arg0 : !llvm.ptr) {
   // expected-error@+1 {{result #0 must be LLVM type with size, but got '!llvm.target<"no_load">'}}
-  %0 = llvm.load %arg0 {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"no_load">
+  %0 = ptr.load %arg0 {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"no_load">
 }
 
 // -----
 
 func.func @invalid_target_ext_atomic(%arg0 : !llvm.ptr) {
   // expected-error@+1 {{unsupported type '!llvm.target<"spirv.Event">' for atomic access}}
-  %0 = llvm.load %arg0 atomic monotonic {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"spirv.Event">
+  %0 = ptr.load %arg0 atomic monotonic {alignment = 8 : i64} : !llvm.ptr -> !llvm.target<"spirv.Event">
 }
 
 // -----

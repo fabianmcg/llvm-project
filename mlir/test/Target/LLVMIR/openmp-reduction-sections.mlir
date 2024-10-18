@@ -16,16 +16,16 @@ llvm.func @sections_(%arg0: !llvm.ptr {fir.bindc_name = "x"}) attributes {fir.in
     omp.sections reduction(@add_reduction_f32 %arg0 -> %arg1 : !llvm.ptr) {
       omp.section {
       ^bb0(%arg2: !llvm.ptr):
-        %2 = llvm.load %arg2 : !llvm.ptr -> f32
+        %2 = ptr.load %arg2 : !llvm.ptr -> f32
         %3 = llvm.fadd %2, %1  {fastmathFlags = #llvm.fastmath<contract>} : f32
-        llvm.store %3, %arg2 : f32, !llvm.ptr
+        ptr.store %3, %arg2 : f32, !llvm.ptr
         omp.terminator
       }
       omp.section {
       ^bb0(%arg2: !llvm.ptr):
-        %2 = llvm.load %arg2 : !llvm.ptr -> f32
+        %2 = ptr.load %arg2 : !llvm.ptr -> f32
         %3 = llvm.fadd %2, %0  {fastmathFlags = #llvm.fastmath<contract>} : f32
-        llvm.store %3, %arg2 : f32, !llvm.ptr
+        ptr.store %3, %arg2 : f32, !llvm.ptr
         omp.terminator
       }
       omp.terminator

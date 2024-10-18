@@ -2878,7 +2878,7 @@ func.func @vector_load_op(%memref : memref<200x100xf32>, %i : index, %j : index)
 // CHECK: %[[mul:.*]] = llvm.mul %{{.*}}, %[[c100]]  : i64
 // CHECK: %[[add:.*]] = llvm.add %[[mul]], %{{.*}}  : i64
 // CHECK: %[[gep:.*]] = llvm.getelementptr %{{.*}}[%[[add]]] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: llvm.load %[[gep]] {alignment = 4 : i64} : !llvm.ptr -> vector<8xf32>
+// CHECK: ptr.load %[[gep]] {alignment = 4 : i64} : !llvm.ptr -> vector<8xf32>
 
 // -----
 
@@ -2892,7 +2892,7 @@ func.func @vector_load_op_nontemporal(%memref : memref<200x100xf32>, %i : index,
 // CHECK: %[[mul:.*]] = llvm.mul %{{.*}}, %[[c100]]  : i64
 // CHECK: %[[add:.*]] = llvm.add %[[mul]], %{{.*}}  : i64
 // CHECK: %[[gep:.*]] = llvm.getelementptr %{{.*}}[%[[add]]] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: llvm.load %[[gep]] {alignment = 4 : i64, nontemporal} : !llvm.ptr -> vector<8xf32>
+// CHECK: ptr.load %[[gep]] {alignment = 4 : i64, nontemporal} : !llvm.ptr -> vector<8xf32>
 
 // -----
 
@@ -2901,7 +2901,7 @@ func.func @vector_load_op_index(%memref : memref<200x100xindex>, %i : index, %j 
   return %0 : vector<8xindex>
 }
 // CHECK-LABEL: func @vector_load_op_index
-// CHECK: %[[T0:.*]] = llvm.load %{{.*}} {alignment = 8 : i64} : !llvm.ptr -> vector<8xi64>
+// CHECK: %[[T0:.*]] = ptr.load %{{.*}} {alignment = 8 : i64} : !llvm.ptr -> vector<8xi64>
 // CHECK: %[[T1:.*]] = builtin.unrealized_conversion_cast %[[T0]] : vector<8xi64> to vector<8xindex>
 // CHECK: return %[[T1]] : vector<8xindex>
 
@@ -2918,7 +2918,7 @@ func.func @vector_store_op(%memref : memref<200x100xf32>, %i : index, %j : index
 // CHECK: %[[mul:.*]] = llvm.mul %{{.*}}, %[[c100]]  : i64
 // CHECK: %[[add:.*]] = llvm.add %[[mul]], %{{.*}}  : i64
 // CHECK: %[[gep:.*]] = llvm.getelementptr %{{.*}}[%[[add]]] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: llvm.store %{{.*}}, %[[gep]] {alignment = 4 : i64} :  vector<4xf32>, !llvm.ptr
+// CHECK: ptr.store %{{.*}}, %[[gep]] {alignment = 4 : i64} :  vector<4xf32>, !llvm.ptr
 
 // -----
 
@@ -2933,7 +2933,7 @@ func.func @vector_store_op_nontemporal(%memref : memref<200x100xf32>, %i : index
 // CHECK: %[[mul:.*]] = llvm.mul %{{.*}}, %[[c100]]  : i64
 // CHECK: %[[add:.*]] = llvm.add %[[mul]], %{{.*}}  : i64
 // CHECK: %[[gep:.*]] = llvm.getelementptr %{{.*}}[%[[add]]] : (!llvm.ptr, i64) -> !llvm.ptr, f32
-// CHECK: llvm.store %{{.*}}, %[[gep]] {alignment = 4 : i64, nontemporal} :  vector<4xf32>, !llvm.ptr
+// CHECK: ptr.store %{{.*}}, %[[gep]] {alignment = 4 : i64, nontemporal} :  vector<4xf32>, !llvm.ptr
 
 // -----
 
@@ -2943,7 +2943,7 @@ func.func @vector_store_op_index(%memref : memref<200x100xindex>, %i : index, %j
   return
 }
 // CHECK-LABEL: func @vector_store_op_index
-// CHECK: llvm.store %{{.*}}, %{{.*}} {alignment = 8 : i64} : vector<4xi64>, !llvm.ptr
+// CHECK: ptr.store %{{.*}}, %{{.*}} {alignment = 8 : i64} : vector<4xi64>, !llvm.ptr
 
 // -----
 

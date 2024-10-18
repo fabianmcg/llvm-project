@@ -3204,7 +3204,7 @@ void CallIntrinsicOp::build(OpBuilder &builder, OperationState &state,
 // OpAsmDialectInterface
 //===----------------------------------------------------------------------===//
 
-static Dialect* getPtrDialect(Type type) {
+static Dialect *getPtrDialect(Type type) {
   auto ty = dyn_cast<LLVMPointerType>(type);
   if (!ty)
     return nullptr;
@@ -3235,9 +3235,10 @@ struct LLVMOpAsmDialectInterface : public OpAsmDialectInterface {
         .Default([](Attribute) { return AliasResult::NoAlias; });
   }
   void initTypeAliases(
-      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>> &aliases) const {
-        aliases.push_back({TypeID::get<ptr::PtrType>(), getPtrDialect});
-      }
+      SmallVectorImpl<std::pair<TypeID, function_ref<Dialect *(Type)>>>
+          &aliases) const {
+    aliases.push_back({TypeID::get<ptr::PtrType>(), getPtrDialect});
+  }
 };
 } // namespace
 

@@ -7,14 +7,14 @@
     %0 = llvm.mlir.constant(0 : i32) : i32
     %c4 = llvm.mlir.constant(4 : i64) : i64
     %2 = llvm.call @malloc(%c4) : (i64) -> !llvm.ptr
-    llvm.store %0, %2 : i32, !llvm.ptr
+    ptr.store %0, %2 : i32, !llvm.ptr
     omp.yield(%2 : !llvm.ptr)
   } combiner {
   ^bb0(%arg0: !llvm.ptr, %arg1: !llvm.ptr):
-    %0 = llvm.load %arg0 : !llvm.ptr -> i32
-    %1 = llvm.load %arg1 : !llvm.ptr -> i32
+    %0 = ptr.load %arg0 : !llvm.ptr -> i32
+    %1 = ptr.load %arg1 : !llvm.ptr -> i32
     %2 = llvm.add %0, %1  : i32
-    llvm.store %2, %arg0 : i32, !llvm.ptr
+    ptr.store %2, %arg0 : i32, !llvm.ptr
     omp.yield(%arg0 : !llvm.ptr)
   } cleanup {
   ^bb0(%arg0: !llvm.ptr):
@@ -28,8 +28,8 @@
     %1 = llvm.mlir.addressof @i : !llvm.ptr
     %2 = llvm.mlir.addressof @j : !llvm.ptr
     omp.parallel reduction(byref @add_reduction_i_32 %1 -> %arg0, byref @add_reduction_i_32 %2 -> %arg1 : !llvm.ptr, !llvm.ptr) {
-      llvm.store %0, %arg0 : i32, !llvm.ptr
-      llvm.store %0, %arg1 : i32, !llvm.ptr
+      ptr.store %0, %arg0 : i32, !llvm.ptr
+      ptr.store %0, %arg1 : i32, !llvm.ptr
       omp.terminator
     }
     llvm.return
