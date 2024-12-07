@@ -93,6 +93,14 @@ def CSE : Pass<"cse"> {
   ];
 }
 
+def DumpOpCFG : Pass<"dump-op-cfg", "::mlir::FunctionOpInterface"> {
+  let summary = "Print Graphviz visualization of an operation";
+  let description = [{
+    This pass print.
+  }];
+  let constructor = "mlir::createPrintOpGraphPass()";
+}
+
 def RemoveDeadValues : Pass<"remove-dead-values"> {
   let summary = "Remove dead values";
   let description = [{

@@ -14,6 +14,7 @@
 #ifndef MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 #define MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 
+#include "mlir/IR/ControlFlow.h"
 #include "mlir/IR/OpDefinition.h"
 
 namespace mlir {
@@ -319,6 +320,8 @@ struct ReturnLike : public TraitBase<ConcreteType, ReturnLike> {
 };
 } // namespace OpTrait
 
+/// Builds the CFG starting with the given op.
+CFGOp *buildOpCFG(Operation op, CFGContext &context);
 } // namespace mlir
 
 //===----------------------------------------------------------------------===//
