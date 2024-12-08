@@ -376,6 +376,117 @@ def SelectLikeOpInterface : OpInterface<"SelectLikeOpInterface"> {
 }
 
 //===----------------------------------------------------------------------===//
+// GeneralRegionBranchOpInterface
+//===----------------------------------------------------------------------===//
+
+def GeneralRegionBranchOpInterface : OpInterface<"GeneralRegionBranchOpInterface"> {
+  let description = [{
+    This interface provides information for region operations that exhibit
+    branching behavior between held regions. I.e., this interface allows for
+    expressing control flow information for region holding operations.
+
+    This interface is meant to model well-defined cases of control-flow and
+    value propagation, where what occurs along control-flow edges is assumed to
+    be side-effect free.
+  }];
+  let cppNamespace = "::mlir";
+
+  let methods = [
+    InterfaceMethod<[{
+        Returns the operands of this operation that are forwarded to the region
+        successor's block arguments or this operation's results when branching
+        to `point`. `point` is guaranteed to be among the successors that are
+        returned by `getEntrySuccessorRegions`/`getSuccessorRegions(parent())`.
+
+        Example: In the above example, this method returns the operand %b of the
+        `scf.for` op, regardless of the value of `point`. I.e., this op always
+        forwards the same operands, regardless of whether the loop has 0 or more
+        iterations.
+      }],
+      "::mlir::OperandRange", "getEntrySuccessorOperands",
+      (ins "::mlir::RegionBranchPoint":$point), [{}],
+      /*defaultImplementation=*/[{
+        auto operandEnd = this->getOperation()->operand_end();
+        return ::mlir::OperandRange(operandEnd, operandEnd);
+      }]
+    >,
+    InterfaceMethod<[{
+        Returns the potential region successors when first executing the op.
+
+        Note: The control flow does not necessarily have to enter any region of
+        this op.
+      }],
+      "void", "getEntrySuccessorRegions",
+      (ins "std::optional<::llvm::ArrayRef<::mlir::Attribute>>":$operands,
+           "::llvm::SmallVectorImpl<::mlir::RegionSuccessor> &":$regions), [{}]
+    >,
+    InterfaceMethod<[{
+        This method is called to compare types along control-flow edges. By
+        default, the types are checked as equal.
+      }],
+      "bool", "areTypesCompatible",
+      (ins "::mlir::Type":$lhs, "::mlir::Type":$rhs), [{}],
+      /*defaultImplementation=*/[{ return lhs == rhs; }]
+    >,
+    InterfaceMethod<[{
+        This method returns the control-flow label exposed by this op.
+      }],
+      "::mlir::CFGLabel", "getCFGLabel"
+    >,
+  ];
+
+  let verify = [{
+    static_assert(!ConcreteOp::template hasTrait<OpTrait::ZeroRegions>(),
+                  "expected operation to have non-zero regions");
+    return detail::verifyTypesAlongControlFlowEdges($_op);
+  }];
+  let verifyWithRegions = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// GeneralRegionBranchTerminatorOpInterface
+//===----------------------------------------------------------------------===//
+
+def GeneralRegionBranchTerminatorOpInterface :
+  OpInterface<"GeneralRegionBranchTerminatorOpInterface"> {
+  let description = [{
+    This interface provides information for branching terminator operations.
+  }];
+  let cppNamespace = "::mlir";
+
+  let methods = [
+    InterfaceMethod<[{
+        Returns the operands that correspond to the arguments of the successor
+        at the given index. It consists of a number of operands that are
+        internally produced by the operation, followed by a range of operands
+        that are forwarded. An example operation making use of produced
+        operands would be:
+      }],
+      "::mlir::SuccessorOperands", "getSuccessorOperands",
+      (ins "unsigned":$index)
+    >,
+    InterfaceMethod<[{
+        Returns the potential region successor labels that are branched to
+        after this terminator.
+      }],
+      "void", "getSuccessorLabels",
+      (ins "std::optional<::llvm::ArrayRef<::mlir::Attribute>>":$operands,
+           "::llvm::SmallVectorImpl<::mlir::CFGLabel> &":$labels)
+    >,
+  ];
+  let verify = [{
+    static_assert(ConcreteOp::template hasTrait<OpTrait::IsTerminator>(),
+                  "expected operation to be a terminator");
+    static_assert(ConcreteOp::template hasTrait<OpTrait::ZeroResults>(),
+                  "expected operation to have zero results");
+    static_assert(ConcreteOp::template hasTrait<OpTrait::ZeroSuccessors>(),
+                  "expected operation to have zero successors");
+    return success();
+  }];
+}
+
+
+//===----------------------------------------------------------------------===//
 // ControlFlow Traits
 //===----------------------------------------------------------------------===//
 

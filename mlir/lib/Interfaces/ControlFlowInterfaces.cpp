@@ -10,6 +10,7 @@
 
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
+#include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/SmallPtrSet.h"
 
 using namespace mlir;
@@ -359,5 +360,81 @@ Region *mlir::getEnclosingRepetitiveRegion(Value value) {
         return region;
     region = op->getParentRegion();
   }
+  return nullptr;
+}
+
+//===----------------------------------------------------------------------===//
+// CFGOpInterface
+//===----------------------------------------------------------------------===//
+
+// namespace {
+// struct CFGBuilder {
+//   CFGBuilder(CFGContext &context) : context(context) {}
+//   CFGFlowPoint *build(Operation *op);
+
+// private:
+//   CFGFlowPoint *build(RegionBranchOpInterface op);
+//   CFGFlowPoint *build(GeneralRegionBranchOpInterface op);
+//   CFGTerminator *build(GeneralRegionBranchTerminatorOpInterface op);
+//   CFGContext &context;
+//   llvm::ScopedHashTable<CFGLabel, CFGFlowPoint *> table;
+// };
+// } // namespace
+
+// CFGFlowPoint *CFGBuilder::build(Operation *op) {
+//   if (auto branch = dyn_cast<RegionBranchOpInterface>(op))
+//     return build(branch);
+//   else if (auto branch = dyn_cast<GeneralRegionBranchOpInterface>(op))
+//     return build(branch);
+//   else if (auto terminator =
+//                dyn_cast<GeneralRegionBranchTerminatorOpInterface>(op)) {
+//     build(terminator);
+//     return nullptr;
+//   }
+//   for (Region &region : op->getRegions())
+//     for (Block &block : region)
+//       for (Operation &op : block)
+//         build(&op);
+//   return nullptr;
+// }
+
+// CFGFlowPoint *CFGBuilder::build(RegionBranchOpInterface op) {
+//   auto point = new CFGFlowPoint(op);
+//   context.insert(point);
+//   SmallVector<RegionSuccessor> successors, parentSuccessors;
+//   auto builder = [&](RegionBranchPoint branchPoint) {
+//     successors.clear();
+//     op.getSuccessorRegions(branchPoint, successors);
+//     for (Block &block : *branchPoint.getRegionOrNull()) {
+//       for (Operation &op : block)
+//         build(&op);
+//       auto terminator =
+//           cast<RegionBranchTerminatorOpInterface>(block.getTerminator());
+//       auto tPoint = new CFGTerminator(terminator);
+//       context.insert(tPoint);
+//       // tPoint->pushSuccessor();
+//     }
+//   };
+//   op.getSuccessorRegions(RegionBranchPoint::parent(), parentSuccessors);
+//   for (RegionSuccessor successor : parentSuccessors)
+//     point->pushSuccessor(successor.getSuccessor());
+//   for (RegionSuccessor successor : parentSuccessors) {
+//     if (successor.isParent())
+//       continue;
+//     builder(successor.getSuccessor());
+//   }
+//   return point;
+// }
+
+// CFGFlowPoint *CFGBuilder::build(GeneralRegionBranchOpInterface op) {
+//   return nullptr;
+// }
+// CFGTerminator *CFGBuilder::build(GeneralRegionBranchTerminatorOpInterface op)
+// {
+//   return nullptr;
+// }
+
+CFGFlowPoint *mlir::buildOpCFG(Operation *op, CFGContext &context) {
+  // return CFGBuilder(context).build(op);
   return nullptr;
 }

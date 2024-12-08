@@ -19,32 +19,23 @@ using namespace mlir;
 // CFGOperand
 //===----------------------------------------------------------------------===//
 
-CFGOperand::CFGOperand(CFGPoint *owner, CFGFlowPoint *point)
+CFGOperand::CFGOperand(CFGTerminator *owner, CFGFlowPoint *point)
     : Base(owner, point) {}
 
-IRObjectWithUseList<CFGOperand, CFGPoint> *
+IRObjectWithUseList<CFGOperand, CFGTerminator> *
 CFGOperand::getUseList(CFGFlowPoint *point) {
   return point;
 }
 
-CFGPointWithSuccessors *CFGOperand::getOwnerAsPointWithSuccessors() const {
-  CFGPoint *owner = getOwner();
-  if (auto point = dyn_cast<CFGTerminator>(owner))
-    return point;
-  else if (auto point = dyn_cast<CFGOp>(owner))
-    return point;
-  llvm_unreachable("invalid CFG point");
-}
-
 unsigned CFGOperand::getOperandNumber() {
-  return this - &getOwnerAsPointWithSuccessors()->getSuccessorOperands()[0];
+  return this - &getOwner()->getSuccessorOperands()[0];
 }
 
 //===----------------------------------------------------------------------===//
 // CFGPredecessorIterator
 //===----------------------------------------------------------------------===//
 
-CFGPoint *CFGPredecessorIterator::unwrap(CFGOperand &value) {
+CFGTerminator *CFGPredecessorIterator::unwrap(CFGOperand &value) {
   return value.getOwner();
 }
 
@@ -57,47 +48,11 @@ unsigned CFGPredecessorIterator::getSuccessorIndex() const {
 //===----------------------------------------------------------------------===//
 
 CFGSuccessorRange::CFGSuccessorRange() : CFGSuccessorRange(nullptr, 0) {}
-CFGSuccessorRange::CFGSuccessorRange(CFGPointWithSuccessors *point)
+CFGSuccessorRange::CFGSuccessorRange(CFGTerminator *point)
     : CFGSuccessorRange() {
   if ((count = point->getNumSuccessors()))
     base = point->getSuccessorOperands().data();
 }
-
-//===----------------------------------------------------------------------===//
-// Control-flow operation
-//===----------------------------------------------------------------------===//
-
-namespace {
-struct CFGDumper {
-  CFGDumper(llvm::raw_ostream &os) : os(os), logger(os) {}
-
-  void dump(CFGOp *point);
-  void dump(CFGFlowPoint *point);
-  void dump(CFGTerminator *point);
-
-  void dumpHeader(CFGPoint *point);
-
-  llvm::raw_ostream &os;
-  llvm::ScopedPrinter printer;
-  DenseMap<CFGPoint *, int> point2Labels;
-};
-} // namespace
-
-void CFGDumper::dump(CFGOp *point) {
-  dumpHeader(point);
-  printer.indent();
-  for (CFGFlowPoint *successor : CFGSuccessorRange(point))
-    dump(successor);
-  printer.unindent();
-}
-
-void CFGDumper::dump(CFGFlowPoint *point) { dumpHeader(point); }
-
-void CFGOp::print(llvm::raw_ostream &os) const {
-  CFGDumper(llvm::errs()).dump(const_cast<CFGOp*>(this));
-}
-
-void CFGOp::dump() const { print(llvm::errs()); }
 
 //===----------------------------------------------------------------------===//
 // CFGLabelAttr

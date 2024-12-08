@@ -9,6 +9,7 @@
 #include "mlir/Transforms/Passes.h"
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/ControlFlow.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
@@ -26,4 +27,20 @@ struct DumpOpCFGPass : public impl::DumpOpCFGBase<DumpOpCFGPass> {
 };
 } // namespace
 
-void DumpOpCFGPass::runOnOperation() { CFGContext cfgContext; }
+static CFGFlowPoint *buildFlowPoint(Block *block, CFGContext &context) {}
+
+// static CFGOp *buildOpCFG(FunctionOpInterface op, CFGContext &context) {
+//   if (op.getFunctionBody().empty())
+//     return nullptr;
+//   auto cfgOp = new CFGOp(op);
+//   context.insert(cfgOp);
+//   cfgOp.addSuccessor(buildFlowPoint(&cfgOp.front()));
+//   return cfgOp;
+// }
+
+void DumpOpCFGPass::runOnOperation() {
+  CFGContext cfgContext;
+  // if (CFGOp *cfg = ::buildOpCFG(getOperation(), cfgContext))
+  // cfg->dump();
+  llvm::errs() << sizeof(llvm::iplist<Operation>) << "\n";
+}

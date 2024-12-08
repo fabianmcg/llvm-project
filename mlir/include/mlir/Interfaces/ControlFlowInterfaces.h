@@ -320,8 +320,11 @@ struct ReturnLike : public TraitBase<ConcreteType, ReturnLike> {
 };
 } // namespace OpTrait
 
-/// Builds the CFG starting with the given op.
-CFGOp *buildOpCFG(Operation op, CFGContext &context);
+// Builds the CFG starting with the given op.
+CFGFlowPoint *buildOpCFG(Operation *op, CFGContext &context);
+
+/// Prints `op` CFG into `os`.
+void printOpCFG(Operation *op, CFGContext &context, llvm::raw_ostream &os);
 } // namespace mlir
 
 //===----------------------------------------------------------------------===//
