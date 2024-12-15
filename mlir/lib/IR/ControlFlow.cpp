@@ -19,23 +19,32 @@ using namespace mlir;
 // CFGOperand
 //===----------------------------------------------------------------------===//
 
-CFGOperand::CFGOperand(CFGTerminator *owner, CFGFlowPoint *point)
+CFGOperand::CFGOperand(CFGPoint *owner, CFGFlowPoint *point)
     : Base(owner, point) {}
 
-IRObjectWithUseList<CFGOperand, CFGTerminator> *
+IRObjectWithUseList<CFGOperand, CFGPoint> *
 CFGOperand::getUseList(CFGFlowPoint *point) {
   return point;
 }
 
+static CFGPointWithSuccessors *getAsPointWithSuccessors(CFGPoint *point) {
+  if (auto term = dyn_cast<CFGTerminator>(point))
+    return term;
+  if (auto op = dyn_cast<CFGOp>(point))
+    return op;
+  llvm_unreachable("invalid operand owner");
+}
+
 unsigned CFGOperand::getOperandNumber() {
-  return this - &getOwner()->getSuccessorOperands()[0];
+  return this -
+         &getAsPointWithSuccessors(getOwner())->getSuccessorOperands()[0];
 }
 
 //===----------------------------------------------------------------------===//
 // CFGPredecessorIterator
 //===----------------------------------------------------------------------===//
 
-CFGTerminator *CFGPredecessorIterator::unwrap(CFGOperand &value) {
+CFGPoint *CFGPredecessorIterator::unwrap(CFGOperand &value) {
   return value.getOwner();
 }
 
@@ -48,10 +57,26 @@ unsigned CFGPredecessorIterator::getSuccessorIndex() const {
 //===----------------------------------------------------------------------===//
 
 CFGSuccessorRange::CFGSuccessorRange() : CFGSuccessorRange(nullptr, 0) {}
-CFGSuccessorRange::CFGSuccessorRange(CFGTerminator *point)
+CFGSuccessorRange::CFGSuccessorRange(CFGPointWithSuccessors *point)
     : CFGSuccessorRange() {
   if ((count = point->getNumSuccessors()))
     base = point->getSuccessorOperands().data();
+}
+
+//===----------------------------------------------------------------------===//
+// Control-flow graph context
+//===----------------------------------------------------------------------===//
+
+void CFGContext::PointDeleter::operator()(CFGPoint *ptr) const {
+  if (auto point = dyn_cast<CFGTerminator>(ptr))
+    delete point;
+  else if (auto point = dyn_cast<CFGOp>(ptr)) {
+    point->dropAllUses();
+    delete point;
+  } else if (auto point = dyn_cast<CFGRegion>(ptr)) {
+    point->dropAllUses();
+    delete point;
+  }
 }
 
 //===----------------------------------------------------------------------===//

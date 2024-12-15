@@ -393,8 +393,7 @@ def GeneralRegionBranchOpInterface : OpInterface<"GeneralRegionBranchOpInterface
 
   let methods = [
     InterfaceMethod<[{
-        Returns the operands of this operation that are forwarded to the region
-        successor's block arguments or this operation's results when branching
+        Returns the operands of this operation that are forwarded to the  successor's block arguments or this operation's results when branching
         to `point`. `point` is guaranteed to be among the successors that are
         returned by `getEntrySuccessorRegions`/`getSuccessorRegions(parent())`.
 
@@ -403,8 +402,8 @@ def GeneralRegionBranchOpInterface : OpInterface<"GeneralRegionBranchOpInterface
         forwards the same operands, regardless of whether the loop has 0 or more
         iterations.
       }],
-      "::mlir::OperandRange", "getEntrySuccessorOperands",
-      (ins "::mlir::RegionBranchPoint":$point), [{}],
+      "::mlir::OperandRange", "getSuccessorOperands",
+      (ins "unsigned":$operandIndex), [{}],
       /*defaultImplementation=*/[{
         auto operandEnd = this->getOperation()->operand_end();
         return ::mlir::OperandRange(operandEnd, operandEnd);
@@ -416,9 +415,9 @@ def GeneralRegionBranchOpInterface : OpInterface<"GeneralRegionBranchOpInterface
         Note: The control flow does not necessarily have to enter any region of
         this op.
       }],
-      "void", "getEntrySuccessorRegions",
+      "void", "getSuccessorLabels",
       (ins "std::optional<::llvm::ArrayRef<::mlir::Attribute>>":$operands,
-           "::llvm::SmallVectorImpl<::mlir::RegionSuccessor> &":$regions), [{}]
+           "::llvm::SmallVectorImpl<::mlir::CFGLabel> &":$labels), [{}]
     >,
     InterfaceMethod<[{
         This method is called to compare types along control-flow edges. By

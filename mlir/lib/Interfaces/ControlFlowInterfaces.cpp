@@ -12,6 +12,8 @@
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/FormatVariadic.h"
+#include "llvm/Support/ScopedPrinter.h"
 
 using namespace mlir;
 
@@ -367,74 +369,282 @@ Region *mlir::getEnclosingRepetitiveRegion(Value value) {
 // CFGOpInterface
 //===----------------------------------------------------------------------===//
 
-// namespace {
-// struct CFGBuilder {
-//   CFGBuilder(CFGContext &context) : context(context) {}
-//   CFGFlowPoint *build(Operation *op);
+namespace {
+struct CFGBuilder {
+  CFGBuilder(CFGContext &context) : context(context) {}
+  CFGPoint *build(Operation *op);
 
-// private:
-//   CFGFlowPoint *build(RegionBranchOpInterface op);
-//   CFGFlowPoint *build(GeneralRegionBranchOpInterface op);
-//   CFGTerminator *build(GeneralRegionBranchTerminatorOpInterface op);
-//   CFGContext &context;
-//   llvm::ScopedHashTable<CFGLabel, CFGFlowPoint *> table;
-// };
-// } // namespace
+private:
+  CFGOp *build(RegionBranchOpInterface op);
+  CFGTerminator *build(RegionBranchTerminatorOpInterface op);
+  CFGOp *build(GeneralRegionBranchOpInterface op);
+  CFGTerminator *build(GeneralRegionBranchTerminatorOpInterface op);
+  CFGContext &context;
+  llvm::ScopedHashTable<CFGLabel, CFGOp *> table;
+};
+} // namespace
 
-// CFGFlowPoint *CFGBuilder::build(Operation *op) {
-//   if (auto branch = dyn_cast<RegionBranchOpInterface>(op))
-//     return build(branch);
-//   else if (auto branch = dyn_cast<GeneralRegionBranchOpInterface>(op))
-//     return build(branch);
-//   else if (auto terminator =
-//                dyn_cast<GeneralRegionBranchTerminatorOpInterface>(op)) {
-//     build(terminator);
-//     return nullptr;
-//   }
-//   for (Region &region : op->getRegions())
-//     for (Block &block : region)
-//       for (Operation &op : block)
-//         build(&op);
-//   return nullptr;
-// }
+CFGPoint *CFGBuilder::build(Operation *op) {
+  CFGPoint *point{};
+  if (auto branch = dyn_cast<RegionBranchOpInterface>(op))
+    point = build(branch);
+  else if (auto terminator = dyn_cast<RegionBranchTerminatorOpInterface>(op))
+    point = build(terminator);
+  else if (auto branch = dyn_cast<GeneralRegionBranchOpInterface>(op))
+    point = build(branch);
+  else if (auto terminator =
+               dyn_cast<GeneralRegionBranchTerminatorOpInterface>(op))
+    point = build(terminator);
+  for (Region &region : op->getRegions())
+    for (Block &block : region)
+      for (Operation &op : block)
+        (void)build(&op);
+  return point;
+}
 
-// CFGFlowPoint *CFGBuilder::build(RegionBranchOpInterface op) {
-//   auto point = new CFGFlowPoint(op);
-//   context.insert(point);
-//   SmallVector<RegionSuccessor> successors, parentSuccessors;
-//   auto builder = [&](RegionBranchPoint branchPoint) {
-//     successors.clear();
-//     op.getSuccessorRegions(branchPoint, successors);
-//     for (Block &block : *branchPoint.getRegionOrNull()) {
-//       for (Operation &op : block)
-//         build(&op);
-//       auto terminator =
-//           cast<RegionBranchTerminatorOpInterface>(block.getTerminator());
-//       auto tPoint = new CFGTerminator(terminator);
-//       context.insert(tPoint);
-//       // tPoint->pushSuccessor();
-//     }
-//   };
-//   op.getSuccessorRegions(RegionBranchPoint::parent(), parentSuccessors);
-//   for (RegionSuccessor successor : parentSuccessors)
-//     point->pushSuccessor(successor.getSuccessor());
-//   for (RegionSuccessor successor : parentSuccessors) {
-//     if (successor.isParent())
-//       continue;
-//     builder(successor.getSuccessor());
-//   }
-//   return point;
-// }
+CFGOp *CFGBuilder::build(RegionBranchOpInterface op) {
+  auto point = new CFGOp(op);
+  context.insert(point);
+  SmallVector<CFGRegion *> regions;
+  for (Region &region : op->getRegions()) {
+    auto point = new CFGRegion(&region);
+    context.insert(point);
+    regions.push_back(point);
+  }
+  SmallVector<RegionSuccessor> parentSuccessors;
+  op.getSuccessorRegions(RegionBranchPoint::parent(), parentSuccessors);
+  for (RegionSuccessor successor : parentSuccessors) {
+    if (successor.isParent()) {
+      point->pushSuccessor(point);
+      continue;
+    }
+    point->pushSuccessor(regions[successor.getSuccessor()->getRegionNumber()]);
+  }
+  return point;
+}
 
-// CFGFlowPoint *CFGBuilder::build(GeneralRegionBranchOpInterface op) {
-//   return nullptr;
-// }
-// CFGTerminator *CFGBuilder::build(GeneralRegionBranchTerminatorOpInterface op)
-// {
-//   return nullptr;
-// }
+CFGTerminator *CFGBuilder::build(RegionBranchTerminatorOpInterface op) {
+  auto point = new CFGTerminator(op);
+  context.insert(point);
+  if (!isa<RegionBranchOpInterface>(op->getParentOp()))
+    return nullptr;
+  SmallVector<Attribute> attrs(op->getOperands().size());
+  SmallVector<RegionSuccessor> successors;
+  op.getSuccessorRegions(attrs, successors);
+  for (RegionSuccessor successor : successors) {
+    CFGPoint *succPoint{};
+    if (successor.isParent())
+      succPoint = context.lookup(op->getParentOp());
+    else
+      succPoint = context.lookup(successor.getSuccessor());
+    point->pushSuccessor(cast<CFGFlowPoint>(succPoint));
+  }
+  return point;
+}
 
-CFGFlowPoint *mlir::buildOpCFG(Operation *op, CFGContext &context) {
-  // return CFGBuilder(context).build(op);
+CFGOp *CFGBuilder::build(GeneralRegionBranchOpInterface op) { return nullptr; }
+
+CFGTerminator *CFGBuilder::build(GeneralRegionBranchTerminatorOpInterface op) {
   return nullptr;
+}
+
+CFGPoint *mlir::buildOpCFG(Operation *op, CFGContext &context) {
+  return CFGBuilder(context).build(op);
+}
+
+//===----------------------------------------------------------------------===//
+// CFGPrinter
+//===----------------------------------------------------------------------===//
+
+namespace {
+struct CFGPrinter {
+  CFGPrinter(llvm::raw_ostream &stream, CFGContext &context)
+      : stream(stream), context(context) {}
+
+  void dumpGraph(Operation *op);
+
+private:
+  /// Dump the graph header.
+  void dumpHeader();
+
+  /// Dump an op.
+  void dumpOp(Operation *op);
+
+  /// Dump a block.
+  void dumpBlock(Block *block);
+
+  void dumpSuccessors(Operation *op, Block *parent);
+
+  //===--------------------------------------------------------------------===//
+  // Utility functions
+  //===--------------------------------------------------------------------===//
+
+  /// Print an indented line.
+  llvm::raw_ostream &print() {
+    stream.printIndent();
+    return stream.getOStream();
+  }
+
+  /// Return unique labels.
+  uint32_t getId(Operation *op);
+  uint32_t getId(Region *region, Block *block);
+  std::string getLabel(Operation *op);
+  std::string getLabel(Block *block);
+  std::string getHeader(Operation *op);
+  std::string getHeader(Block *block);
+
+  //===--------------------------------------------------------------------===//
+  // Members
+  //===--------------------------------------------------------------------===//
+  llvm::ScopedPrinter stream;
+  llvm::DenseMap<Operation *, uint32_t> opLabels;
+  llvm::DenseMap<std::pair<Region *, Block *>, uint32_t> blockLabels;
+  llvm::SmallPtrSet<void *, 8> visited;
+  CFGContext &context;
+};
+} // namespace
+
+uint32_t CFGPrinter::getId(Operation *op) {
+  uint32_t &label = opLabels[op];
+  if (label == 0)
+    label = opLabels.size();
+  return label;
+}
+
+uint32_t CFGPrinter::getId(Region *region, Block *block) {
+  uint32_t &label = blockLabels[{region, block}];
+  if (label == 0)
+    label = blockLabels.size();
+  return label;
+}
+
+std::string CFGPrinter::getLabel(Operation *op) {
+  return llvm::formatv("o{0}", getId(op)).str();
+}
+
+std::string CFGPrinter::getLabel(Block *block) {
+  Region *region = block->getParent();
+  Operation *op = region->getParentOp();
+  return llvm::formatv("b{0}_{1}_{2}", getId(op), region->getRegionNumber(),
+                       getId(region, block))
+      .str();
+}
+
+void CFGPrinter::dumpGraph(Operation *op) {
+  dumpHeader();
+  dumpOp(op);
+  stream.unindent();
+  print() << "}\n";
+}
+
+void CFGPrinter::dumpHeader() {
+  print() << "digraph {\n";
+  stream.indent();
+  print() << "rankdir=LR;\n";
+  print() << "node [ shape=record ];\n";
+}
+
+std::string CFGPrinter::getHeader(Operation *op) {
+  return llvm::formatv("Op[{0}]: {1}", getId(op), op->getName().getStringRef())
+      .str();
+}
+std::string CFGPrinter::getHeader(Block *block) {
+  Region *region = block->getParent();
+  Operation *op = region->getParentOp();
+  return llvm::formatv("Block[{0}, {1}, {2}]", getId(op),
+                       region->getRegionNumber(), getId(region, block))
+      .str();
+}
+
+void CFGPrinter::dumpOp(Operation *op) {
+  if (!visited.insert(op).second)
+    return;
+  std::string label = getLabel(op);
+  print() << label << "[\n";
+  stream.indent();
+  print() << "label = \"<root>" << getHeader(op) << "\"\n";
+  stream.indent();
+  for (Region &region : op->getRegions()) {
+    if (region.empty() || region.front().empty())
+      continue;
+    print() << "+ \"| <" << getLabel(&region.front()) << "> "
+            << getHeader(&region.front()) << "\"\n";
+  }
+  stream.unindent(2);
+  print() << "];\n";
+  for (Region &region : op->getRegions()) {
+    if (region.empty() || region.front().empty())
+      continue;
+    Block *entry = &region.front();
+    std::string blockLabel = getLabel(entry);
+    print() << label << ":" << blockLabel << " -> " << blockLabel << ":root;\n";
+    dumpBlock(entry);
+  }
+  dumpSuccessors(op, nullptr);
+}
+
+void CFGPrinter::dumpBlock(Block *block) {
+  if (!visited.insert(block).second)
+    return;
+  std::string label = getLabel(block);
+  print() << label << "[\n";
+  stream.indent();
+  print() << "label = \"<root>" << getHeader(block) << "\"\n";
+  stream.indent();
+  for (Operation &op : *block) {
+    print() << "+ \"| <" << getLabel(&op) << "> " << getHeader(&op) << "\"\n";
+  }
+  stream.unindent(2);
+  print() << "];\n";
+  for (Operation &op : *block) {
+    if (op.getNumRegions() == 0 ||
+        llvm::all_of(op.getRegions(),
+                     [](Region &region) { return region.empty(); }))
+      continue;
+    std::string opLabel = getLabel(&op);
+    print() << label << ":" << opLabel << " -> " << opLabel << ":root;\n";
+    dumpOp(&op);
+  }
+  Operation &maybeTerminator = block->back();
+  if (!maybeTerminator.hasTrait<OpTrait::IsTerminator>() ||
+      (maybeTerminator.getNumRegions() != 0 &&
+       llvm::any_of(maybeTerminator.getRegions(),
+                    [](Region &region) { return !region.empty(); })))
+    return;
+  dumpSuccessors(&maybeTerminator, block);
+}
+
+void CFGPrinter::dumpSuccessors(Operation *op, Block *parent) {
+  CFGPoint *point = context.lookup(op);
+  std::string label = getLabel(op);
+  if (parent)
+    label = getLabel(parent) + ":" + label;
+  else
+    label = label + ":root";
+  auto printSuccessors = [&](CFGSuccessorRange range) {
+    for (CFGFlowPoint *point : range) {
+      if (auto op = dyn_cast<CFGOp>(point)) {
+        print() << label << ":root -> " << getLabel(op->getOp())
+                << ":root [color=\"green\"];\n";
+      } else if (auto region = dyn_cast<CFGRegion>(point)) {
+        print() << label << ":root -> "
+                << getLabel(&region->getRegion()->front())
+                << ":root [color=\"blue\"];\n";
+      }
+    }
+  };
+  if (CFGOp *cfgOp = dyn_cast_or_null<CFGOp>(point))
+    printSuccessors(cfgOp->getSuccessors());
+  else if (CFGTerminator *term = dyn_cast_or_null<CFGTerminator>(point))
+    printSuccessors(term->getSuccessors());
+  for (Block *successor : op->getSuccessors()) {
+    print() << label << " -> " << getLabel(successor)
+            << ":root [color=\"red\"];\n";
+    dumpBlock(successor);
+  }
+}
+
+void mlir::printOpCFG(Operation *op, CFGContext &context,
+                      llvm::raw_ostream &os) {
+  CFGPrinter(os, context).dumpGraph(op);
 }

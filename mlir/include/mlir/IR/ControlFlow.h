@@ -20,8 +20,11 @@
 #include "llvm/ADT/DenseMap.h"
 
 namespace mlir {
-class CFGTerminator;
+class CFGPoint;
+class CFGPointWithSuccessors;
 class CFGFlowPoint;
+class CFGOp;
+class CFGTerminator;
 class CFGLabel;
 class WalkResult;
 
@@ -30,20 +33,21 @@ class WalkResult;
 //===----------------------------------------------------------------------===//
 
 /// Control-flow operand.
-class CFGOperand : public IROperand<CFGOperand, CFGFlowPoint *, CFGTerminator> {
+class CFGOperand : public IROperand<CFGOperand, CFGFlowPoint *, CFGPoint> {
 public:
-  using Base = IROperand<CFGOperand, CFGFlowPoint *, CFGTerminator>;
+  using Base = IROperand<CFGOperand, CFGFlowPoint *, CFGPoint>;
 
   /// Provide the use list that is attached to the given point.
-  static IRObjectWithUseList<CFGOperand, CFGTerminator> *
+  static IRObjectWithUseList<CFGOperand, CFGPoint> *
   getUseList(CFGFlowPoint *point);
 
   /// Return which operand this is in the operand list of the point.
   unsigned getOperandNumber();
 
 private:
+  friend class CFGOp;
   friend class CFGTerminator;
-  CFGOperand(CFGTerminator *owner, CFGFlowPoint *point);
+  CFGOperand(CFGPoint *owner, CFGFlowPoint *point);
 };
 
 //===----------------------------------------------------------------------===//
@@ -52,19 +56,19 @@ private:
 
 /// Implement a predecessor iterator for control-flow points.
 class CFGPredecessorIterator final
-    : public llvm::mapped_iterator<ValueUseIterator<CFGOperand, CFGTerminator>,
-                                   CFGTerminator *(*)(CFGOperand &)> {
-  static CFGTerminator *unwrap(CFGOperand &value);
+    : public llvm::mapped_iterator<ValueUseIterator<CFGOperand, CFGPoint>,
+                                   CFGPoint *(*)(CFGOperand &)> {
+  static CFGPoint *unwrap(CFGOperand &value);
 
 public:
   /// Initializes the operand type iterator to the specified operand  iterator
-  CFGPredecessorIterator(ValueUseIterator<CFGOperand, CFGTerminator> it)
-      : llvm::mapped_iterator<ValueUseIterator<CFGOperand, CFGTerminator>,
-                              CFGTerminator *(*)(CFGOperand &)>(it, &unwrap) {}
+  CFGPredecessorIterator(ValueUseIterator<CFGOperand, CFGPoint> it)
+      : llvm::mapped_iterator<ValueUseIterator<CFGOperand, CFGPoint>,
+                              CFGPoint *(*)(CFGOperand &)>(it, &unwrap) {}
 
   explicit CFGPredecessorIterator(CFGOperand *operand)
       : CFGPredecessorIterator(
-            ValueUseIterator<CFGOperand, CFGTerminator>(operand)) {}
+            ValueUseIterator<CFGOperand, CFGPoint>(operand)) {}
 
   /// Get the successor number in the predecessor terminator.
   unsigned getSuccessorIndex() const;
@@ -82,7 +86,7 @@ class CFGSuccessorRange final
 public:
   using RangeBaseT::RangeBaseT;
   CFGSuccessorRange();
-  CFGSuccessorRange(CFGTerminator *point);
+  CFGSuccessorRange(CFGPointWithSuccessors *point);
 
 private:
   /// See `llvm::detail::indexed_accessor_range_base` for details.
@@ -100,52 +104,17 @@ private:
 };
 
 //===----------------------------------------------------------------------===//
-// Control-flow point
+// Control-flow point with successors
 //===----------------------------------------------------------------------===//
 
-/// Control-flow point.
-class alignas(8) CFGPoint {
+/// Control-flow point with successors
+class CFGPointWithSuccessors {
 public:
-  /// Control-flow point kind.
-  typedef enum { FlowOp, Terminator } CFGPointKind;
-
-  /// Returns the op associated with this point.
-  Operation *getOp() const { return op.getPointer(); }
-
-  /// Returns the control-flow point kind.
-  CFGPointKind getKind() const { return op.getInt(); }
-
-  static bool classof(CFGPoint const *) { return true; }
-
-  /// Returns whether this control-flow point can have predecessors.
-  bool canHavePredecessors() const { return getKind() != Terminator; }
-
-private:
-  /// The control-flow object.
-  llvm::PointerIntPair<Operation *, 1, CFGPointKind> op;
-
-protected:
-  CFGPoint(Operation *op, CFGPointKind kind);
-};
-
-//===----------------------------------------------------------------------===//
-// Control-flow terminator
-//===----------------------------------------------------------------------===//
-
-/// Control-flow terminator point.
-class CFGTerminator : public CFGPoint {
-public:
-  CFGTerminator(Operation *op) : CFGPoint(op, Terminator) {}
-
-  static bool classof(CFGPoint const *point) {
-    return point->getKind() == Terminator;
-  }
-
   //===--------------------------------------------------------------------===//
   // Successors.
   //===--------------------------------------------------------------------===//
   /// Returns true if this blocks has no successors.
-  bool hasNoSuccessors() { return succ_begin() == succ_end(); }
+  bool hasNoSuccessors() { return successors.empty(); }
 
   // Indexed successor access.
   unsigned getNumSuccessors() const { return successors.size(); }
@@ -154,22 +123,89 @@ public:
   // Successor iteration.
   using succ_iterator = CFGSuccessorRange::iterator;
 
+  /// Returns the successor operands.
+  MutableArrayRef<CFGOperand> getSuccessorOperands() { return successors; }
+
+protected:
+  /// The CFG point successors.
+  SmallVector<CFGOperand, 0> successors;
+};
+
+//===----------------------------------------------------------------------===//
+// Control-flow point
+//===----------------------------------------------------------------------===//
+
+/// Control-flow point.
+class alignas(8) CFGPoint {
+public:
+  CFGPoint(const CFGPoint &) = delete;
+  /// Control-flow point kind.
+  typedef enum { FlowOp, FlowRegion, Terminator } CFGPointKind;
+
+  /// Returns the IR object associated with this control-flow point.
+  void *getAsOpaquePointer() const { return irObject.getPointer(); }
+
+  /// Returns the control-flow point kind.
+  CFGPointKind getKind() const { return irObject.getInt(); }
+
+  static bool classof(CFGPoint const *) { return true; }
+
+  /// Returns whether this control-flow point can have predecessors.
+  bool canHavePredecessors() const { return getKind() != Terminator; }
+
+  /// Returns whether this control-flow point can have successors.
+  bool canHaveSuccessors() const { return getKind() != FlowRegion; }
+
+  /// Two control-flow points are equal if they have the same IR object.
+  bool operator==(const CFGPoint &other) const {
+    return getAsOpaquePointer() == other.getAsOpaquePointer();
+  }
+  bool operator!=(const CFGPoint &rhs) const { return !(*this == rhs); }
+
+private:
+  /// The control-flow object.
+  llvm::PointerIntPair<void *, 2, CFGPointKind> irObject;
+
+protected:
+  CFGPoint(Operation *op, CFGPointKind kind) : irObject(op, kind) {}
+  CFGPoint(Region *region) : irObject(region, FlowRegion) {}
+};
+
+// Make CFGPoint hashable.
+inline ::llvm::hash_code hash_value(const CFGPoint &arg) {
+  return llvm::hash_value(arg.getAsOpaquePointer());
+}
+
+//===----------------------------------------------------------------------===//
+// Control-flow terminator
+//===----------------------------------------------------------------------===//
+
+/// Control-flow terminator point.
+class CFGTerminator : public CFGPoint, public CFGPointWithSuccessors {
+public:
+  CFGTerminator(Operation *terminator) : CFGPoint(terminator, Terminator) {}
+
+  static bool classof(CFGPoint const *point) {
+    return point->getKind() == Terminator;
+  }
+
+  /// Successor iterators.
   succ_iterator succ_begin() { return getSuccessors().begin(); }
 
   succ_iterator succ_end() { return getSuccessors().end(); }
 
-  CFGSuccessorRange getSuccessors() { return CFGSuccessorRange(this); }
-
   /// Returns the successor operands.
-  MutableArrayRef<CFGOperand> getSuccessorOperands() { return successors; }
+  CFGSuccessorRange getSuccessors() { return this; }
 
-  void pushSuccessor(CFGFlowPoint *op) {
-    successors.push_back(CFGOperand(this, op));
+  /// Returns the associated terminator operation.
+  Operation *getOp() const {
+    return reinterpret_cast<Operation *>(getAsOpaquePointer());
   }
 
-private:
-  /// The CFG point successors.
-  SmallVector<CFGOperand, 0> successors;
+  /// Adds a new successor.
+  void pushSuccessor(CFGFlowPoint *point) {
+    successors.push_back(CFGOperand(this, point));
+  }
 };
 
 //===----------------------------------------------------------------------===//
@@ -178,12 +214,10 @@ private:
 
 /// Control-flow operation.
 class CFGFlowPoint : public CFGPoint,
-                     public IRObjectWithUseList<CFGOperand, CFGTerminator> {
+                     public IRObjectWithUseList<CFGOperand, CFGPoint> {
 public:
-  CFGFlowPoint(Operation *op) : CFGPoint(op, FlowOp) {}
-
   static bool classof(CFGPoint const *point) {
-    return point->getKind() == FlowOp;
+    return point->getKind() == FlowOp || point->getKind() == FlowRegion;
   }
 
   //===--------------------------------------------------------------------===//
@@ -205,31 +239,59 @@ public:
     return {pred_begin(), pred_end()};
   }
 
-  //===--------------------------------------------------------------------===//
-  // Successors.
-  //===--------------------------------------------------------------------===//
-  /// Returns true if this op has no successors.
-  bool hasNoSuccessors() { return succ_begin() == succ_end(); }
+protected:
+  CFGFlowPoint(Operation *op) : CFGPoint(op, FlowOp) {}
+  CFGFlowPoint(Region *region) : CFGPoint(region) {}
+};
 
-  // Indexed successor access.
-  unsigned getNumSuccessors() const { return successors.size(); }
-  Region *getSuccessor(unsigned i) const { return successors[i]; }
+//===----------------------------------------------------------------------===//
+// Control-flow operation
+//===----------------------------------------------------------------------===//
 
-  // Successor iteration.
-  using succ_iterator = MutableArrayRef<Region *>::iterator;
+/// Control-flow operation.
+class CFGOp : public CFGFlowPoint, public CFGPointWithSuccessors {
+public:
+  CFGOp(Operation *op) : CFGFlowPoint(op) {}
+  static bool classof(CFGPoint const *point) {
+    return point->getKind() == FlowOp;
+  }
 
+  /// Returns the associated operation.
+  Operation *getOp() const {
+    return reinterpret_cast<Operation *>(getAsOpaquePointer());
+  }
+
+  /// Successor iterators.
   succ_iterator succ_begin() { return getSuccessors().begin(); }
 
   succ_iterator succ_end() { return getSuccessors().end(); }
 
   /// Returns the successor operands.
-  MutableArrayRef<Region *> getSuccessors() { return successors; }
+  CFGSuccessorRange getSuccessors() { return this; }
 
-  void pushSuccessor(Region *region) { successors.push_back(region); }
+  /// Adds a new successor.
+  void pushSuccessor(CFGFlowPoint *point) {
+    successors.push_back(CFGOperand(this, point));
+  }
+};
 
-private:
-  /// The region successors.
-  SmallVector<Region *, 0> successors;
+//===----------------------------------------------------------------------===//
+// Control-flow region
+//===----------------------------------------------------------------------===//
+
+/// Control-flow region.
+class CFGRegion : public CFGFlowPoint {
+public:
+  CFGRegion(Region *region) : CFGFlowPoint(region) {}
+
+  static bool classof(CFGPoint const *point) {
+    return point->getKind() == FlowRegion;
+  }
+
+  /// Returns the associated region.
+  Region *getRegion() const {
+    return reinterpret_cast<Region *>(getAsOpaquePointer());
+  }
 };
 
 //===----------------------------------------------------------------------===//
@@ -238,20 +300,33 @@ private:
 
 /// Control-flow context.
 class CFGContext {
-  using MapTy = DenseMap<Operation *, std::unique_ptr<CFGPoint>>;
-  /// Lookup table for operations with CFG semantics.
-  MapTy ops;
+  /// Helper for deleting CFG points.
+  struct PointDeleter {
+    constexpr PointDeleter() noexcept = default;
+    void operator()(CFGPoint *point) const;
+  };
+  using MapTy = DenseMap<void *, std::unique_ptr<CFGPoint, PointDeleter>>;
+  /// Lookup table for CFG points.
+  MapTy points;
 
 public:
   /// Inserts a new CFG point.
   std::pair<MapTy::iterator, bool> insert(CFGPoint *point) {
-    return ops.try_emplace(point->getOp(), point);
+    return points.try_emplace(point->getAsOpaquePointer(), point);
   }
 
   /// Looks up the CFG point corresponding to `op`, returns `nullptr` if the
   /// point doesn't exist.
   CFGPoint *lookup(Operation *op) const {
-    if (auto it = ops.find(op); it != ops.end())
+    if (auto it = points.find(op); it != points.end())
+      return it->second.get();
+    return nullptr;
+  }
+
+  /// Looks up the CFG point corresponding to `region`, returns `nullptr` if the
+  /// point doesn't exist.
+  CFGPoint *lookup(Region *region) const {
+    if (auto it = points.find(region); it != points.end())
       return it->second.get();
     return nullptr;
   }
