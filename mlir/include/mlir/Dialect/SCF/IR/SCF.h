@@ -37,6 +37,9 @@ void buildTerminatedBody(OpBuilder &builder, Location loc);
 #define GET_OP_CLASSES
 #include "mlir/Dialect/SCF/IR/SCFOps.h.inc"
 
+#define GET_ATTRDEF_CLASSES
+#include "mlir/Dialect/SCF/IR/SCFOpsAttributes.h.inc"
+
 namespace mlir {
 namespace scf {
 

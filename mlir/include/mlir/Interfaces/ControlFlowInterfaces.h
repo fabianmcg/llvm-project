@@ -14,10 +14,12 @@
 #ifndef MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 #define MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 
-#include "mlir/IR/ControlFlow.h"
+#include "mlir/IR/ControlFlowLabel.h"
 #include "mlir/IR/OpDefinition.h"
 
 namespace mlir {
+class CFGPoint;
+class CFGContext;
 class BranchOpInterface;
 class RegionBranchOpInterface;
 

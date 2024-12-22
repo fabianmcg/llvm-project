@@ -64,6 +64,31 @@ CFGSuccessorRange::CFGSuccessorRange(CFGPointWithSuccessors *point)
 }
 
 //===----------------------------------------------------------------------===//
+// Control-flow region
+//===----------------------------------------------------------------------===//
+
+CFGRegion::~CFGRegion() { dropAllUses(); }
+
+//===----------------------------------------------------------------------===//
+// Control-flow op
+//===----------------------------------------------------------------------===//
+
+CFGOp::CFGOp(Operation *op) : CFGFlowPoint(op) {
+  if (op->getNumRegions() == 0)
+    return;
+  regions = std::allocator<CFGRegion>().allocate(op->getNumRegions());
+  for (Region &region : op->getRegions())
+    new (regions + region.getRegionNumber()) CFGRegion(this, &region);
+}
+
+CFGOp::~CFGOp() {
+  dropAllUses();
+  for (CFGRegion &region : getRegions())
+    region.dropAllUses();
+  std::allocator<CFGRegion>().deallocate(regions, getOp()->getNumRegions());
+}
+
+//===----------------------------------------------------------------------===//
 // Control-flow graph context
 //===----------------------------------------------------------------------===//
 
@@ -71,12 +96,15 @@ void CFGContext::PointDeleter::operator()(CFGPoint *ptr) const {
   if (auto point = dyn_cast<CFGTerminator>(ptr))
     delete point;
   else if (auto point = dyn_cast<CFGOp>(ptr)) {
-    point->dropAllUses();
-    delete point;
-  } else if (auto point = dyn_cast<CFGRegion>(ptr)) {
-    point->dropAllUses();
     delete point;
   }
+}
+
+CFGRegion *CFGContext::lookup(Region *region) const {
+  auto op = dyn_cast_or_null<CFGOp>(lookup(region->getParentOp()));
+  if (!op)
+    return nullptr;
+  return &op->getRegions()[region->getRegionNumber()];
 }
 
 //===----------------------------------------------------------------------===//

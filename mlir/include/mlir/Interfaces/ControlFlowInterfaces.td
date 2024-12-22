@@ -410,36 +410,22 @@ def GeneralRegionBranchOpInterface : OpInterface<"GeneralRegionBranchOpInterface
       }]
     >,
     InterfaceMethod<[{
-        Returns the potential region successors when first executing the op.
+        Returns the potential successors when executing the op on entry.
 
         Note: The control flow does not necessarily have to enter any region of
         this op.
       }],
-      "void", "getSuccessorLabels",
+      "void", "getSuccessors",
       (ins "std::optional<::llvm::ArrayRef<::mlir::Attribute>>":$operands,
-           "::llvm::SmallVectorImpl<::mlir::CFGLabel> &":$labels), [{}]
+           "::llvm::SmallVectorImpl<::mlir::RegionSuccessor> &":$successors)
     >,
     InterfaceMethod<[{
-        This method is called to compare types along control-flow edges. By
-        default, the types are checked as equal.
+        This method returns the control-flow labels caught by this op.
       }],
-      "bool", "areTypesCompatible",
-      (ins "::mlir::Type":$lhs, "::mlir::Type":$rhs), [{}],
-      /*defaultImplementation=*/[{ return lhs == rhs; }]
-    >,
-    InterfaceMethod<[{
-        This method returns the control-flow label exposed by this op.
-      }],
-      "::mlir::CFGLabel", "getCFGLabel"
+      "void", "getCaughtLabels",
+      (ins "::llvm::SmallVectorImpl<std::pair<::mlir::CFGLabel, ::mlir::RegionSuccessor>> &":$labels)
     >,
   ];
-
-  let verify = [{
-    static_assert(!ConcreteOp::template hasTrait<OpTrait::ZeroRegions>(),
-                  "expected operation to have non-zero regions");
-    return detail::verifyTypesAlongControlFlowEdges($_op);
-  }];
-  let verifyWithRegions = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -468,7 +454,7 @@ def GeneralRegionBranchTerminatorOpInterface :
         Returns the potential region successor labels that are branched to
         after this terminator.
       }],
-      "void", "getSuccessorLabels",
+      "void", "getSuccessors",
       (ins "std::optional<::llvm::ArrayRef<::mlir::Attribute>>":$operands,
            "::llvm::SmallVectorImpl<::mlir::CFGLabel> &":$labels)
     >,
@@ -483,7 +469,6 @@ def GeneralRegionBranchTerminatorOpInterface :
     return success();
   }];
 }
-
 
 //===----------------------------------------------------------------------===//
 // ControlFlow Traits

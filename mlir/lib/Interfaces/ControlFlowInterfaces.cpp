@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ControlFlow.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/SmallPtrSet.h"
@@ -380,7 +381,7 @@ private:
   CFGOp *build(GeneralRegionBranchOpInterface op);
   CFGTerminator *build(GeneralRegionBranchTerminatorOpInterface op);
   CFGContext &context;
-  llvm::ScopedHashTable<CFGLabel, CFGOp *> table;
+  llvm::ScopedHashTable<CFGLabel, std::pair<CFGOp *, RegionSuccessor>> table;
 };
 } // namespace
 
@@ -391,7 +392,7 @@ CFGPoint *CFGBuilder::build(Operation *op) {
   else if (auto terminator = dyn_cast<RegionBranchTerminatorOpInterface>(op))
     point = build(terminator);
   else if (auto branch = dyn_cast<GeneralRegionBranchOpInterface>(op))
-    point = build(branch);
+    return build(branch);
   else if (auto terminator =
                dyn_cast<GeneralRegionBranchTerminatorOpInterface>(op))
     point = build(terminator);
@@ -405,12 +406,7 @@ CFGPoint *CFGBuilder::build(Operation *op) {
 CFGOp *CFGBuilder::build(RegionBranchOpInterface op) {
   auto point = new CFGOp(op);
   context.insert(point);
-  SmallVector<CFGRegion *> regions;
-  for (Region &region : op->getRegions()) {
-    auto point = new CFGRegion(&region);
-    context.insert(point);
-    regions.push_back(point);
-  }
+  MutableArrayRef<CFGRegion> regions = point->getRegions();
   SmallVector<RegionSuccessor> parentSuccessors;
   op.getSuccessorRegions(RegionBranchPoint::parent(), parentSuccessors);
   for (RegionSuccessor successor : parentSuccessors) {
@@ -418,7 +414,7 @@ CFGOp *CFGBuilder::build(RegionBranchOpInterface op) {
       point->pushSuccessor(point);
       continue;
     }
-    point->pushSuccessor(regions[successor.getSuccessor()->getRegionNumber()]);
+    point->pushSuccessor(&regions[successor.getSuccessor()->getRegionNumber()]);
   }
   return point;
 }
@@ -442,10 +438,52 @@ CFGTerminator *CFGBuilder::build(RegionBranchTerminatorOpInterface op) {
   return point;
 }
 
-CFGOp *CFGBuilder::build(GeneralRegionBranchOpInterface op) { return nullptr; }
+CFGOp *CFGBuilder::build(GeneralRegionBranchOpInterface op) {
+  llvm::ScopedHashTableScope<CFGLabel, std::pair<CFGOp *, RegionSuccessor>>
+      scope(table);
+  auto point = new CFGOp(op);
+  context.insert(point);
+  MutableArrayRef<CFGRegion> regions = point->getRegions();
+  SmallVector<RegionSuccessor> successors;
+  op.getSuccessors(std::nullopt, successors);
+  for (RegionSuccessor successor : successors) {
+    if (successor.isParent()) {
+      point->pushSuccessor(point);
+      continue;
+    }
+    point->pushSuccessor(&regions[successor.getSuccessor()->getRegionNumber()]);
+  }
+  SmallVector<std::pair<CFGLabel, RegionSuccessor>> labels;
+  op.getCaughtLabels(labels);
+  for (auto [label, successor] : labels)
+    table.insert(label, {point, successor});
+  for (Region &region : op->getRegions())
+    for (Block &block : region)
+      for (Operation &op : block)
+        (void)build(&op);
+  return point;
+}
 
 CFGTerminator *CFGBuilder::build(GeneralRegionBranchTerminatorOpInterface op) {
-  return nullptr;
+  auto term = new CFGTerminator(op);
+  context.insert(term);
+  SmallVector<CFGLabel> labels;
+  op.getSuccessors(std::nullopt, labels);
+  for (CFGLabel label : labels) {
+    auto [point, successor] = table.lookup(label);
+    if (!point) {
+      label.dump();
+      context.pushUnresolved(term, label);
+      continue;
+    }
+    if (successor.isParent()) {
+      term->pushSuccessor(point);
+      continue;
+    }
+    term->pushSuccessor(
+        &point->getRegions()[successor.getSuccessor()->getRegionNumber()]);
+  }
+  return term;
 }
 
 CFGPoint *mlir::buildOpCFG(Operation *op, CFGContext &context) {

@@ -41,11 +41,54 @@ def SCF_Dialect : Dialect {
   }];
 
   let dependentDialects = ["arith::ArithDialect"];
+  let useDefaultAttributePrinterParser = 1;
 }
 
 // Base class for SCF dialect ops.
 class SCF_Op<string mnemonic, list<Trait> traits = []> :
     Op<SCF_Dialect, mnemonic, traits>;
+
+// Base class for SCF labels.
+class SCF_LabelAttr<string name, string attr_mnemonic, list<Trait> traits = []>
+    : CFGLabelAttrDef<SCF_Dialect, name, traits> {
+  let cppClassName = name;
+  let mnemonic = attr_mnemonic;
+}
+
+//===----------------------------------------------------------------------===//
+// SCF labels
+//===----------------------------------------------------------------------===//
+
+def ContinueLabelAttr : SCF_LabelAttr<"ContinueLabel", "continue"> {
+  let summary = "Continue label";
+  let assemblyFormat = "";
+}
+
+def BreakLabelAttr : SCF_LabelAttr<"BreakLabel", "break"> {
+  let summary = "Break label";
+  let assemblyFormat = "";
+}
+
+def YieldLabelAttr : SCF_LabelAttr<"YieldLabel", "yield"> {
+  let summary = "Yield label";
+  let assemblyFormat = "";
+}
+
+//===----------------------------------------------------------------------===//
+// BreakOp
+//===----------------------------------------------------------------------===//
+
+def BreakOp : SCF_Op<"break", [
+  DeclareOpInterfaceMethods<GeneralRegionBranchTerminatorOpInterface>,
+  Pure,
+  Terminator
+]> {
+  let summary = "Break op";
+  let arguments = (ins Variadic<AnyType>:$results);
+  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+  let assemblyFormat =
+      [{  attr-dict ($results^ `:` type($results))? }];
+}
 
 //===----------------------------------------------------------------------===//
 // ConditionOp
@@ -70,6 +113,22 @@ def ConditionOp : SCF_Op<"condition", [
 
   let assemblyFormat =
       [{ `(` $condition `)` attr-dict ($args^ `:` type($args))? }];
+}
+
+//===----------------------------------------------------------------------===//
+// ContinueOp
+//===----------------------------------------------------------------------===//
+
+def ContinueOp : SCF_Op<"continue", [
+  DeclareOpInterfaceMethods<GeneralRegionBranchTerminatorOpInterface>,
+  Pure,
+  Terminator
+]> {
+  let summary = "Continue op";
+  let arguments = (ins Variadic<AnyType>:$results);
+  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+  let assemblyFormat =
+      [{  attr-dict ($results^ `:` type($results))? }];
 }
 
 //===----------------------------------------------------------------------===//
@@ -292,6 +351,51 @@ def ForOp : SCF_Op<"for",
   let hasCustomAssemblyFormat = 1;
   let hasVerifier = 1;
   let hasRegionVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// GForOp
+//===----------------------------------------------------------------------===//
+
+def GForOp : SCF_Op<"generic_for",
+      [AutomaticAllocationScope,
+       AllTypesMatch<["lowerBound", "upperBound", "step"]>,
+       DeclareOpInterfaceMethods<GeneralRegionBranchOpInterface>,RecursiveMemoryEffects,
+       SingleBlock]> {
+  let summary = "for operation";
+  let description = [{
+  }];
+  let arguments = (ins AnySignlessIntegerOrIndex:$lowerBound,
+                       AnySignlessIntegerOrIndex:$upperBound,
+                       AnySignlessIntegerOrIndex:$step,
+                       Variadic<AnyType>:$initArgs);
+  let results = (outs Variadic<AnyType>:$results);
+  let regions = (region SizedRegion<1>:$region);
+  let hasCustomAssemblyFormat = 1;
+
+  let extraClassDeclaration = [{
+    Value getInductionVar() { return getBody()->getArgument(0); }
+
+    /// Return the `index`-th region iteration argument.
+    BlockArgument getRegionIterArg(unsigned index) {
+      assert(index < getNumRegionIterArgs() &&
+        "expected an index less than the number of region iter args");
+      return getBody()->getArguments().drop_front(getNumInductionVars())[index];
+    }
+
+    void setLowerBound(Value bound) { getOperation()->setOperand(0, bound); }
+    void setUpperBound(Value bound) { getOperation()->setOperand(1, bound); }
+    void setStep(Value step) { getOperation()->setOperand(2, step); }
+
+    /// Number of induction variables, always 1 for scf::ForOp.
+    unsigned getNumInductionVars() { return 1; }
+    /// Number of region arguments for loop-carried values
+    unsigned getNumRegionIterArgs() {
+      return getBody()->getNumArguments() - getNumInductionVars();
+    }
+    /// Number of operands controlling the loop: lb, ub, step
+    unsigned getNumControlOperands() { return 3; }
+  }];
 }
 
 //===----------------------------------------------------------------------===//
@@ -765,6 +869,23 @@ def IfOp : SCF_Op<"if", [DeclareOpInterfaceMethods<RegionBranchOpInterface, [
 }
 
 //===----------------------------------------------------------------------===//
+// GIfOp
+//===----------------------------------------------------------------------===//
+
+def GIfOp : SCF_Op<"gif", [DeclareOpInterfaceMethods<GeneralRegionBranchOpInterface>,
+    RecursiveMemoryEffects, NoRegionArguments]> {
+  let summary = "if-then-else operation";
+  let arguments = (ins I1:$condition);
+  let results = (outs Variadic<AnyType>:$results);
+  let regions = (region SizedRegion<1>:$thenRegion,
+                        MaxSizedRegion<1>:$elseRegion);
+  let assemblyFormat = [{
+    $condition (`->` type($results)^)? attr-dict-with-keyword
+    $thenRegion (`else` $elseRegion^)?
+  }];
+}
+
+//===----------------------------------------------------------------------===//
 // ParallelOp
 //===----------------------------------------------------------------------===//
 
@@ -1187,6 +1308,22 @@ def YieldOp : SCF_Op<"yield", [Pure, ReturnLike, Terminator,
   let arguments = (ins Variadic<AnyType>:$results);
   let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
 
+  let assemblyFormat =
+      [{  attr-dict ($results^ `:` type($results))? }];
+}
+
+//===----------------------------------------------------------------------===//
+// GYieldOp
+//===----------------------------------------------------------------------===//
+
+def GYieldOp : SCF_Op<"gyield", [
+  DeclareOpInterfaceMethods<GeneralRegionBranchTerminatorOpInterface>,
+  Pure,
+  Terminator
+]> {
+  let summary = "Yield op";
+  let arguments = (ins Variadic<AnyType>:$results);
+  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
   let assemblyFormat =
       [{  attr-dict ($results^ `:` type($results))? }];
 }

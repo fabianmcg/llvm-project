@@ -1,6 +1,11 @@
 add_mlir_dialect(SCFOps scf Ops)
 add_mlir_doc(SCFOps SCFDialect Dialects/ -gen-dialect-doc)
 
+set(LLVM_TARGET_DEFINITIONS SCFOps.td)
+mlir_tablegen(SCFOpsAttributes.h.inc -gen-attrdef-decls -attrdefs-dialect=scf)
+mlir_tablegen(SCFOpsAttributes.cpp.inc -gen-attrdef-defs -attrdefs-dialect=scf)
+add_public_tablegen_target(MLIRSCFOpsAttributesIncGen)
+
 set(LLVM_TARGET_DEFINITIONS DeviceMappingInterface.td)
 mlir_tablegen(DeviceMappingAttrInterface.h.inc -gen-attr-interface-decls)
 mlir_tablegen(DeviceMappingAttrInterface.cpp.inc -gen-attr-interface-defs)

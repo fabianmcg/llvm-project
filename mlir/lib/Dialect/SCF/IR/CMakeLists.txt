@@ -8,6 +8,7 @@ add_mlir_dialect_library(MLIRSCFDialect
 
   DEPENDS
   MLIRSCFOpsIncGen
+  MLIRSCFOpsAttributesIncGen
 
   LINK_LIBS PUBLIC
   MLIRArithDialect

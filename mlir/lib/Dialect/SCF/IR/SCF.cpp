@@ -16,6 +16,7 @@
 #include "mlir/Dialect/SCF/IR/DeviceMappingInterface.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
@@ -30,6 +31,9 @@ using namespace mlir;
 using namespace mlir::scf;
 
 #include "mlir/Dialect/SCF/IR/SCFOpsDialect.cpp.inc"
+
+#define GET_ATTRDEF_CLASSES
+#include "mlir/Dialect/SCF/IR/SCFOpsAttributes.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 // SCFDialect Dialect Interfaces
@@ -79,6 +83,10 @@ void SCFDialect::initialize() {
                             ExecuteRegionOp, ForOp, IfOp, IndexSwitchOp,
                             ForallOp, InParallelOp, WhileOp, YieldOp>();
   declarePromisedInterface<ValueBoundsOpInterface, ForOp>();
+  addAttributes<
+#define GET_ATTRDEF_LIST
+#include "mlir/Dialect/SCF/IR/SCFOpsAttributes.cpp.inc"
+      >();
 }
 
 /// Default callback for IfOp builders. Inserts a yield without arguments.
@@ -101,6 +109,37 @@ static TerminatorTy verifyAndGetTerminator(Operation *op, Region &region,
   if (terminatorOperation)
     diag.attachNote(terminatorOperation->getLoc()) << "terminator here";
   return nullptr;
+}
+
+//===----------------------------------------------------------------------===//
+// Early exit terminators
+//===----------------------------------------------------------------------===//
+
+SuccessorOperands BreakOp::getSuccessorOperands(unsigned index) {
+  return SuccessorOperands(MutableOperandRange(*this));
+}
+
+void BreakOp::getSuccessors(std::optional<ArrayRef<Attribute>> operands,
+                            SmallVectorImpl<CFGLabel> &successors) {
+  successors.push_back(BreakLabel::get(getContext()));
+}
+
+SuccessorOperands ContinueOp::getSuccessorOperands(unsigned index) {
+  return SuccessorOperands(MutableOperandRange(*this));
+}
+
+void ContinueOp::getSuccessors(std::optional<ArrayRef<Attribute>> operands,
+                               SmallVectorImpl<CFGLabel> &successors) {
+  successors.push_back(ContinueLabel::get(getContext()));
+}
+
+SuccessorOperands GYieldOp::getSuccessorOperands(unsigned index) {
+  return SuccessorOperands(MutableOperandRange(*this));
+}
+
+void GYieldOp::getSuccessors(std::optional<ArrayRef<Attribute>> operands,
+                             SmallVectorImpl<CFGLabel> &successors) {
+  successors.push_back(YieldLabel::get(getContext()));
 }
 
 //===----------------------------------------------------------------------===//
@@ -1125,6 +1164,111 @@ Speculation::Speculatability ForOp::getSpeculatability() {
   // For Step != 1, the loop may not terminate.  We can add more smarts here if
   // needed.
   return Speculation::NotSpeculatable;
+}
+
+//===----------------------------------------------------------------------===//
+// GForOp
+//===----------------------------------------------------------------------===//
+
+void GForOp::getSuccessors(std::optional<ArrayRef<Attribute>> operands,
+                           SmallVectorImpl<RegionSuccessor> &successors) {
+  successors.push_back(RegionSuccessor());
+  successors.push_back(RegionSuccessor(&getBodyRegion()));
+}
+
+void GForOp::getCaughtLabels(
+    SmallVectorImpl<std::pair<CFGLabel, RegionSuccessor>> &labels) {
+  labels.push_back({BreakLabel::get(getContext()), RegionSuccessor()});
+  labels.push_back(
+      {YieldLabel::get(getContext()), RegionSuccessor(&getBodyRegion())});
+  labels.push_back(
+      {ContinueLabel::get(getContext()), RegionSuccessor(&getBodyRegion())});
+}
+
+void GForOp::print(OpAsmPrinter &p) {
+  p << " " << getInductionVar() << " = " << getLowerBound() << " to "
+    << getUpperBound() << " step " << getStep();
+
+  printInitializationList(
+      p, getBody()->getArguments().drop_front(getNumInductionVars()),
+      getInitArgs(), " iter_args");
+  if (!getInitArgs().empty())
+    p << " -> (" << getInitArgs().getTypes() << ')';
+  p << ' ';
+  if (Type t = getInductionVar().getType(); !t.isIndex())
+    p << " : " << t << ' ';
+  p.printRegion(getRegion(),
+                /*printEntryBlockArgs=*/false,
+                /*printBlockTerminators=*/!getInitArgs().empty());
+  p.printOptionalAttrDict((*this)->getAttrs());
+}
+
+ParseResult GForOp::parse(OpAsmParser &parser, OperationState &result) {
+  auto &builder = parser.getBuilder();
+  Type type;
+
+  OpAsmParser::Argument inductionVariable;
+  OpAsmParser::UnresolvedOperand lb, ub, step;
+
+  // Parse the induction variable followed by '='.
+  if (parser.parseOperand(inductionVariable.ssaName) || parser.parseEqual() ||
+      // Parse loop bounds.
+      parser.parseOperand(lb) || parser.parseKeyword("to") ||
+      parser.parseOperand(ub) || parser.parseKeyword("step") ||
+      parser.parseOperand(step))
+    return failure();
+
+  // Parse the optional initial iteration arguments.
+  SmallVector<OpAsmParser::Argument, 4> regionArgs;
+  SmallVector<OpAsmParser::UnresolvedOperand, 4> operands;
+  regionArgs.push_back(inductionVariable);
+
+  bool hasIterArgs = succeeded(parser.parseOptionalKeyword("iter_args"));
+  if (hasIterArgs) {
+    // Parse assignment list and results type list.
+    if (parser.parseAssignmentList(regionArgs, operands) ||
+        parser.parseArrowTypeList(result.types))
+      return failure();
+  }
+
+  if (regionArgs.size() != result.types.size() + 1)
+    return parser.emitError(
+        parser.getNameLoc(),
+        "mismatch in number of loop-carried values and defined values");
+
+  // Parse optional type, else assume Index.
+  if (parser.parseOptionalColon())
+    type = builder.getIndexType();
+  else if (parser.parseType(type))
+    return failure();
+
+  // Resolve input operands.
+  regionArgs.front().type = type;
+  if (parser.resolveOperand(lb, type, result.operands) ||
+      parser.resolveOperand(ub, type, result.operands) ||
+      parser.resolveOperand(step, type, result.operands))
+    return failure();
+  if (hasIterArgs) {
+    for (auto argOperandType :
+         llvm::zip(llvm::drop_begin(regionArgs), operands, result.types)) {
+      Type type = std::get<2>(argOperandType);
+      std::get<0>(argOperandType).type = type;
+      if (parser.resolveOperand(std::get<1>(argOperandType), type,
+                                result.operands))
+        return failure();
+    }
+  }
+
+  // Parse the body region.
+  Region *body = result.addRegion();
+  if (parser.parseRegion(*body, regionArgs))
+    return failure();
+
+  // Parse the optional attribute list.
+  if (parser.parseOptionalAttrDict(result.attributes))
+    return failure();
+
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
@@ -2828,6 +2972,26 @@ Block *IfOp::elseBlock() {
   return &r.back();
 }
 YieldOp IfOp::elseYield() { return cast<YieldOp>(&elseBlock()->back()); }
+
+//===----------------------------------------------------------------------===//
+// IfOp
+//===----------------------------------------------------------------------===//
+
+void GIfOp::getSuccessors(std::optional<ArrayRef<Attribute>> operands,
+                          SmallVectorImpl<RegionSuccessor> &successors) {
+  if (getElseRegion().empty()) {
+    successors.push_back(RegionSuccessor());
+    successors.push_back(RegionSuccessor(&getThenRegion()));
+  } else {
+    successors.push_back(RegionSuccessor(&getThenRegion()));
+    successors.push_back(RegionSuccessor(&getElseRegion()));
+  }
+}
+
+void GIfOp::getCaughtLabels(
+    SmallVectorImpl<std::pair<CFGLabel, RegionSuccessor>> &labels) {
+  labels.push_back({YieldLabel::get(getContext()), RegionSuccessor()});
+}
 
 //===----------------------------------------------------------------------===//
 // ParallelOp
