@@ -29,6 +29,8 @@ def Builtin_Dialect : Dialect {
     void registerAttributes();
     // Register the builtin Location Attributes.
     void registerLocationAttributes();
+    // Register the builtin control-flow Attributes.
+    void registerControlFlowAttributes();
     // Register the builtin Types.
     void registerTypes();
 

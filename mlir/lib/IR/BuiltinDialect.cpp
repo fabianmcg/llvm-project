@@ -108,6 +108,7 @@ void BuiltinDialect::initialize() {
   registerTypes();
   registerAttributes();
   registerLocationAttributes();
+  registerControlFlowAttributes();
   addOperations<
 #define GET_OP_LIST
 #include "mlir/IR/BuiltinOps.cpp.inc"

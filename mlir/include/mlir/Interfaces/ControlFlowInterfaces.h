@@ -14,11 +14,14 @@
 #ifndef MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 #define MLIR_INTERFACES_CONTROLFLOWINTERFACES_H
 
+#include "mlir/IR/ControlFlow.h"
+#include "mlir/IR/ControlFlowLabel.h"
 #include "mlir/IR/OpDefinition.h"
 
 namespace mlir {
 class BranchOpInterface;
 class RegionBranchOpInterface;
+class RegionBranchTerminatorOpInterface;
 
 /// This class models how operands are forwarded to block arguments in control
 /// flow. It consists of a number, denoting how many of the successors block
@@ -319,6 +322,38 @@ struct ReturnLike : public TraitBase<ConcreteType, ReturnLike> {
 };
 } // namespace OpTrait
 
+namespace impl {
+/// Gets the on entry successor operands for the `RegionBranchOpInterface` op,
+/// when branching from point.
+OperandRange getRegionOnEntrySuccessorOperands(RegionBranchOpInterface op,
+                                               CFGBranchPoint point);
+
+/// Gets the on entry successors for the `RegionBranchOpInterface` op.
+void getRegionOnEntrySuccessors(RegionBranchOpInterface op,
+                                std::optional<ArrayRef<Attribute>> operands,
+                                SmallVectorImpl<CFGSuccessor> &successors);
+
+/// Gets the successors for `label` for the `RegionBranchOpInterface` op.
+void getRegionLabelSuccessors(RegionBranchOpInterface op, CFGLabel label,
+                              SmallVectorImpl<CFGSuccessor> &successors);
+
+/// Gets the accepted terminators for the `RegionBranchOpInterface` op.
+void getRegionAcceptedTerminators(
+    RegionBranchOpInterface op,
+    const DenseSet<std::pair<CFGLabel, CFGTerminatorOpInterface>> &terminators,
+    SmallVectorImpl<std::pair<CFGLabel, CFGTerminatorOpInterface>> &accepted);
+
+/// Gets the mutable successor operands when taking the `label` branch for the
+/// `RegionBranchTerminatorOpInterface` op.
+MutableOperandRange
+getRegionLabelMutableSuccessorOperands(RegionBranchTerminatorOpInterface op,
+                                       CFGLabel label);
+
+/// Gets the successor labels for the `RegionBranchTerminatorOpInterface` op.
+void getRegionSuccessorLabels(RegionBranchTerminatorOpInterface op,
+                              std::optional<ArrayRef<Attribute>> operands,
+                              SmallVectorImpl<CFGLabel> &labels);
+} // namespace impl
 } // namespace mlir
 
 //===----------------------------------------------------------------------===//

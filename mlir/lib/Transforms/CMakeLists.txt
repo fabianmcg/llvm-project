@@ -5,6 +5,7 @@ add_mlir_library(MLIRTransforms
   CompositePass.cpp
   ControlFlowSink.cpp
   CSE.cpp
+  DumpOpCFG.cpp
   GenerateRuntimeVerification.cpp
   InlinerPass.cpp
   LocationSnapshot.cpp

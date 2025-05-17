@@ -293,6 +293,12 @@ class LocationAttrDef<Dialect dialect, string name, list<Trait> traits = []>
     : AttrDef<dialect, name, traits # [NativeAttrTrait<"IsLocation">],
               "::mlir::LocationAttr">;
 
+// Provide a CFGLabelAttrDef for dialects to provide their own CFG labels
+// that subclass CFGLabelAttr.
+class CFGLabelAttrDef<Dialect dialect, string name, list<Trait> traits = []>
+    : AttrDef<dialect, name, traits # [NativeAttrTrait<"IsCFGLabel">],
+              "::mlir::CFGLabelAttr">;
+
 // Define a new type, named `name`, belonging to `dialect` that inherits from
 // the given C++ base class.
 class TypeDef<Dialect dialect, string name, list<Trait> traits = [],

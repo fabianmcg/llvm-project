@@ -1,3 +1,4 @@
+add_mlir_interface(ControlFlowGraphInterfaces)
 add_mlir_interface(SymbolInterfaces)
 add_mlir_interface(RegionKindInterface)
 
@@ -34,6 +35,11 @@ set(LLVM_TARGET_DEFINITIONS BuiltinLocationAttributes.td)
 mlir_tablegen(BuiltinLocationAttributes.h.inc -gen-attrdef-decls)
 mlir_tablegen(BuiltinLocationAttributes.cpp.inc -gen-attrdef-defs)
 add_public_tablegen_target(MLIRBuiltinLocationAttributesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS BuiltinControlFlowAttributes.td)
+mlir_tablegen(BuiltinControlFlowAttributes.h.inc -gen-attrdef-decls)
+mlir_tablegen(BuiltinControlFlowAttributes.cpp.inc -gen-attrdef-defs)
+add_public_tablegen_target(MLIRBuiltinControlFlowAttributesIncGen)
 
 set(LLVM_TARGET_DEFINITIONS BuiltinOps.td)
 mlir_tablegen(BuiltinOps.h.inc -gen-op-decls)

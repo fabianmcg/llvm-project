@@ -248,7 +248,7 @@ def ConstantOp : Func_Op<"constant",
 //===----------------------------------------------------------------------===//
 
 def FuncOp : Func_Op<"func", [
-  AffineScope, AutomaticAllocationScope,
+  AffineScope, AutomaticAllocationScope, CFGOpInterface,
   FunctionOpInterface, IsolatedFromAbove, OpAsmOpInterface
 ]> {
   let summary = "An operation with a name containing a single `SSACFG` region";
@@ -355,6 +355,24 @@ def FuncOp : Func_Op<"func", [
     //===------------------------------------------------------------------===//
 
     bool isDeclaration() { return isExternal(); }
+
+    //===------------------------------------------------------------------===//
+    // CFGOpInterface Methods
+    //===------------------------------------------------------------------===//
+    ::mlir::OperandRange getOnEntrySuccessorOperands(
+      ::mlir::CFGBranchPoint point) {
+      return getOperation()->getOperands();
+    }
+    void getOnEntrySuccessors(
+        std::optional<::llvm::ArrayRef<::mlir::Attribute>> operands,
+        ::llvm::SmallVectorImpl<::mlir::CFGSuccessor> &successors) {
+      successors.push_back(CFGSuccessor(getBody()));
+    }
+    void getLabelSuccessors(::mlir::CFGLabel label,
+        ::llvm::SmallVectorImpl<::mlir::CFGSuccessor> &successors);
+    void getAcceptedTerminators(
+      const ::llvm::DenseSet<std::pair<::mlir::CFGLabel, ::mlir::CFGTerminatorOpInterface>>& terminators,
+        ::llvm::SmallVectorImpl<std::pair<::mlir::CFGLabel, ::mlir::CFGTerminatorOpInterface>> &accepted);
   }];
   let hasCustomAssemblyFormat = 1;
 }
@@ -363,8 +381,9 @@ def FuncOp : Func_Op<"func", [
 // ReturnOp
 //===----------------------------------------------------------------------===//
 
-def ReturnOp : Func_Op<"return", [Pure, HasParent<"FuncOp">,
-                                MemRefsNormalizable, ReturnLike, Terminator]> {
+def ReturnOp : Func_Op<"return", [Pure,
+                                MemRefsNormalizable, CFGTerminatorOpInterface,
+                                Terminator]> {
   let summary = "Function return operation";
   let description = [{
     The `func.return` operation represents a return operation within a function.
@@ -390,6 +409,18 @@ def ReturnOp : Func_Op<"return", [Pure, HasParent<"FuncOp">,
 
   let assemblyFormat = "attr-dict ($operands^ `:` type($operands))?";
   let hasVerifier = 1;
+  let extraClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CFGTerminatorOpInterface methods
+    //===------------------------------------------------------------------===//
+    ::mlir::MutableOperandRange getLabelMutableSuccessorOperands(
+      ::mlir::CFGLabel label) {
+      return ::mlir::MutableOperandRange(*this);
+    }
+    void getSuccessorLabels(
+        std::optional<::llvm::ArrayRef<::mlir::Attribute>> operands,
+        ::llvm::SmallVectorImpl<::mlir::CFGLabel> &labels);
+  }];
 }
 
 #endif // MLIR_DIALECT_FUNC_IR_FUNCOPS_TD

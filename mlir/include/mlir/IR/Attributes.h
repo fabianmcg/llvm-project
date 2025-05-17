@@ -293,6 +293,13 @@ using IsMutable = detail::StorageUserTrait::IsMutable<ConcreteType>;
 template <typename ConcreteType>
 struct IsLocation : public AttributeTrait::TraitBase<ConcreteType, IsLocation> {
 };
+
+/// This trait is used to determine if an attribute is a CFG label or not. It is
+/// attached to an attribute by the user if they intend the attribute to be used
+/// as a CFG label.
+template <typename ConcreteType>
+struct IsCFGLabel : public AttributeTrait::TraitBase<ConcreteType, IsCFGLabel> {
+};
 } // namespace AttributeTrait
 
 } // namespace mlir.

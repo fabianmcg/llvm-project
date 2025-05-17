@@ -20,9 +20,10 @@
 namespace mlir {
 
 class Operation;
-template <typename OperandType>
+template <typename OperandType, typename OperandOwnerTy = Operation>
 class ValueUseIterator;
-template <typename UseIteratorT, typename OperandType>
+template <typename UseIteratorT, typename OperandType,
+          typename OperandOwnerTy = Operation>
 class ValueUserIterator;
 
 //===----------------------------------------------------------------------===//
@@ -32,10 +33,11 @@ class ValueUserIterator;
 namespace detail {
 /// This class is the base for IROperand, and provides all of the non-templated
 /// facilities for operand use management.
+template <typename OwnerTy>
 class IROperandBase {
 public:
   /// Return the owner of this operand.
-  Operation *getOwner() const { return owner; }
+  OwnerTy *getOwner() const { return owner; }
 
   /// Return the next operand on the use-list of the value we are referring to.
   /// This should generally only be used by the internal implementation details
@@ -58,7 +60,7 @@ public:
   }
 
 protected:
-  IROperandBase(Operation *owner) : owner(owner) {}
+  IROperandBase(OwnerTy *owner) : owner(owner) {}
   IROperandBase(IROperandBase &&other) : owner(other.owner) {
     *this = std::move(other);
   }
@@ -109,8 +111,8 @@ protected:
   IROperandBase **back = nullptr;
 
 private:
-  /// The operation owner of this operand.
-  Operation *const owner;
+  /// The owner of this operand.
+  OwnerTy *const owner;
 };
 } // namespace detail
 
@@ -123,22 +125,25 @@ private:
 /// types are expected to provide the following:
 ///  * static IRObjectWithUseList *getUseList(IRValueT value);
 ///    - Provide the use list that is attached to the given value.
-template <typename DerivedT, typename IRValueT>
-class IROperand : public detail::IROperandBase {
+template <typename DerivedT, typename IRValueT,
+          typename OperandOwnerTy = Operation>
+class IROperand : public detail::IROperandBase<OperandOwnerTy> {
+  using IROperandBase = detail::IROperandBase<OperandOwnerTy>;
+
 public:
-  IROperand(Operation *owner) : detail::IROperandBase(owner) {}
-  IROperand(Operation *owner, IRValueT value)
-      : detail::IROperandBase(owner), value(value) {
+  IROperand(OperandOwnerTy *owner) : IROperandBase(owner) {}
+  IROperand(OperandOwnerTy *owner, IRValueT value)
+      : IROperandBase(owner), value(value) {
     insertIntoCurrent();
   }
 
   /// We support a move constructor so IROperand's can be in vectors, but this
   /// shouldn't be used by general clients.
-  IROperand(IROperand &&other) : detail::IROperandBase(std::move(other)) {
+  IROperand(IROperand &&other) : IROperandBase(std::move(other)) {
     *this = std::move(other);
   }
   IROperand &operator=(IROperand &&other) {
-    detail::IROperandBase::operator=(std::move(other));
+    IROperandBase::operator=(std::move(other));
     value = other.value;
     other.value = nullptr;
     if (value)
@@ -149,10 +154,12 @@ public:
   /// Two operands are equal if they have the same owner and the same operand
   /// number. They are stored inside of ops, so it is valid to compare their
   /// pointers to determine equality.
-  bool operator==(const IROperand<DerivedT, IRValueT> &other) const {
+  bool
+  operator==(const IROperand<DerivedT, IRValueT, OperandOwnerTy> &other) const {
     return this == &other;
   }
-  bool operator!=(const IROperand<DerivedT, IRValueT> &other) const {
+  bool
+  operator!=(const IROperand<DerivedT, IRValueT, OperandOwnerTy> &other) const {
     return !(*this == other);
   }
 
@@ -163,7 +170,7 @@ public:
   void set(IRValueT newValue) {
     // It isn't worth optimizing for the case of switching operands on a single
     // value.
-    removeFromCurrent();
+    this->removeFromCurrent();
     value = newValue;
     insertIntoCurrent();
   }
@@ -173,7 +180,7 @@ public:
 
   /// \brief Remove this use of the operand.
   void drop() {
-    detail::IROperandBase::drop();
+    IROperandBase::drop();
     value = nullptr;
   }
 
@@ -183,7 +190,7 @@ private:
   IRValueT value = {};
 
   /// Insert this operand into the given use list.
-  void insertIntoCurrent() { insertInto(DerivedT::getUseList(value)); }
+  void insertIntoCurrent() { this->insertInto(DerivedT::getUseList(value)); }
 };
 
 //===----------------------------------------------------------------------===//
@@ -191,8 +198,10 @@ private:
 //===----------------------------------------------------------------------===//
 
 /// This class represents a single IR object that contains a use list.
-template <typename OperandType>
+template <typename OperandType, typename OperandOwnerTy = Operation>
 class IRObjectWithUseList {
+  using IROperandBase = detail::IROperandBase<OperandOwnerTy>;
+
 public:
   ~IRObjectWithUseList() {
     assert(use_empty() && "Cannot destroy a value that still has uses!");
@@ -224,8 +233,8 @@ public:
                indices.size() &&
            "indices vector expected to have a number of elements equal to the "
            "number of uses");
-    SmallVector<detail::IROperandBase *> shuffled(indices.size());
-    detail::IROperandBase *ptr = firstUse;
+    SmallVector<IROperandBase *> shuffled(indices.size());
+    IROperandBase *ptr = firstUse;
     for (size_t idx = 0; idx < indices.size();
          idx++, ptr = ptr->getNextOperandUsingThisValue())
       shuffled[indices[idx]] = ptr;
@@ -243,7 +252,7 @@ public:
   // Uses
   //===--------------------------------------------------------------------===//
 
-  using use_iterator = ValueUseIterator<OperandType>;
+  using use_iterator = ValueUseIterator<OperandType, OperandOwnerTy>;
   using use_range = iterator_range<use_iterator>;
 
   use_iterator use_begin() const { return use_iterator(firstUse); }
@@ -264,7 +273,8 @@ public:
   // Users
   //===--------------------------------------------------------------------===//
 
-  using user_iterator = ValueUserIterator<use_iterator, OperandType>;
+  using user_iterator =
+      ValueUserIterator<use_iterator, OperandType, OperandOwnerTy>;
   using user_range = iterator_range<user_iterator>;
 
   user_iterator user_begin() const { return user_iterator(use_begin()); }
@@ -282,15 +292,15 @@ protected:
 
 private:
   /// Set use as the first use of the chain.
-  void initFirstUse(detail::IROperandBase *use) {
+  void initFirstUse(IROperandBase *use) {
     firstUse = use;
     firstUse->initChainWithUse(&firstUse);
   }
 
-  detail::IROperandBase *firstUse = nullptr;
+  IROperandBase *firstUse = nullptr;
 
   /// Allow access to `firstUse`.
-  friend detail::IROperandBase;
+  friend detail::IROperandBase<OperandOwnerTy>;
 };
 
 //===----------------------------------------------------------------------===//
@@ -299,24 +309,24 @@ private:
 
 /// An iterator class that allows for iterating over the uses of an IR operand
 /// type.
-template <typename OperandType>
-class ValueUseIterator
-    : public llvm::iterator_facade_base<ValueUseIterator<OperandType>,
-                                        std::forward_iterator_tag,
-                                        OperandType> {
+template <typename OperandType, typename OperandOwnerTy>
+class ValueUseIterator : public llvm::iterator_facade_base<
+                             ValueUseIterator<OperandType, OperandOwnerTy>,
+                             std::forward_iterator_tag, OperandType> {
 public:
-  ValueUseIterator(detail::IROperandBase *use = nullptr) : current(use) {}
+  ValueUseIterator(detail::IROperandBase<OperandOwnerTy> *use = nullptr)
+      : current(use) {}
 
-  /// Returns the operation that owns this use.
-  Operation *getUser() const { return current->getOwner(); }
+  /// Returns the object that owns this use.
+  OperandOwnerTy *getUser() const { return current->getOwner(); }
 
   /// Returns the current operands.
   OperandType *getOperand() const { return (OperandType *)current; }
   OperandType &operator*() const { return *getOperand(); }
 
-  using llvm::iterator_facade_base<ValueUseIterator<OperandType>,
-                                   std::forward_iterator_tag,
-                                   OperandType>::operator++;
+  using llvm::iterator_facade_base<
+      ValueUseIterator<OperandType, OperandOwnerTy>, std::forward_iterator_tag,
+      OperandType>::operator++;
   ValueUseIterator &operator++() {
     assert(current && "incrementing past end()!");
     current = (OperandType *)current->getNextOperandUsingThisValue();
@@ -328,7 +338,7 @@ public:
   }
 
 protected:
-  detail::IROperandBase *current;
+  detail::IROperandBase<OperandOwnerTy> *current;
 };
 
 //===----------------------------------------------------------------------===//
@@ -337,21 +347,23 @@ protected:
 
 /// An iterator over the users of an IRObject. This is a wrapper iterator around
 /// a specific use iterator.
-template <typename UseIteratorT, typename OperandType>
+template <typename UseIteratorT, typename OperandType, typename OperandOwnerTy>
 class ValueUserIterator final
     : public llvm::mapped_iterator_base<
-          ValueUserIterator<UseIteratorT, OperandType>, UseIteratorT,
-          Operation *> {
+          ValueUserIterator<UseIteratorT, OperandType, OperandOwnerTy>,
+          UseIteratorT, OperandOwnerTy *> {
 public:
-  using llvm::mapped_iterator_base<ValueUserIterator<UseIteratorT, OperandType>,
-                                   UseIteratorT,
-                                   Operation *>::mapped_iterator_base;
+  using llvm::mapped_iterator_base<
+      ValueUserIterator<UseIteratorT, OperandType, OperandOwnerTy>,
+      UseIteratorT, OperandOwnerTy *>::mapped_iterator_base;
 
   /// Map the element to the iterator result type.
-  Operation *mapElement(OperandType &value) const { return value.getOwner(); }
+  OperandOwnerTy *mapElement(OperandType &value) const {
+    return value.getOwner();
+  }
 
-  /// Provide access to the underlying operation.
-  Operation *operator->() { return **this; }
+  /// Provide access to the underlying owner.
+  OperandOwnerTy *operator->() { return **this; }
 };
 
 } // namespace mlir

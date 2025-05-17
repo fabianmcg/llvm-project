@@ -759,6 +759,14 @@ class VariadicResults
     : public detail::MultiResultTraitBase<ConcreteType, VariadicResults> {};
 
 //===----------------------------------------------------------------------===//
+// Control-flow Traits
+
+/// This class indicates that the operation has region-based control-flow.
+template <typename ConcreteType>
+class HasRegionControlFlow
+    : public TraitBase<ConcreteType, HasRegionControlFlow> {};
+
+//===----------------------------------------------------------------------===//
 // Terminator Traits
 //===----------------------------------------------------------------------===//
 

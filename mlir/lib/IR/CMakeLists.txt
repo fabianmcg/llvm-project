@@ -18,6 +18,7 @@ add_mlir_library(MLIRIR
   BuiltinDialectBytecode.cpp
   BuiltinTypes.cpp
   BuiltinTypeInterfaces.cpp
+  ControlFlow.cpp
   Diagnostics.cpp
   Dialect.cpp
   DialectResourceBlobManager.cpp
@@ -59,6 +60,7 @@ add_mlir_library(MLIRIR
   MLIRBuiltinTypeInterfacesIncGen
   MLIRCallInterfacesIncGen
   MLIRCastInterfacesIncGen
+  MLIRControlFlowGraphInterfacesIncGen
   MLIRDataLayoutInterfacesIncGen
   MLIROpAsmInterfaceIncGen
   MLIRRegionKindInterfaceIncGen

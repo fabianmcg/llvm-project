@@ -283,12 +283,29 @@ FuncOp FuncOp::clone() {
   return clone(mapper);
 }
 
+void FuncOp::getAcceptedTerminators(
+    const DenseSet<std::pair<CFGLabel, CFGTerminatorOpInterface>> &terminators,
+    SmallVectorImpl<std::pair<CFGLabel, CFGTerminatorOpInterface>> &accepted) {
+  for (auto [label, term] : terminators) {
+    if (!isa<ReturnControlAttr>(label))
+      continue;
+    accepted.push_back({label, term});
+  }
+}
+
+void FuncOp::getLabelSuccessors(CFGLabel label,
+                                SmallVectorImpl<CFGSuccessor> &successors) {
+  if (!isa<ReturnControlAttr>(label))
+    return;
+  successors.push_back(CFGSuccessor(CFGBranchPoint::parent()));
+}
+
 //===----------------------------------------------------------------------===//
 // ReturnOp
 //===----------------------------------------------------------------------===//
 
 LogicalResult ReturnOp::verify() {
-  auto function = cast<FuncOp>((*this)->getParentOp());
+  auto function = (*this)->getParentOfType<FuncOp>();
 
   // The operand number and types must match the function signature.
   const auto &results = function.getFunctionType().getResults();
@@ -306,6 +323,11 @@ LogicalResult ReturnOp::verify() {
                          << " in function @" << function.getName();
 
   return success();
+}
+
+void ReturnOp::getSuccessorLabels(std::optional<ArrayRef<Attribute>> operands,
+                                  SmallVectorImpl<CFGLabel> &labels) {
+  labels.push_back(ReturnControlAttr::get(getContext()));
 }
 
 //===----------------------------------------------------------------------===//

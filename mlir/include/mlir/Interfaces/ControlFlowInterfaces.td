@@ -15,6 +15,7 @@
 #define MLIR_INTERFACES_CONTROLFLOWINTERFACES
 
 include "mlir/IR/OpBase.td"
+include "mlir/IR/ControlFlowGraphInterfaces.td"
 
 //===----------------------------------------------------------------------===//
 // BranchOpInterface
@@ -115,7 +116,9 @@ def BranchOpInterface : OpInterface<"BranchOpInterface"> {
 // RegionBranchOpInterface
 //===----------------------------------------------------------------------===//
 
-def RegionBranchOpInterface : OpInterface<"RegionBranchOpInterface"> {
+def RegionBranchOpInterface : OpInterface<"RegionBranchOpInterface", [
+    CFGOpInterface
+  ]> {
   let description = [{
     This interface provides information for region operations that exhibit
     branching behavior between held regions. I.e., this interface allows for
@@ -277,6 +280,29 @@ def RegionBranchOpInterface : OpInterface<"RegionBranchOpInterface"> {
     /// reachable regions (starting from the entry regions) are considered.
     bool hasLoop();
   }];
+  let extraTraitClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CFGOpInterface methods
+    //===------------------------------------------------------------------===//
+    ::mlir::OperandRange getOnEntrySuccessorOperands(
+      ::mlir::CFGBranchPoint point) {
+      return ::mlir::impl::getRegionOnEntrySuccessorOperands($_op, point);
+    }
+    void getOnEntrySuccessors(
+        std::optional<::llvm::ArrayRef<::mlir::Attribute>> operands,
+        ::llvm::SmallVectorImpl<::mlir::CFGSuccessor> &successors) {
+      ::mlir::impl::getRegionOnEntrySuccessors($_op, operands, successors);
+    }
+    void getLabelSuccessors(::mlir::CFGLabel label,
+        ::llvm::SmallVectorImpl<::mlir::CFGSuccessor> &successors) {
+      ::mlir::impl::getRegionLabelSuccessors($_op, label, successors);
+    }
+    void getAcceptedTerminators(
+      const ::llvm::DenseSet<std::pair<::mlir::CFGLabel, ::mlir::CFGTerminatorOpInterface>>& terminators,
+        ::llvm::SmallVectorImpl<std::pair<::mlir::CFGLabel, ::mlir::CFGTerminatorOpInterface>> &accepted) {
+      ::mlir::impl::getRegionAcceptedTerminators($_op, terminators, accepted);
+    }
+  }];
 }
 
 //===----------------------------------------------------------------------===//
@@ -284,7 +310,9 @@ def RegionBranchOpInterface : OpInterface<"RegionBranchOpInterface"> {
 //===----------------------------------------------------------------------===//
 
 def RegionBranchTerminatorOpInterface :
-  OpInterface<"RegionBranchTerminatorOpInterface"> {
+  OpInterface<"RegionBranchTerminatorOpInterface", [
+    CFGTerminatorOpInterface
+  ]> {
   let description = [{
     This interface provides information for branching terminator operations
     in the presence of a parent `RegionBranchOpInterface` implementation. It
@@ -341,7 +369,25 @@ def RegionBranchTerminatorOpInterface :
       return getMutableSuccessorOperands(point);
     }
   }];
+  let extraTraitClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CFGTerminatorOpInterface methods
+    //===------------------------------------------------------------------===//
+    ::mlir::MutableOperandRange getLabelMutableSuccessorOperands(
+      ::mlir::CFGLabel label) {
+      return ::mlir::impl::getRegionLabelMutableSuccessorOperands($_op, label);
+    }
+    void getSuccessorLabels(
+        std::optional<::llvm::ArrayRef<::mlir::Attribute>> operands,
+        ::llvm::SmallVectorImpl<::mlir::CFGLabel> &labels) {
+      ::mlir::impl::getRegionSuccessorLabels($_op, operands, labels);
+    }
+  }];
 }
+
+//===----------------------------------------------------------------------===//
+// SelectLikeOpInterface
+//===----------------------------------------------------------------------===//
 
 def SelectLikeOpInterface : OpInterface<"SelectLikeOpInterface"> {
   let description = [{

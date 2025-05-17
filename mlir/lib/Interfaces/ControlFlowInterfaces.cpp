@@ -9,8 +9,12 @@
 #include <utility>
 
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ControlFlow.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
+#include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/FormatVariadic.h"
+#include "llvm/Support/ScopedPrinter.h"
 
 using namespace mlir;
 
@@ -360,4 +364,97 @@ Region *mlir::getEnclosingRepetitiveRegion(Value value) {
     region = op->getParentRegion();
   }
   return nullptr;
+}
+
+//===----------------------------------------------------------------------===//
+// CFGOpInterface and CFGTerminatorOpInterface implementations
+//===----------------------------------------------------------------------===//
+
+static void addSuccessors(MutableArrayRef<RegionSuccessor> regions,
+                          SmallVectorImpl<CFGSuccessor> &successors) {
+  for (RegionSuccessor &succ : regions) {
+    if (succ.isParent()) {
+      successors.push_back(
+          CFGSuccessor(CFGBranchPoint::parent(), succ.getSuccessorInputs()));
+      continue;
+    }
+    successors.push_back(CFGSuccessor(CFGBranchPoint(succ.getSuccessor()),
+                                      succ.getSuccessorInputs()));
+  }
+}
+
+OperandRange
+mlir::impl::getRegionOnEntrySuccessorOperands(RegionBranchOpInterface op,
+                                              CFGBranchPoint point) {
+  if (point.isParent()) {
+    return op.getEntrySuccessorOperands(RegionBranchPoint::parent());
+  }
+  Region *region = point.getRegionOrNull();
+  assert(region && "invalid branch-point");
+  return op.getEntrySuccessorOperands(RegionBranchPoint(region));
+}
+
+void mlir::impl::getRegionOnEntrySuccessors(
+    RegionBranchOpInterface op, std::optional<ArrayRef<Attribute>> operands,
+    SmallVectorImpl<CFGSuccessor> &successors) {
+  SmallVector<RegionSuccessor> regions;
+  // TODO: Fix the `RegionBranchOpInterface` behavior in here.
+  if (operands)
+    op.getEntrySuccessorRegions(*operands, regions);
+  else
+    op.getSuccessorRegions(RegionBranchPoint::parent(), regions);
+  addSuccessors(regions, successors);
+}
+
+void mlir::impl::getRegionLabelSuccessors(
+    RegionBranchOpInterface op, CFGLabel label,
+    SmallVectorImpl<CFGSuccessor> &successors) {
+  if (isa<YieldToParentAttr>(label)) {
+    successors.push_back(CFGSuccessor(CFGBranchPoint::parent()));
+    return;
+  }
+  RegionBranchPoint point = RegionBranchPoint(
+      op->getRegion(cast<YieldToRegionAttr>(label).getRegionNumber()));
+
+  SmallVector<RegionSuccessor> regions;
+  op.getSuccessorRegions(point, regions);
+  addSuccessors(regions, successors);
+}
+
+void mlir::impl::getRegionAcceptedTerminators(
+    RegionBranchOpInterface op,
+    const DenseSet<std::pair<CFGLabel, CFGTerminatorOpInterface>> &terminators,
+    SmallVectorImpl<std::pair<CFGLabel, CFGTerminatorOpInterface>> &accepted) {
+  for (std::pair<CFGLabel, CFGTerminatorOpInterface> term : terminators) {
+    if (!isa<YieldToParentAttr, YieldToRegionAttr>(term.first))
+      continue;
+    assert(term.second->getParentOp() == op.getOperation() && "ill-formed CFG");
+    accepted.push_back(term);
+  }
+}
+
+MutableOperandRange mlir::impl::getRegionLabelMutableSuccessorOperands(
+    RegionBranchTerminatorOpInterface op, CFGLabel label) {
+  if (isa<YieldToRegionAttr>(label)) {
+    return op.getMutableSuccessorOperands(RegionBranchPoint::parent());
+  }
+  Operation *parent = op->getParentOp();
+  assert(parent && "ill-formed CFG");
+  return op.getMutableSuccessorOperands(RegionBranchPoint(
+      parent->getRegion(cast<YieldToRegionAttr>(label).getRegionNumber())));
+}
+
+void mlir::impl::getRegionSuccessorLabels(
+    RegionBranchTerminatorOpInterface op,
+    std::optional<ArrayRef<Attribute>> operands,
+    SmallVectorImpl<CFGLabel> &labels) {
+  SmallVector<RegionSuccessor> regions;
+  op.getSuccessorRegions(operands ? *operands : ArrayRef<Attribute>(), regions);
+  for (RegionSuccessor &succ : regions) {
+    if (succ.isParent()) {
+      labels.push_back(YieldToParentAttr::get(op.getContext()));
+      continue;
+    }
+    labels.push_back(YieldToRegionAttr::get(*succ.getSuccessor()));
+  }
 }

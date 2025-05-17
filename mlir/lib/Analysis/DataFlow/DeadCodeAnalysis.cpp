@@ -414,7 +414,7 @@ void DeadCodeAnalysis::visitRegionTerminator(Operation *op,
   SmallVector<RegionSuccessor> successors;
   if (auto terminator = dyn_cast<RegionBranchTerminatorOpInterface>(op))
     terminator.getSuccessorRegions(*operands, successors);
-  else
+  else // TODO: Forbid this.
     branch.getSuccessorRegions(op->getParentRegion(), successors);
 
   // Mark successor region entry blocks as executable and add this op to the

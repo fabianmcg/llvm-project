@@ -94,6 +94,13 @@ def CSE : Pass<"cse"> {
   ];
 }
 
+def DumpOpCFG : Pass<"dump-op-cfg"> {
+  let summary = "Print Graphviz visualization of an operation";
+  let description = [{
+    This pass print.
+  }];
+}
+
 def RemoveDeadValues : Pass<"remove-dead-values"> {
   let summary = "Remove dead values";
   let description = [{
