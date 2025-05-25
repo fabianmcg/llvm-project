@@ -817,6 +817,8 @@ add_mlir_python_common_capi_library(MLIRPythonCAPI
     MLIRPythonSources
     MLIRPythonExtension.RegisterEverything
     ${_ADDL_TEST_SOURCES}
+  CXX_SOURCES
+    stub.cpp
 )
 
 ################################################################################
@@ -837,6 +839,12 @@ endif()
 # This must come last.
 ################################################################################
 
+set(MLIRPythonCAPI_LIBS "MLIRPythonCAPI")
+
+if(MLIR_BUILD_MLIR_C_DYLIB)
+  list(APPEND MLIRPythonCAPI_LIBS "MLIR-C")
+endif()
+
 add_mlir_python_modules(MLIRPythonModules
   ROOT_PREFIX "${MLIR_BINARY_DIR}/python_packages/mlir_core/mlir"
   INSTALL_PREFIX "${MLIR_BINDINGS_PYTHON_INSTALL_PREFIX}"
@@ -845,6 +853,5 @@ add_mlir_python_modules(MLIRPythonModules
     MLIRPythonExtension.RegisterEverything
     ${_ADDL_TEST_SOURCES}
   COMMON_CAPI_LINK_LIBS
-    MLIRPythonCAPI
+    ${MLIRPythonCAPI_LIBS}
 )
-

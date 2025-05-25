@@ -1,10 +1,18 @@
-# Building libmlir-cpp.so fails if LLVM_ENABLE_PIC=Off
-if (NOT LLVM_ENABLE_PIC)
+if (NOT MLIR_BUILD_MLIR_DYLIB)
   return()
 endif()
 
+# Building libmlir-cpp.so fails if LLVM_ENABLE_PIC=Off
+if (NOT LLVM_ENABLE_PIC)
+  message(ERROR "Building libMLIR.so requires -DLLVM_ENABLE_PIC=ON")
+  return()
+endif()
+
+message(STATUS "Building MLIR dylib")
+
 # Building libmlir-cpp.so may not work on MSVC
 if (MSVC)
+  message(ERROR "Building libMLIR.so on unsupported platform")
   return()
 endif()
 
@@ -12,6 +20,7 @@ get_property(mlir_libs GLOBAL PROPERTY MLIR_STATIC_LIBS)
 get_property(mlir_llvm_link_components GLOBAL PROPERTY MLIR_LLVM_LINK_COMPONENTS)
 list(REMOVE_DUPLICATES mlir_libs)
 list(REMOVE_DUPLICATES mlir_llvm_link_components)
+set_property(GLOBAL PROPERTY MLIR_DYLIB_LINK_COMPONENTS ${mlir_llvm_link_components})
 
 foreach (lib ${mlir_libs})
   if(XCODE)
@@ -30,22 +39,21 @@ if(MLIR_LINK_MLIR_DYLIB)
   set(INSTALL_WITH_TOOLCHAIN INSTALL_WITH_TOOLCHAIN)
 endif()
 
-if(LLVM_BUILD_LLVM_DYLIB)
-  add_mlir_library(
-    MLIR
-    SHARED
-    EXCLUDE_FROM_LIBMLIR
-    ${INSTALL_WITH_TOOLCHAIN}
-    mlir-shlib.cpp
-    ${_OBJECTS}
-    LINK_LIBS
-    ${_DEPS}
+add_mlir_library(
+  MLIR
+  SHARED
+  EXCLUDE_FROM_LIBMLIR
+  ${INSTALL_WITH_TOOLCHAIN}
+  mlir-shlib.cpp
+  ${_OBJECTS}
+  LINK_LIBS
+  ${_DEPS}
 
-    LINK_COMPONENTS
-    ${mlir_llvm_link_components}
-  )
-  target_link_libraries(MLIR PRIVATE ${LLVM_PTHREAD_LIB})
-endif()
+  LINK_COMPONENTS
+  ${mlir_llvm_link_components}
+)
+target_link_libraries(MLIR PRIVATE ${LLVM_PTHREAD_LIB})
+set_property(GLOBAL PROPERTY MLIR_DYLIB_LIBS ${mlir_libs})
 
 #message("Libraries included in libMLIR.so: ${mlir_libs}")
 #message("LLVM Components included in libMLIR.so: ${mlir_llvm_link_components}")
