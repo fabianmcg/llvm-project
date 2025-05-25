@@ -450,7 +450,7 @@ function(mlir_python_setup_extension_rpath target)
   # lib directory. This will be absolute for the build tree and relative for
   # install.
   # When we have access to CMake >= 3.20, there is a helper to calculate this.
-  if(BUILD_SHARED_LIBS AND ARG_RELATIVE_INSTALL_ROOT)
+  if((MLIR_LINK_MLIR_DYLIB OR BUILD_SHARED_LIBS) AND ARG_RELATIVE_INSTALL_ROOT)
     get_filename_component(_real_lib_dir "${LLVM_LIBRARY_OUTPUT_INTDIR}" REALPATH)
     set_property(TARGET ${target} APPEND PROPERTY
       BUILD_RPATH "${_real_lib_dir}")
@@ -481,7 +481,7 @@ function(add_mlir_python_common_capi_library name)
   cmake_parse_arguments(ARG
     ""
     "INSTALL_COMPONENT;INSTALL_DESTINATION;OUTPUT_DIRECTORY;RELATIVE_INSTALL_ROOT"
-    "DECLARED_HEADERS;DECLARED_SOURCES;EMBED_LIBS"
+    "DECLARED_HEADERS;DECLARED_SOURCES;EMBED_LIBS;CXX_SOURCES"
     ${ARGN})
   # Collect all explicit and transitive embed libs.
   set(_embed_libs ${ARG_EMBED_LIBS})
@@ -494,11 +494,18 @@ function(add_mlir_python_common_capi_library name)
   endforeach()
   list(REMOVE_DUPLICATES _embed_libs)
 
+  # If `libMLIR-C.so` is present link against it.
+  if (MLIR_BUILD_MLIR_C_DYLIB)
+    list(APPEND _dylibs "MLIR-C")
+  endif()
+
   # Generate the aggregate .so that everything depends on.
   add_mlir_aggregate(${name}
     SHARED
+    ${ARG_CXX_SOURCES}
     DISABLE_INSTALL
     EMBED_LIBS ${_embed_libs}
+    PUBLIC_LIBS ${_dylibs}
   )
 
   # Process any headers associated with the library
