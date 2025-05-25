@@ -26,9 +26,11 @@ if(MLIR_BUILD_MLIR_C_DYLIB)
   get_property(_capi_libraries GLOBAL PROPERTY MLIR_CAPI_LIBS)
   add_mlir_aggregate(MLIR-C
     SHARED
+    KEEP_CAPI
     EMBED_LIBS
       ${_capi_libraries}
   )
+  set_property(GLOBAL PROPERTY MLIR_C_DYLIB_LIBS ${_capi_libraries})
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_options(MLIR-C PRIVATE "-Wl,-exclude-libs,ALL")
   else()
