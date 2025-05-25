@@ -161,10 +161,19 @@ set(MLIR_INSTALL_AGGREGATE_OBJECTS 1 CACHE BOOL
     not desired. Enabling this will result in object files being written \
     under lib/objects-{CMAKE_BUILD_TYPE}.")
 
-set(MLIR_BUILD_MLIR_C_DYLIB 0 CACHE BOOL "Builds libMLIR-C shared library.")
+set(MLIR_BUILD_MLIR_DYLIB 0 CACHE BOOL "Builds libMLIR shared library.")
+set(MLIR_LINK_MLIR_DYLIB ${MLIR_BUILD_MLIR_DYLIB} CACHE BOOL
+    "Link against libMLIR.so")
+if(MLIR_LINK_MLIR_DYLIB AND NOT MLIR_BUILD_MLIR_DYLIB)
+  message(ERROR "Setting MLIR_LINK_MLIR_DYLIB requires setting MLIR_BUILD_MLIR_DYLIB")
+endif()
 
-set(MLIR_LINK_MLIR_DYLIB ${LLVM_LINK_LLVM_DYLIB} CACHE BOOL
-    "Link tools against libMLIR.so")
+set(MLIR_BUILD_MLIR_C_DYLIB 0 CACHE BOOL "Builds libMLIR-C shared library.")
+set(MLIR_LINK_MLIR_C_DYLIB ${MLIR_BUILD_MLIR_C_DYLIB} AND ${MLIR_BUILD_MLIR_C_DYLIB} CACHE BOOL
+    "Link against libMLIR-C.so")
+if(MLIR_LINK_MLIR_C_DYLIB AND NOT MLIR_BUILD_MLIR_C_DYLIB)
+  message(ERROR "Setting MLIR_LINK_MLIR_C_DYLIB requires setting MLIR_BUILD_MLIR_C_DYLIB")
+endif()
 
 configure_file(
   ${MLIR_MAIN_INCLUDE_DIR}/mlir/Config/mlir-config.h.cmake
