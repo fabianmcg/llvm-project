@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformDialectTransforms
+add_mlir_dialect_upstream_library(MLIRTransformDialectTransforms
   CheckUses.cpp
   InferEffects.cpp
   InterpreterPass.cpp

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIROpenACCDialect
+add_mlir_dialect_upstream_library(MLIROpenACCDialect
   OpenACC.cpp
 
   ADDITIONAL_HEADER_DIRS

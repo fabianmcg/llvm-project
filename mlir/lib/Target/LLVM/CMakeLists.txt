@@ -1,4 +1,4 @@
-add_mlir_library(MLIRTargetLLVM
+add_mlir_upstream_library(MLIRTargetLLVM
   ModuleToObject.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -29,7 +29,7 @@ if ("NVPTX" IN_LIST LLVM_TARGETS_TO_BUILD)
   )
 endif()
 
-add_mlir_dialect_library(MLIRNVVMTarget
+add_mlir_dialect_upstream_library(MLIRNVVMTarget
   NVVM/Target.cpp
 
   OBJECT
@@ -142,7 +142,7 @@ if (MLIR_NVVM_EMBED_LIBDEVICE)
   endif()
   
   embed_binary_to_src(${MLIR_NVVM_LIBDEVICE_PATH} ${CMAKE_CURRENT_BINARY_DIR}/libdevice_embedded.c _mlir_embedded_libdevice)
-  add_mlir_library(MLIRNVVMLibdevice
+  add_mlir_upstream_library(MLIRNVVMLibdevice
     ${CMAKE_CURRENT_BINARY_DIR}/libdevice_embedded.c
   )
   target_link_libraries(MLIRNVVMTarget PRIVATE MLIRNVVMLibdevice)
@@ -167,7 +167,7 @@ if (MLIR_ENABLE_ROCM_CONVERSIONS)
   )
 endif()
 
-add_mlir_dialect_library(MLIRROCDLTarget
+add_mlir_dialect_upstream_library(MLIRROCDLTarget
   ROCDL/Target.cpp
   ROCDL/Utils.cpp
 

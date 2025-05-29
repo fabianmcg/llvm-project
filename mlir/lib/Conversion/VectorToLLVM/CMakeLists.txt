@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRVectorToLLVM
+add_mlir_conversion_upstream_library(MLIRVectorToLLVM
   PARTIAL_SOURCES_INTENDED
   ConvertVectorToLLVM.cpp
 
@@ -24,7 +24,7 @@ add_mlir_conversion_library(MLIRVectorToLLVM
   MLIRVectorTransforms
   )
 
-add_mlir_conversion_library(MLIRVectorToLLVMPass
+add_mlir_conversion_upstream_library(MLIRVectorToLLVMPass
   PARTIAL_SOURCES_INTENDED
 
   ConvertVectorToLLVMPass.cpp

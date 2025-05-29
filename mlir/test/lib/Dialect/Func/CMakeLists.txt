@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRFuncTestPasses
+add_mlir_upstream_library(MLIRFuncTestPasses
   TestDecomposeCallGraphTypes.cpp
 
   EXCLUDE_FROM_LIBMLIR

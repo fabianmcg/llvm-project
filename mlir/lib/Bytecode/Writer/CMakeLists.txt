@@ -1,4 +1,4 @@
-add_mlir_library(MLIRBytecodeWriter
+add_mlir_upstream_library(MLIRBytecodeWriter
   BytecodeWriter.cpp
   IRNumbering.cpp
 

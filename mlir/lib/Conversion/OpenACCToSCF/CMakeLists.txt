@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIROpenACCToSCF
+add_mlir_conversion_upstream_library(MLIROpenACCToSCF
   OpenACCToSCF.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRUBToLLVM
+add_mlir_conversion_upstream_library(MLIRUBToLLVM
   UBToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRConvertToEmitC
+add_mlir_conversion_upstream_library(MLIRConvertToEmitC
   ConvertToEmitCPass.cpp
 
   ADDITIONAL_HEADER_DIRS

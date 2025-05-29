@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRVCIXToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRVCIXToLLVMIRTranslation
   VCIXToLLVMIRTranslation.cpp
 
   DEPENDS

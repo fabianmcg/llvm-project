@@ -3,7 +3,7 @@ set(LLVM_OPTIONAL_SOURCES
   ToLLVMInterface.cpp
 )
 
-add_mlir_conversion_library(MLIRConvertToLLVMInterface
+add_mlir_conversion_upstream_library(MLIRConvertToLLVMInterface
   ToLLVMInterface.cpp
 
   DEPENDS
@@ -14,7 +14,7 @@ add_mlir_conversion_library(MLIRConvertToLLVMInterface
   MLIRSupport
 )
 
-add_mlir_conversion_library(MLIRConvertToLLVMPass
+add_mlir_conversion_upstream_library(MLIRConvertToLLVMPass
   ConvertToLLVMPass.cpp
 
   DEPENDS

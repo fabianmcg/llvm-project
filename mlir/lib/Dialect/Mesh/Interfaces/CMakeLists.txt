@@ -1,4 +1,4 @@
-add_mlir_library(MLIRShardingInterface
+add_mlir_upstream_library(MLIRShardingInterface
   ShardingInterface.cpp
 
   ADDITIONAL_HEADER_DIRS

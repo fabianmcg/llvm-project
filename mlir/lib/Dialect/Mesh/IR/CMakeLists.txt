@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMeshDialect
+add_mlir_dialect_upstream_library(MLIRMeshDialect
   MeshOps.cpp
 
   ADDITIONAL_HEADER_DIRS

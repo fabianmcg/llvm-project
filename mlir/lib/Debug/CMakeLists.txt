@@ -1,6 +1,6 @@
 add_subdirectory(Observers)
 
-add_mlir_library(MLIRDebug
+add_mlir_upstream_library(MLIRDebug
   CLOptionsSetup.cpp
   DebugCounter.cpp
   ExecutionContext.cpp

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRNVGPUUtils
+add_mlir_dialect_upstream_library(MLIRNVGPUUtils
   MMAUtils.cpp
 
   ADDITIONAL_HEADER_DIRS

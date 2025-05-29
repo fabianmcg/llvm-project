@@ -44,7 +44,7 @@ add_public_tablegen_target(MLIRTestOpsSyntaxIncGen)
 add_sharded_ops(TestOps 20)
 
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestDialect
+add_mlir_upstream_library(MLIRTestDialect
   TestAttributes.cpp
   TestDialect.cpp
   TestFormatUtils.cpp
@@ -96,7 +96,7 @@ mlir_target_link_libraries(MLIRTestDialect PUBLIC
   MLIRBufferizationDialect
 )
 
-add_mlir_translation_library(MLIRTestFromLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRTestFromLLVMIRTranslation
   TestFromLLVMIRTranslation.cpp
 
   EXCLUDE_FROM_LIBMLIR
@@ -113,7 +113,7 @@ add_mlir_translation_library(MLIRTestFromLLVMIRTranslation
   MLIRLLVMIRToLLVMTranslation
 )
 
-add_mlir_translation_library(MLIRTestToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRTestToLLVMIRTranslation
   TestToLLVMIRTranslation.cpp
 
   EXCLUDE_FROM_LIBMLIR

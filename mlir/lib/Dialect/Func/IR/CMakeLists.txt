@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRFuncDialect
+add_mlir_dialect_upstream_library(MLIRFuncDialect
   FuncOps.cpp
 
   ADDITIONAL_HEADER_DIRS

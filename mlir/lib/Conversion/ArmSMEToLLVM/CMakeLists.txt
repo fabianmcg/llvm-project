@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArmSMEToLLVM
+add_mlir_conversion_upstream_library(MLIRArmSMEToLLVM
   ArmSMEToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

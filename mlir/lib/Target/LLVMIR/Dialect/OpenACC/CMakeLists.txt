@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIROpenACCToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIROpenACCToLLVMIRTranslation
   OpenACCToLLVMIRTranslation.cpp
 
   LINK_COMPONENTS

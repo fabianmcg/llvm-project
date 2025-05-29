@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRLinalgTransformOps
+add_mlir_dialect_upstream_library(MLIRLinalgTransformOps
   DialectExtension.cpp
   GPUHeuristics.cpp
   LinalgMatchOps.cpp

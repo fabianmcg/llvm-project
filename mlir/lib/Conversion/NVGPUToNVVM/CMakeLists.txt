@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRNVGPUToNVVM
+add_mlir_conversion_upstream_library(MLIRNVGPUToNVVM
   NVGPUToNVVM.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_library(MLIRTransformDialectInterfaces
+add_mlir_upstream_library(MLIRTransformDialectInterfaces
   MatchInterfaces.cpp
   TransformInterfaces.cpp
 

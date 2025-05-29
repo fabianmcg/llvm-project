@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRPDLToPDLInterp
+add_mlir_conversion_upstream_library(MLIRPDLToPDLInterp
   PDLToPDLInterp.cpp
   Predicate.cpp
   PredicateTree.cpp

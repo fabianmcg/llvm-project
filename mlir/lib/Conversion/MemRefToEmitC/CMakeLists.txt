@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMemRefToEmitC
+add_mlir_conversion_upstream_library(MLIRMemRefToEmitC
   MemRefToEmitC.cpp
   MemRefToEmitCPass.cpp
 

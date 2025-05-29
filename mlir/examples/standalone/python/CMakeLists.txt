@@ -47,7 +47,7 @@ declare_mlir_python_extension(StandalonePythonSources.NanobindExtension
 # Common CAPI
 ################################################################################
 
-add_mlir_python_common_capi_library(StandalonePythonCAPI
+add_mlir_python_common_capi_upstream_library(StandalonePythonCAPI
   INSTALL_COMPONENT StandalonePythonModules
   INSTALL_DESTINATION python_packages/standalone/mlir_standalone/_mlir_libs
   OUTPUT_DIRECTORY "${MLIR_BINARY_DIR}/python_packages/standalone/mlir_standalone/_mlir_libs"

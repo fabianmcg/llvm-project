@@ -1,4 +1,4 @@
-add_mlir_dialect_library(
+add_mlir_dialect_upstream_library(
   MLIRPtrDialect
   PtrAttrs.cpp
   PtrTypes.cpp

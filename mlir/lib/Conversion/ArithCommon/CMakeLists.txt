@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArithAttrToLLVMConversion
+add_mlir_conversion_upstream_library(MLIRArithAttrToLLVMConversion
   AttrToLLVMConverter.cpp
 
   LINK_COMPONENTS

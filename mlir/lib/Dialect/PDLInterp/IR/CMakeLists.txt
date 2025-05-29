@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRPDLInterpDialect
+add_mlir_dialect_upstream_library(MLIRPDLInterpDialect
   PDLInterp.cpp
 
   ADDITIONAL_HEADER_DIRS

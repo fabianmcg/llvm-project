@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTosaToTensor
+add_mlir_conversion_upstream_library(MLIRTosaToTensor
   TosaToTensor.cpp
   TosaToTensorPass.cpp
 

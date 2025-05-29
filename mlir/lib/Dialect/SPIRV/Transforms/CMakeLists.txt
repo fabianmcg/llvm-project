@@ -9,7 +9,7 @@ set(LLVM_OPTIONAL_SOURCES
   UpdateVCEPass.cpp
 )
 
-add_mlir_dialect_library(MLIRSPIRVConversion
+add_mlir_dialect_upstream_library(MLIRSPIRVConversion
   SPIRVConversion.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -28,7 +28,7 @@ add_mlir_dialect_library(MLIRSPIRVConversion
   MLIRVectorTransforms
 )
 
-add_mlir_dialect_library(MLIRSPIRVTransforms
+add_mlir_dialect_upstream_library(MLIRSPIRVTransforms
   CanonicalizeGLPass.cpp
   DecorateCompositeTypeLayoutPass.cpp
   LowerABIAttributesPass.cpp

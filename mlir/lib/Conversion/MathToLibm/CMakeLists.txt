@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMathToLibm
+add_mlir_conversion_upstream_library(MLIRMathToLibm
   MathToLibm.cpp
 
   ADDITIONAL_HEADER_DIRS

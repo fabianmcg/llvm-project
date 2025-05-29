@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSCFUtils
+add_mlir_dialect_upstream_library(MLIRSCFUtils
   AffineCanonicalizationUtils.cpp
   Utils.cpp
 

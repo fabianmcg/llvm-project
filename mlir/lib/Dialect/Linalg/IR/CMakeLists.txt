@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRLinalgDialect
+add_mlir_dialect_upstream_library(MLIRLinalgDialect
   LinalgInterfaces.cpp
   LinalgOps.cpp
   LinalgDialect.cpp

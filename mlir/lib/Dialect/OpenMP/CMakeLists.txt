@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIROpenMPDialect
+add_mlir_dialect_upstream_library(MLIROpenMPDialect
   IR/OpenMPDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTosaToMLProgram
+add_mlir_conversion_upstream_library(MLIRTosaToMLProgram
   TosaToMLProgram.cpp
   TosaToMLProgramPass.cpp
 

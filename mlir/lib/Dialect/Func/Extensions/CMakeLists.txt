@@ -4,7 +4,7 @@ set(LLVM_OPTIONAL_SOURCES
   MeshShardingExtensions.cpp
   )
 
-add_mlir_extension_library(MLIRFuncInlinerExtension
+add_mlir_extension_upstream_library(MLIRFuncInlinerExtension
   InlinerExtension.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -17,7 +17,7 @@ add_mlir_extension_library(MLIRFuncInlinerExtension
   MLIRFuncDialect
   )
 
-add_mlir_extension_library(MLIRFuncMeshShardingExtensions
+add_mlir_extension_upstream_library(MLIRFuncMeshShardingExtensions
   MeshShardingExtensions.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -30,7 +30,7 @@ add_mlir_extension_library(MLIRFuncMeshShardingExtensions
   )
 
 
-add_mlir_extension_library(MLIRFuncAllExtensions
+add_mlir_extension_upstream_library(MLIRFuncAllExtensions
   AllExtensions.cpp
 
   ADDITIONAL_HEADER_DIRS

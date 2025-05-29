@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRIndexToLLVM
+add_mlir_conversion_upstream_library(MLIRIndexToLLVM
   IndexToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -2,7 +2,7 @@ set(LLVM_LINK_COMPONENTS
   lineeditor
   )
 
-add_mlir_library(MLIRQueryLib
+add_mlir_upstream_library(MLIRQueryLib
   MlirQueryMain.cpp
 
   ADDITIONAL_HEADER_DIRS

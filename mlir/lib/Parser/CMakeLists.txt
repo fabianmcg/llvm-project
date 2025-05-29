@@ -1,4 +1,4 @@
-add_mlir_library(MLIRParser
+add_mlir_upstream_library(MLIRParser
   Parser.cpp
 
   ADDITIONAL_HEADER_DIRS

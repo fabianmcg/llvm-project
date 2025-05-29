@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRROCDLToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRROCDLToLLVMIRTranslation
   ROCDLToLLVMIRTranslation.cpp
 
   DEPENDS

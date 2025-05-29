@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRPDLDialect
+add_mlir_dialect_upstream_library(MLIRPDLDialect
   PDL.cpp
   PDLTypes.cpp
 

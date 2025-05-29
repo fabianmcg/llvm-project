@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAffineUtils
+add_mlir_dialect_upstream_library(MLIRAffineUtils
   LoopFusionUtils.cpp
   LoopUtils.cpp
   Utils.cpp

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRQuantDialect
+add_mlir_dialect_upstream_library(MLIRQuantDialect
   QuantDialectBytecode.h
   QuantDialectBytecode.cpp
   QuantOps.cpp

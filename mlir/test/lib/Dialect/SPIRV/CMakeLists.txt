@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRSPIRVTestPasses
+add_mlir_upstream_library(MLIRSPIRVTestPasses
   TestAvailability.cpp
   TestEntryPointAbi.cpp
   TestModuleCombiner.cpp

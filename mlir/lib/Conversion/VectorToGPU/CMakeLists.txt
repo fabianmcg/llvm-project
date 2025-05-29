@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRVectorToGPU
+add_mlir_conversion_upstream_library(MLIRVectorToGPU
   VectorToGPU.cpp
 
   ADDITIONAL_HEADER_DIRS

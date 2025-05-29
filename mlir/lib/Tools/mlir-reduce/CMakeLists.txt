@@ -1,4 +1,4 @@
-add_mlir_library(MLIRReduceLib
+add_mlir_upstream_library(MLIRReduceLib
   MlirReduceMain.cpp
 
   LINK_LIBS PUBLIC

@@ -3,7 +3,7 @@ set(LLVM_OPTIONAL_SOURCES
   MeshShardingExtensions.cpp
   )
 
-add_mlir_extension_library(MLIRTensorMeshShardingExtensions
+add_mlir_extension_upstream_library(MLIRTensorMeshShardingExtensions
   MeshShardingExtensions.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -15,7 +15,7 @@ add_mlir_extension_library(MLIRTensorMeshShardingExtensions
   MLIRShardingInterface
   )
 
-add_mlir_extension_library(MLIRTensorAllExtensions
+add_mlir_extension_upstream_library(MLIRTensorAllExtensions
   AllExtensions.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -23,8 +23,8 @@ set(LLVM_OPTIONAL_SOURCES
   ViewLikeInterface.cpp
   )
 
-function(add_mlir_interface_library name)
-  add_mlir_library(MLIR${name}
+function(add_mlir_interface_upstream_library name)
+  add_mlir_upstream_library(MLIR${name}
     ${name}.cpp
 
     ADDITIONAL_HEADER_DIRS
@@ -36,18 +36,18 @@ function(add_mlir_interface_library name)
     LINK_LIBS PUBLIC
     MLIRIR
     )
-endfunction(add_mlir_interface_library)
+endfunction(add_mlir_interface_upstream_library)
 
 
-add_mlir_interface_library(CallInterfaces)
-add_mlir_interface_library(CastInterfaces)
-add_mlir_interface_library(ControlFlowInterfaces)
-add_mlir_interface_library(CopyOpInterface)
-add_mlir_interface_library(DataLayoutInterfaces)
-add_mlir_interface_library(DerivedAttributeOpInterface)
-add_mlir_interface_library(DestinationStyleOpInterface)
+add_mlir_interface_upstream_library(CallInterfaces)
+add_mlir_interface_upstream_library(CastInterfaces)
+add_mlir_interface_upstream_library(ControlFlowInterfaces)
+add_mlir_interface_upstream_library(CopyOpInterface)
+add_mlir_interface_upstream_library(DataLayoutInterfaces)
+add_mlir_interface_upstream_library(DerivedAttributeOpInterface)
+add_mlir_interface_upstream_library(DestinationStyleOpInterface)
 
-add_mlir_library(MLIRFunctionInterfaces
+add_mlir_upstream_library(MLIRFunctionInterfaces
   FunctionInterfaces.cpp
   FunctionImplementation.cpp
 
@@ -62,10 +62,10 @@ add_mlir_library(MLIRFunctionInterfaces
   MLIRIR
 )
 
-add_mlir_interface_library(InferIntRangeInterface)
-add_mlir_interface_library(InferTypeOpInterface)
+add_mlir_interface_upstream_library(InferIntRangeInterface)
+add_mlir_interface_upstream_library(InferTypeOpInterface)
 
-add_mlir_library(MLIRLoopLikeInterface
+add_mlir_upstream_library(MLIRLoopLikeInterface
   LoopLikeInterface.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -79,13 +79,13 @@ add_mlir_library(MLIRLoopLikeInterface
   MLIRFunctionInterfaces
 )
 
-add_mlir_interface_library(MemorySlotInterfaces)
-add_mlir_interface_library(ParallelCombiningOpInterface)
-add_mlir_interface_library(RuntimeVerifiableOpInterface)
-add_mlir_interface_library(ShapedOpInterfaces)
-add_mlir_interface_library(SideEffectInterfaces)
+add_mlir_interface_upstream_library(MemorySlotInterfaces)
+add_mlir_interface_upstream_library(ParallelCombiningOpInterface)
+add_mlir_interface_upstream_library(RuntimeVerifiableOpInterface)
+add_mlir_interface_upstream_library(ShapedOpInterfaces)
+add_mlir_interface_upstream_library(SideEffectInterfaces)
 
-add_mlir_library(MLIRSubsetOpInterface
+add_mlir_upstream_library(MLIRSubsetOpInterface
   SubsetOpInterface.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -102,7 +102,7 @@ add_mlir_library(MLIRSubsetOpInterface
   MLIRValueBoundsOpInterface
   )
 
-add_mlir_library(MLIRTilingInterface
+add_mlir_upstream_library(MLIRTilingInterface
   TilingInterface.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -116,10 +116,10 @@ add_mlir_library(MLIRTilingInterface
   MLIRIR
 )
 
-add_mlir_interface_library(VectorInterfaces)
-add_mlir_interface_library(ViewLikeInterface)
+add_mlir_interface_upstream_library(VectorInterfaces)
+add_mlir_interface_upstream_library(ViewLikeInterface)
 
-add_mlir_library(MLIRValueBoundsOpInterface
+add_mlir_upstream_library(MLIRValueBoundsOpInterface
   ValueBoundsOpInterface.cpp
 
   ADDITIONAL_HEADER_DIRS

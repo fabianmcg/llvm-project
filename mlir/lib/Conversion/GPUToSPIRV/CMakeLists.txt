@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRGPUToSPIRV
+add_mlir_conversion_upstream_library(MLIRGPUToSPIRV
   GPUToSPIRV.cpp
   GPUToSPIRVPass.cpp
   WmmaOpsToSPIRV.cpp

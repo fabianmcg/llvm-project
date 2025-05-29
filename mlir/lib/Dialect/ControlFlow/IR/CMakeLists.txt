@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRControlFlowDialect
+add_mlir_dialect_upstream_library(MLIRControlFlowDialect
   ControlFlowOps.cpp
 
   ADDITIONAL_HEADER_DIRS

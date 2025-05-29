@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSCFDialect
+add_mlir_dialect_upstream_library(MLIRSCFDialect
   SCF.cpp
   DeviceMappingInterface.cpp
   ValueBoundsOpInterfaceImpl.cpp

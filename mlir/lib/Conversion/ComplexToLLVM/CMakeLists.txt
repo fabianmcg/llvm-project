@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRComplexToLLVM
+add_mlir_conversion_upstream_library(MLIRComplexToLLVM
   ComplexToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

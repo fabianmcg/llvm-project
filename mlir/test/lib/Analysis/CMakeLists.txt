@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestAnalysis
+add_mlir_upstream_library(MLIRTestAnalysis
   TestAliasAnalysis.cpp
   TestCallGraph.cpp
   TestDataFlowFramework.cpp

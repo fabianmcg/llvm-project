@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTensorToLinalg
+add_mlir_conversion_upstream_library(MLIRTensorToLinalg
   TensorToLinalg.cpp
   TensorToLinalgPass.cpp
 

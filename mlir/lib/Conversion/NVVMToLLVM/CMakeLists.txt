@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRNVVMToLLVM
+add_mlir_conversion_upstream_library(MLIRNVVMToLLVM
   NVVMToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

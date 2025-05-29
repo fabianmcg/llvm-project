@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRBufferizationToMemRef
+add_mlir_conversion_upstream_library(MLIRBufferizationToMemRef
   BufferizationToMemRef.cpp
 
   ADDITIONAL_HEADER_DIRS

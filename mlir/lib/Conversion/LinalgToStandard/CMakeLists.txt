@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRLinalgToStandard
+add_mlir_conversion_upstream_library(MLIRLinalgToStandard
   LinalgToStandard.cpp
 
   ADDITIONAL_HEADER_DIRS

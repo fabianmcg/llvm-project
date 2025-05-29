@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTosaTransforms
+add_mlir_dialect_upstream_library(MLIRTosaTransforms
   TosaDecomposeTransposeConv.cpp
   TosaDecomposeDepthwise.cpp
   TosaFolders.cpp

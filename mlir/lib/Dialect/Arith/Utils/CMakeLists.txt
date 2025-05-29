@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArithUtils
+add_mlir_dialect_upstream_library(MLIRArithUtils
   Utils.cpp
 
   ADDITIONAL_HEADER_DIRS

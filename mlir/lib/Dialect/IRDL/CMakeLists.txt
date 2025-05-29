@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRIRDL
+add_mlir_dialect_upstream_library(MLIRIRDL
   IR/IRDL.cpp
   IR/IRDLOps.cpp
   IRDLLoading.cpp

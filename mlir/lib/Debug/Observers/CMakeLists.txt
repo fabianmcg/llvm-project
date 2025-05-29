@@ -1,4 +1,4 @@
-add_mlir_library(MLIRObservers
+add_mlir_upstream_library(MLIRObservers
   ActionLogging.cpp
   ActionProfiler.cpp
 

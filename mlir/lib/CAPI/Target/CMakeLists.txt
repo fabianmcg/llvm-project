@@ -1,4 +1,4 @@
-add_mlir_upstream_c_api_library(MLIRCAPITarget
+add_mlir_upstream_c_api_upstream_library(MLIRCAPITarget
   LLVMIR.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -14,7 +14,7 @@ add_mlir_upstream_c_api_library(MLIRCAPITarget
   MLIRSupport
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIExportSMTLIB
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIExportSMTLIB
   ExportSMTLIB.cpp
 
   PARTIAL_SOURCES_INTENDED

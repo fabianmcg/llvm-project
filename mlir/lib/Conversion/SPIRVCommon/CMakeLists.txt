@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSPIRVAttrToLLVMConversion
+add_mlir_conversion_upstream_library(MLIRSPIRVAttrToLLVMConversion
   AttrToLLVMConverter.cpp
 
   DEPENDS

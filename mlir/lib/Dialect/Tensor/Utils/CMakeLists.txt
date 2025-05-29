@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTensorUtils
+add_mlir_dialect_upstream_library(MLIRTensorUtils
   Utils.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_library(MLIRInferIntRangeCommon
+add_mlir_upstream_library(MLIRInferIntRangeCommon
     InferIntRangeCommon.cpp
 
     ADDITIONAL_HEADER_DIRS

@@ -479,7 +479,7 @@ endfunction()
 #     have an "obj.${name}" object library associated).
 function(add_mlir_python_common_capi_library name)
   cmake_parse_arguments(ARG
-    ""
+    "UPSTREAM_LIB"
     "INSTALL_COMPONENT;INSTALL_DESTINATION;OUTPUT_DIRECTORY;RELATIVE_INSTALL_ROOT"
     "DECLARED_HEADERS;DECLARED_SOURCES;EMBED_LIBS"
     ${ARGN})
@@ -494,10 +494,14 @@ function(add_mlir_python_common_capi_library name)
   endforeach()
   list(REMOVE_DUPLICATES _embed_libs)
 
+  _set_mlir_upstream_lib_tag(UPSTREAM_LIB_TAG ARG_UPSTREAM_LIB)
+
   # Generate the aggregate .so that everything depends on.
   add_mlir_aggregate(${name}
     SHARED
+    ${UPSTREAM_LIB_TAG}
     DISABLE_INSTALL
+    ${ARG_UNPARSED_ARGUMENTS}
     EMBED_LIBS ${_embed_libs}
   )
 
@@ -531,6 +535,11 @@ function(add_mlir_python_common_capi_library name)
     RUNTIME DESTINATION "${ARG_INSTALL_DESTINATION}"
   )
 endfunction()
+
+function(add_mlir_python_common_capi_upstream_library name)
+  add_mlir_python_common_capi_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_python_common_capi_upstream_library)
+
 
 function(_flatten_mlir_python_targets output_var)
   set(_flattened)

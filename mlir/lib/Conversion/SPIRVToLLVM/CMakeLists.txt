@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSPIRVToLLVM
+add_mlir_conversion_upstream_library(MLIRSPIRVToLLVM
   ConvertLaunchFuncToLLVMCalls.cpp
   SPIRVToLLVM.cpp
   SPIRVToLLVMPass.cpp

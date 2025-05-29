@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArmSMETransforms
+add_mlir_dialect_upstream_library(MLIRArmSMETransforms
   EnableArmStreaming.cpp
   OuterProductFusion.cpp
   TileAllocation.cpp

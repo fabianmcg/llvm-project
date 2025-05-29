@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRXeGPUTestPasses
+add_mlir_dialect_upstream_library(MLIRXeGPUTestPasses
   TestXeGPUTransforms.cpp
 
   EXCLUDE_FROM_LIBMLIR

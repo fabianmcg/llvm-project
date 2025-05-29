@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAsyncDialect
+add_mlir_dialect_upstream_library(MLIRAsyncDialect
   Async.cpp
 
   ADDITIONAL_HEADER_DIRS

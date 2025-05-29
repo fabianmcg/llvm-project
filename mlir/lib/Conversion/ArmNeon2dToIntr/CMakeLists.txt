@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArmNeon2dToIntr
+add_mlir_conversion_upstream_library(MLIRArmNeon2dToIntr
   ArmNeon2dToIntr.cpp
 
   ADDITIONAL_HEADER_DIRS

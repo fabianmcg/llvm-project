@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRAMDGPUToROCDL
+add_mlir_conversion_upstream_library(MLIRAMDGPUToROCDL
   AMDGPUToROCDL.cpp
 
   ADDITIONAL_HEADER_DIRS

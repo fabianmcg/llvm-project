@@ -1,6 +1,6 @@
 set(LLVM_OPTIONAL_SOURCES ByteCode.cpp)
 
-add_mlir_library(MLIRRewrite
+add_mlir_upstream_library(MLIRRewrite
   FrozenRewritePatternSet.cpp
   PatternApplicator.cpp
 
@@ -17,7 +17,7 @@ add_mlir_library(MLIRRewrite
   )
 
 if(MLIR_ENABLE_PDL_IN_PATTERNMATCH)
-  add_mlir_library(MLIRRewritePDL
+  add_mlir_upstream_library(MLIRRewritePDL
     ByteCode.cpp
 
     ADDITIONAL_HEADER_DIRS

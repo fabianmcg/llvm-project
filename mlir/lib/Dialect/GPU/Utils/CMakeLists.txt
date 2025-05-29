@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRGPUUtils
+add_mlir_dialect_upstream_library(MLIRGPUUtils
   Utils.cpp
   DistributionUtils.cpp
 

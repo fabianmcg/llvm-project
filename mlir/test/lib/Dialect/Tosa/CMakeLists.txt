@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTosaTestPasses
+add_mlir_dialect_upstream_library(MLIRTosaTestPasses
   TosaTestPasses.cpp
   TestAvailability.cpp
 

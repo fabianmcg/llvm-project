@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRLLVMTestPasses
+add_mlir_upstream_library(MLIRLLVMTestPasses
   TestLowerToLLVM.cpp
   TestPatterns.cpp
 

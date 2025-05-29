@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMemRefDialect
+add_mlir_dialect_upstream_library(MLIRMemRefDialect
   MemRefDialect.cpp
   MemRefMemorySlot.cpp
   MemRefOps.cpp

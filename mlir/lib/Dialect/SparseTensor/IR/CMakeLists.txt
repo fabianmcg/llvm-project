@@ -3,9 +3,9 @@
 # internals or else mlir_c_runner_utils will inherit that dependency.
 #
 # Because this is a header-only (`INTERFACE`) library, we cannot use
-# the `add_mlir_library` function.  So we do our best to replicate the
+# the `add_mlir_upstream_library` function.  So we do our best to replicate the
 # relevant portions below.  If doing so becomes too complicated, then
-# we should adjust the `add_mlir_library` function to also work for
+# we should adjust the `add_mlir_upstream_library` function to also work for
 # `INTERFACE` libraries.
 set(MLIRSparseTensorEnums_hdrs
     mlir/Dialect/SparseTensor/IR/Enums.h)
@@ -27,7 +27,7 @@ else()
   add_custom_target(MLIRSparseTensorEnums) # empty "phony" target
 endif()
 
-add_mlir_dialect_library(MLIRSparseTensorDialect
+add_mlir_dialect_upstream_library(MLIRSparseTensorDialect
   SparseTensorDialect.cpp
   SparseTensorInterfaces.cpp
   Detail/Var.cpp

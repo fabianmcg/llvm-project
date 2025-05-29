@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRReconcileUnrealizedCasts
+add_mlir_conversion_upstream_library(MLIRReconcileUnrealizedCasts
   ReconcileUnrealizedCasts.cpp
 
   ADDITIONAL_HEADER_DIRS

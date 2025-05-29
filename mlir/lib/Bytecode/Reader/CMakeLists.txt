@@ -1,4 +1,4 @@
-add_mlir_library(MLIRBytecodeReader
+add_mlir_upstream_library(MLIRBytecodeReader
   BytecodeReader.cpp
 
   ADDITIONAL_HEADER_DIRS

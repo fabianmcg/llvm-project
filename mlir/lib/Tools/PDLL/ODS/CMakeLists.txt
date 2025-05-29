@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPDLLODS
+add_mlir_upstream_library(MLIRPDLLODS
   Constraint.cpp
   Context.cpp
   Dialect.cpp

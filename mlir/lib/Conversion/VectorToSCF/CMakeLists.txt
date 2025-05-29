@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRVectorToSCF
+add_mlir_conversion_upstream_library(MLIRVectorToSCF
   VectorToSCF.cpp
 
   ADDITIONAL_HEADER_DIRS

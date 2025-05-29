@@ -1,4 +1,4 @@
-add_mlir_library(MLIRLoopLikeInterfaceTestPasses
+add_mlir_upstream_library(MLIRLoopLikeInterfaceTestPasses
   TestBlockInLoop.cpp
 
   EXCLUDE_FROM_LIBMLIR

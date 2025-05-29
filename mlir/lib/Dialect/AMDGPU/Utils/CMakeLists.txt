@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAMDGPUUtils
+add_mlir_dialect_upstream_library(MLIRAMDGPUUtils
   Chipset.cpp
 
   ADDITIONAL_HEADER_DIRS

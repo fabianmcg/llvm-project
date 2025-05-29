@@ -24,7 +24,7 @@ set(LLVM_OPTIONAL_SOURCES
 # Use a separate library for OptUtils, to avoid pulling in the entire JIT and
 # codegen infrastructure. Unlike MLIRExecutionEngine, this is part of
 # libMLIR.so.
-add_mlir_library(MLIRExecutionEngineUtils
+add_mlir_upstream_library(MLIRExecutionEngineUtils
   OptUtils.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -61,7 +61,7 @@ if(LLVM_USE_PERF)
       PerfJITEvents)
 endif(LLVM_USE_PERF)
 
-add_mlir_library(MLIRExecutionEngine
+add_mlir_upstream_library(MLIRExecutionEngine
   ExecutionEngine.cpp
 
   EXCLUDE_FROM_LIBMLIR
@@ -106,7 +106,7 @@ if(LLVM_BUILD_LLVM_DYLIB AND NOT (WIN32 OR MINGW OR CYGWIN)) # Does not build on
   # Build a shared library for the execution engine. Some downstream projects
   # use this library to build their own CPU runners while preserving dynamic
   # linkage.
-  add_mlir_library(MLIRExecutionEngineShared
+  add_mlir_upstream_library(MLIRExecutionEngineShared
     ExecutionEngine.cpp
     SHARED
 
@@ -126,7 +126,7 @@ if(LLVM_BUILD_LLVM_DYLIB AND NOT (WIN32 OR MINGW OR CYGWIN)) # Does not build on
 endif()
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-add_mlir_library(MLIRJitRunner
+add_mlir_upstream_library(MLIRJitRunner
   JitRunner.cpp
 
   EXCLUDE_FROM_LIBMLIR
@@ -157,7 +157,7 @@ mlir_target_link_libraries(MLIRJitRunner PUBLIC
 # When -fPIC is not provided, shared libraries cannot be built if it links against
 # non-PIC code.
 if(LLVM_ENABLE_PIC)
-  add_mlir_library(mlir_float16_utils
+  add_mlir_upstream_library(mlir_float16_utils
     SHARED
     Float16bits.cpp
 
@@ -168,7 +168,7 @@ if(LLVM_ENABLE_PIC)
 
   add_subdirectory(SparseTensor)
 
-  add_mlir_library(mlir_c_runner_utils
+  add_mlir_upstream_library(mlir_c_runner_utils
     SHARED
     CRunnerUtils.cpp
     SparseTensorRuntime.cpp
@@ -183,7 +183,7 @@ if(LLVM_ENABLE_PIC)
   set_property(TARGET mlir_c_runner_utils PROPERTY CXX_STANDARD 17)
   target_compile_definitions(mlir_c_runner_utils PRIVATE mlir_c_runner_utils_EXPORTS)
 
-  add_mlir_library(mlir_runner_utils
+  add_mlir_upstream_library(mlir_runner_utils
     SHARED
     RunnerUtils.cpp
 
@@ -194,7 +194,7 @@ if(LLVM_ENABLE_PIC)
   )
   target_compile_definitions(mlir_runner_utils PRIVATE mlir_runner_utils_EXPORTS)
 
-  add_mlir_library(mlir_async_runtime
+  add_mlir_upstream_library(mlir_async_runtime
     SHARED
     AsyncRuntime.cpp
 
@@ -212,12 +212,12 @@ if(LLVM_ENABLE_PIC)
     target_link_options(mlir_async_runtime PRIVATE "-Wl,-exclude-libs,ALL")
   endif()
 
-  add_mlir_library(mlir_arm_sme_abi_stubs
+  add_mlir_upstream_library(mlir_arm_sme_abi_stubs
     SHARED
     ArmSMEStubs.cpp)
   target_compile_definitions(mlir_arm_sme_abi_stubs PRIVATE mlir_arm_sme_abi_stubs_EXPORTS)
 
-  add_mlir_library(mlir_arm_runner_utils
+  add_mlir_upstream_library(mlir_arm_runner_utils
     SHARED
     ArmRunnerUtils.cpp)
 
@@ -236,7 +236,7 @@ if(LLVM_ENABLE_PIC)
     # We need the libcuda.so library.
     find_library(CUDA_RUNTIME_LIBRARY cuda HINTS ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES} REQUIRED)
 
-    add_mlir_library(mlir_cuda_runtime
+    add_mlir_upstream_library(mlir_cuda_runtime
       SHARED
       CudaRuntimeWrappers.cpp
 
@@ -332,7 +332,7 @@ if(LLVM_ENABLE_PIC)
       endif()
     endif()
 
-    add_mlir_library(mlir_rocm_runtime
+    add_mlir_upstream_library(mlir_rocm_runtime
       SHARED
       RocmRuntimeWrappers.cpp
 
@@ -387,7 +387,7 @@ if(LLVM_ENABLE_PIC)
       message(FATAL_ERROR "LevelZero not found. Please set LEVEL_ZERO_DIR.")
     endif()
 
-    add_mlir_library(mlir_sycl_runtime
+    add_mlir_upstream_library(mlir_sycl_runtime
       SHARED
       SyclRuntimeWrappers.cpp
 
@@ -410,7 +410,7 @@ if(LLVM_ENABLE_PIC)
   endif()
 
   if(MLIR_ENABLE_SPIRV_CPU_RUNNER)
-    add_mlir_library(mlir_spirv_cpu_runtime
+    add_mlir_upstream_library(mlir_spirv_cpu_runtime
       SHARED
       SpirvCpuRuntimeWrappers.cpp
 

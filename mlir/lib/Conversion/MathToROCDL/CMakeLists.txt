@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMathToROCDL
+add_mlir_conversion_upstream_library(MLIRMathToROCDL
   MathToROCDL.cpp
 
   ADDITIONAL_HEADER_DIRS

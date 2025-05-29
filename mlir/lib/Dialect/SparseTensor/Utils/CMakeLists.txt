@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSparseTensorUtils
+add_mlir_dialect_upstream_library(MLIRSparseTensorUtils
   Merger.cpp
 
   ADDITIONAL_HEADER_DIRS

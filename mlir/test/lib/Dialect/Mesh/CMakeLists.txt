@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRMeshTest
+add_mlir_upstream_library(MLIRMeshTest
   TestOpLowering.cpp
   TestReshardingSpmdization.cpp
   TestSimplifications.cpp

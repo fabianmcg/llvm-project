@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRArmNeonToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRArmNeonToLLVMIRTranslation
   ArmNeonToLLVMIRTranslation.cpp
 
   DEPENDS

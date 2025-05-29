@@ -9,7 +9,7 @@ set(LLVM_TARGET_DEFINITIONS ArithCanonicalization.td)
 mlir_tablegen(ArithCanonicalization.inc -gen-rewriters)
 add_public_tablegen_target(MLIRArithCanonicalizationIncGen)
 
-add_mlir_dialect_library(MLIRArithDialect
+add_mlir_dialect_upstream_library(MLIRArithDialect
   ArithOps.cpp
   ArithDialect.cpp
   InferIntRangeInterfaceImpls.cpp
@@ -31,7 +31,7 @@ add_mlir_dialect_library(MLIRArithDialect
   MLIRUBDialect
   )
 
-add_mlir_dialect_library(MLIRArithValueBoundsOpInterfaceImpl
+add_mlir_dialect_upstream_library(MLIRArithValueBoundsOpInterfaceImpl
   ValueBoundsOpInterfaceImpl.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArithToArmSME
+add_mlir_conversion_upstream_library(MLIRArithToArmSME
   ArithToArmSME.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -88,7 +88,7 @@ set(LIBS
 
 # Exclude from libMLIR.so because this has static options intended for
 # opt-like tools only.
-add_mlir_library(MLIRMlirOptMain
+add_mlir_upstream_library(MLIRMlirOptMain
   mlir-opt.cpp
 
   EXCLUDE_FROM_LIBMLIR

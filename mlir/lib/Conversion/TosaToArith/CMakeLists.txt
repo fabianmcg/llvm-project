@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTosaToArith
+add_mlir_conversion_upstream_library(MLIRTosaToArith
   TosaToArith.cpp
   TosaToArithPass.cpp
 

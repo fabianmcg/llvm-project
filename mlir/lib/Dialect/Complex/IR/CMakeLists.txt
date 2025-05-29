@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRComplexDialect
+add_mlir_dialect_upstream_library(MLIRComplexDialect
   ComplexOps.cpp
   ComplexDialect.cpp
 

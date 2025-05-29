@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMemRefToSPIRV
+add_mlir_conversion_upstream_library(MLIRMemRefToSPIRV
   MapMemRefStorageClassPass.cpp
   MemRefToSPIRV.cpp
   MemRefToSPIRVPass.cpp

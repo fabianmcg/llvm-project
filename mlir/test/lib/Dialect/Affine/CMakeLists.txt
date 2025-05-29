@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRAffineTransformsTestPasses
+add_mlir_upstream_library(MLIRAffineTransformsTestPasses
   TestAffineDataCopy.cpp
   TestAffineLoopUnswitching.cpp
   TestAffineLoopParametricTiling.cpp

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArmSVEDialect
+add_mlir_dialect_upstream_library(MLIRArmSVEDialect
   ArmSVEDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

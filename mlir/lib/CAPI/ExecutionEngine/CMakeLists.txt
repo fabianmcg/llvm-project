@@ -6,7 +6,7 @@ set(LLVM_LINK_COMPONENTS
 )
 
 # Main API shared library.
-add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIExecutionEngine
   ExecutionEngine.cpp
 
   LINK_LIBS PUBLIC

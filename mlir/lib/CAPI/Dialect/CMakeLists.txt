@@ -1,4 +1,4 @@
-add_mlir_upstream_c_api_library(MLIRCAPIAMDGPU
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIAMDGPU
   AMDGPU.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -7,7 +7,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIAMDGPU
   MLIRAMDGPUDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIArith
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIArith
   Arith.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -16,7 +16,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIArith
   MLIRArithDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIAsync
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIAsync
   Async.cpp
   AsyncPasses.cpp
 
@@ -31,7 +31,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIAsync
   MLIRPass
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIControlFlow
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIControlFlow
   ControlFlow.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -40,7 +40,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIControlFlow
   MLIRControlFlowDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIEmitC
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIEmitC
   EmitC.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -49,7 +49,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIEmitC
   MLIREmitCDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIMath
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIMath
   Math.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -58,7 +58,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIMath
   MLIRMathDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIMemRef
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIMemRef
   MemRef.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -67,7 +67,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIMemRef
   MLIRMemRefDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIGPU
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIGPU
   GPU.cpp
   GPUPasses.cpp
 
@@ -81,7 +81,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIGPU
   MLIRPass
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIIndex
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIIndex
   Index.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -90,7 +90,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIIndex
   MLIRIndexDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIIRDL
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIIRDL
   IRDL.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -99,7 +99,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIIRDL
   MLIRIRDL
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPILLVM
+add_mlir_upstream_c_api_upstream_library(MLIRCAPILLVM
   LLVM.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -108,7 +108,7 @@ add_mlir_upstream_c_api_library(MLIRCAPILLVM
   MLIRLLVMDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPILinalg
+add_mlir_upstream_c_api_upstream_library(MLIRCAPILinalg
   Linalg.cpp
   LinalgPasses.cpp
 
@@ -123,7 +123,7 @@ add_mlir_upstream_c_api_library(MLIRCAPILinalg
   MLIRLinalgTransforms
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIMLProgram
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIMLProgram
   MLProgram.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -132,7 +132,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIMLProgram
   MLIRMLProgramDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPINVGPU
+add_mlir_upstream_c_api_upstream_library(MLIRCAPINVGPU
   NVGPU.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -141,7 +141,7 @@ add_mlir_upstream_c_api_library(MLIRCAPINVGPU
   MLIRNVGPUDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPINVVM
+add_mlir_upstream_c_api_upstream_library(MLIRCAPINVVM
   NVVM.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -150,7 +150,7 @@ add_mlir_upstream_c_api_library(MLIRCAPINVVM
   MLIRNVVMDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIROCDL
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIROCDL
   ROCDL.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -160,7 +160,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIROCDL
 )
 
 
-add_mlir_upstream_c_api_library(MLIRCAPISCF
+add_mlir_upstream_c_api_upstream_library(MLIRCAPISCF
   SCF.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -169,7 +169,7 @@ add_mlir_upstream_c_api_library(MLIRCAPISCF
   MLIRSCFDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIShape
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIShape
   Shape.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -178,7 +178,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIShape
   MLIRShapeDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPISparseTensor
+add_mlir_upstream_c_api_upstream_library(MLIRCAPISparseTensor
   SparseTensor.cpp
   SparseTensorPasses.cpp
 
@@ -189,7 +189,7 @@ add_mlir_upstream_c_api_library(MLIRCAPISparseTensor
   MLIRSparseTensorTransforms
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIFunc
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIFunc
   Func.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -198,7 +198,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIFunc
   MLIRFuncDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPISPIRV
+add_mlir_upstream_c_api_upstream_library(MLIRCAPISPIRV
   SPIRV.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -207,7 +207,7 @@ add_mlir_upstream_c_api_library(MLIRCAPISPIRV
   MLIRSPIRVDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPITensor
+add_mlir_upstream_c_api_upstream_library(MLIRCAPITensor
   Tensor.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -216,7 +216,7 @@ add_mlir_upstream_c_api_library(MLIRCAPITensor
   MLIRTensorDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPITransformDialect
+add_mlir_upstream_c_api_upstream_library(MLIRCAPITransformDialect
   Transform.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -225,7 +225,7 @@ add_mlir_upstream_c_api_library(MLIRCAPITransformDialect
   MLIRTransformDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPITransformDialectTransforms
+add_mlir_upstream_c_api_upstream_library(MLIRCAPITransformDialectTransforms
   TransformInterpreter.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -234,7 +234,7 @@ add_mlir_upstream_c_api_library(MLIRCAPITransformDialectTransforms
   MLIRTransformDialectTransforms
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIQuant
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIQuant
   Quant.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -243,7 +243,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIQuant
   MLIRQuantDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIOpenMP
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIOpenMP
   OpenMP.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -252,7 +252,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIOpenMP
   MLIROpenMPDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIPDL
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIPDL
   PDL.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -261,7 +261,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIPDL
   MLIRPDLDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPIVector
+add_mlir_upstream_c_api_upstream_library(MLIRCAPIVector
   Vector.cpp
 
   PARTIAL_SOURCES_INTENDED
@@ -270,7 +270,7 @@ add_mlir_upstream_c_api_library(MLIRCAPIVector
   MLIRVectorDialect
 )
 
-add_mlir_upstream_c_api_library(MLIRCAPISMT
+add_mlir_upstream_c_api_upstream_library(MLIRCAPISMT
   SMT.cpp
 
   PARTIAL_SOURCES_INTENDED

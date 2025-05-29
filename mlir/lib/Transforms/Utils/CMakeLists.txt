@@ -1,4 +1,4 @@
-add_mlir_library(MLIRTransformUtils
+add_mlir_upstream_library(MLIRTransformUtils
   CFGToSCF.cpp
   CommutativityUtils.cpp
   ControlFlowSinkUtils.cpp

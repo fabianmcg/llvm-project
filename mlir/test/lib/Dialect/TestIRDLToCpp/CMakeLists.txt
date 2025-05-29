@@ -1,6 +1,6 @@
 add_irdl_to_cpp_target(TestIRDLToCppGen test_irdl_to_cpp.irdl.mlir)
 
-add_mlir_library(MLIRTestIRDLToCppDialect
+add_mlir_upstream_library(MLIRTestIRDLToCppDialect
   TestIRDLToCppDialect.cpp
 
   EXCLUDE_FROM_LIBMLIR

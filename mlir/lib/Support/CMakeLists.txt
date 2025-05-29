@@ -7,7 +7,7 @@ set(LLVM_OPTIONAL_SOURCES
   TypeID.cpp
 )
 
-add_mlir_library(MLIRSupport
+add_mlir_upstream_library(MLIRSupport
   FileUtilities.cpp
   InterfaceSupport.cpp
   RawOstreamExtras.cpp

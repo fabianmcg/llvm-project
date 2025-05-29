@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArmNeonTransforms
+add_mlir_dialect_upstream_library(MLIRArmNeonTransforms
   LowerContractionToSMMLAPattern.cpp
 
   DEPENDS

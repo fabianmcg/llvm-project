@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArithToSPIRV
+add_mlir_conversion_upstream_library(MLIRArithToSPIRV
   ArithToSPIRV.cpp
 
   ADDITIONAL_HEADER_DIRS

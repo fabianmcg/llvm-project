@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTosaToLinalg
+add_mlir_conversion_upstream_library(MLIRTosaToLinalg
   TosaToLinalg.cpp
   TosaToLinalgNamed.cpp
   TosaToLinalgNamedPass.cpp

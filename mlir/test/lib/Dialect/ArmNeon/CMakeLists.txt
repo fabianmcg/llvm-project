@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRArmNeonTestPasses
+add_mlir_upstream_library(MLIRArmNeonTestPasses
   TestLowerToArmNeon.cpp
 
   EXCLUDE_FROM_LIBMLIR

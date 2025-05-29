@@ -1,4 +1,4 @@
-add_mlir_library(MLIRQueryMatcher
+add_mlir_upstream_library(MLIRQueryMatcher
   MatchFinder.cpp
   Parser.cpp
   RegistryManager.cpp

@@ -3,7 +3,7 @@ set(LLVM_OPTIONAL_SOURCES
   LLVMToLLVMIRTranslation.cpp
   )
 
-add_mlir_translation_library(MLIRLLVMIRToLLVMTranslation
+add_mlir_translation_upstream_library(MLIRLLVMIRToLLVMTranslation
   LLVMIRToLLVMTranslation.cpp
 
   LINK_COMPONENTS
@@ -16,7 +16,7 @@ add_mlir_translation_library(MLIRLLVMIRToLLVMTranslation
   MLIRTargetLLVMIRImport
   )
 
-add_mlir_translation_library(MLIRLLVMToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRLLVMToLLVMIRTranslation
   LLVMToLLVMIRTranslation.cpp
 
   LINK_COMPONENTS

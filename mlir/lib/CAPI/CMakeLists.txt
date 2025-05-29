@@ -2,8 +2,8 @@
 # property via a custom wrapper function. This is then used to create an
 # aggregate below.
 set_property(GLOBAL APPEND PROPERTY MLIR_CAPI_LIBS)
-function(add_mlir_upstream_c_api_library name)
-  add_mlir_public_c_api_library(${name} ${ARGN})
+function(add_mlir_upstream_c_api_upstream_library name)
+  add_mlir_public_c_api_upstream_library(${name} ${ARGN})
   set_property(GLOBAL APPEND PROPERTY MLIR_CAPI_LIBS ${name})
 endfunction()
 
@@ -24,7 +24,7 @@ endif()
 if(MLIR_BUILD_MLIR_C_DYLIB)
   message(STATUS "Building MLIR-C dylib")
   get_property(_capi_libraries GLOBAL PROPERTY MLIR_CAPI_LIBS)
-  add_mlir_aggregate(MLIR-C
+  add_mlir_upstream_aggregate(MLIR-C
     SHARED
     EMBED_LIBS
       ${_capi_libraries}

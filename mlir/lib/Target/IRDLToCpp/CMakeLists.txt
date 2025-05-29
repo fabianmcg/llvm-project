@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRTargetIRDLToCpp
+add_mlir_translation_upstream_library(MLIRTargetIRDLToCpp
   TranslationRegistration.cpp
   IRDLToCpp.cpp
   Templates/DialectDecl.txt

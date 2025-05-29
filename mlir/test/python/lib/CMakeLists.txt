@@ -5,7 +5,7 @@ set(LLVM_OPTIONAL_SOURCES
   PythonTestModuleNanobind.cpp
 )
 
-add_mlir_library(MLIRPythonTestDialect
+add_mlir_upstream_library(MLIRPythonTestDialect
   PythonTestDialect.cpp
 
   EXCLUDE_FROM_LIBMLIR
@@ -19,7 +19,7 @@ mlir_target_link_libraries(MLIRPythonTestDialect PUBLIC
   MLIRSupport
 )
 
-add_mlir_public_c_api_library(MLIRCAPIPythonTestDialect
+add_mlir_public_c_api_upstream_library(MLIRCAPIPythonTestDialect
   PythonTestCAPI.cpp
 
   DEPENDS

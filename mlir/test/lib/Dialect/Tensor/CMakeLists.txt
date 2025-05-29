@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTensorTestPasses
+add_mlir_upstream_library(MLIRTensorTestPasses
   TestTensorTransforms.cpp
 
   EXCLUDE_FROM_LIBMLIR

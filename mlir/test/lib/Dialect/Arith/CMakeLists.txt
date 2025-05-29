@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRArithTestPasses
+add_mlir_upstream_library(MLIRArithTestPasses
   TestEmulateWideInt.cpp
 
   EXCLUDE_FROM_LIBMLIR

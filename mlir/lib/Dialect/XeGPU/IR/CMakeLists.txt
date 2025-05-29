@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRXeGPUDialect
+add_mlir_dialect_upstream_library(MLIRXeGPUDialect
   XeGPUDialect.cpp
   XeGPUOps.cpp
 

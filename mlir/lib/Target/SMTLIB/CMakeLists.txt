@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRExportSMTLIB
+add_mlir_translation_upstream_library(MLIRExportSMTLIB
   ExportSMTLIB.cpp
 
   LINK_COMPONENTS

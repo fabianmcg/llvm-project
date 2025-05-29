@@ -1,4 +1,4 @@
-# Outside examples, this should be `add_mlir_library`.
+# Outside examples, this should be `add_mlir_upstream_library`.
 add_mlir_example_library(
   # Library called MyExtension.
   MyExtensionCh4

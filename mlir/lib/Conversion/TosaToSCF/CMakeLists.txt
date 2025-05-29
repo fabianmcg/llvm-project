@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTosaToSCF
+add_mlir_conversion_upstream_library(MLIRTosaToSCF
   TosaToSCF.cpp
   TosaToSCFPass.cpp
 

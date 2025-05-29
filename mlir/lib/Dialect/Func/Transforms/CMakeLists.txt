@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRFuncTransforms
+add_mlir_dialect_upstream_library(MLIRFuncTransforms
   DuplicateFunctionElimination.cpp
   FuncConversions.cpp
 

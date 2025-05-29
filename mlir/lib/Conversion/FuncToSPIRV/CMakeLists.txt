@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRFuncToSPIRV
+add_mlir_conversion_upstream_library(MLIRFuncToSPIRV
   FuncToSPIRV.cpp
   FuncToSPIRVPass.cpp
 

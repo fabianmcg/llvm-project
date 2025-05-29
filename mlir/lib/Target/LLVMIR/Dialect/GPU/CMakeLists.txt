@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRGPUToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRGPUToLLVMIRTranslation
   GPUToLLVMIRTranslation.cpp
   SelectObjectAttr.cpp
 

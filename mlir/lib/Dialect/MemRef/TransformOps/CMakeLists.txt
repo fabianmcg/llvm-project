@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMemRefTransformOps
+add_mlir_dialect_upstream_library(MLIRMemRefTransformOps
   MemRefTransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

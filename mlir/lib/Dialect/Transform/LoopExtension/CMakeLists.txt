@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformLoopExtension
+add_mlir_dialect_upstream_library(MLIRTransformLoopExtension
   LoopExtension.cpp
   LoopExtensionOps.cpp
 

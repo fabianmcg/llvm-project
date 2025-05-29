@@ -6,7 +6,7 @@ set(LLVM_OPTIONAL_SOURCES
   ValueBoundsOpInterfaceImpl.cpp
 )
 
-add_mlir_dialect_library(MLIRTensorDialect
+add_mlir_dialect_upstream_library(MLIRTensorDialect
   TensorDialect.cpp
   TensorOps.cpp
   ValueBoundsOpInterfaceImpl.cpp
@@ -37,7 +37,7 @@ add_mlir_dialect_library(MLIRTensorDialect
   MLIRViewLikeInterface
   )
 
-add_mlir_dialect_library(MLIRTensorInferTypeOpInterfaceImpl
+add_mlir_dialect_upstream_library(MLIRTensorInferTypeOpInterfaceImpl
   TensorInferTypeOpInterfaceImpl.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -51,7 +51,7 @@ add_mlir_dialect_library(MLIRTensorInferTypeOpInterfaceImpl
   MLIRTensorDialect
   )
 
-add_mlir_dialect_library(MLIRTensorTilingInterfaceImpl
+add_mlir_dialect_upstream_library(MLIRTensorTilingInterfaceImpl
   TensorTilingInterfaceImpl.cpp
 
   ADDITIONAL_HEADER_DIRS

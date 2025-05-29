@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMathTransforms
+add_mlir_dialect_upstream_library(MLIRMathTransforms
   AlgebraicSimplification.cpp
   ExpandPatterns.cpp
   ExtendToSupportedTypes.cpp

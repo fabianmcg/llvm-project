@@ -3,8 +3,8 @@ set(LLVM_OPTIONAL_SOURCES
   MaskingOpInterface.cpp
   )
 
-function(add_mlir_interface_library name)
-  add_mlir_library(MLIR${name}
+function(add_mlir_interface_upstream_library name)
+  add_mlir_upstream_library(MLIR${name}
     ${name}.cpp
 
     ADDITIONAL_HEADER_DIRS
@@ -16,7 +16,7 @@ function(add_mlir_interface_library name)
     LINK_LIBS PUBLIC
     MLIRIR
     )
-endfunction(add_mlir_interface_library)
+endfunction(add_mlir_interface_upstream_library)
 
-add_mlir_interface_library(MaskableOpInterface)
-add_mlir_interface_library(MaskingOpInterface)
+add_mlir_interface_upstream_library(MaskableOpInterface)
+add_mlir_interface_upstream_library(MaskingOpInterface)

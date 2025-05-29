@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArmSMEDialect
+add_mlir_dialect_upstream_library(MLIRArmSMEDialect
   ArmSME.cpp
   Utils.cpp
 

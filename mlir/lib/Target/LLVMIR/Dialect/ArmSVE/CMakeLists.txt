@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRArmSVEToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRArmSVEToLLVMIRTranslation
   ArmSVEToLLVMIRTranslation.cpp
 
   DEPENDS

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRVectorTransforms
+add_mlir_dialect_upstream_library(MLIRVectorTransforms
   BufferizableOpInterfaceImpl.cpp
   LowerVectorBitCast.cpp
   LowerVectorBroadcast.cpp

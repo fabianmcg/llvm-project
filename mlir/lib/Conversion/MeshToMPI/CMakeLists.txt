@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMeshToMPI
+add_mlir_conversion_upstream_library(MLIRMeshToMPI
   MeshToMPI.cpp
 
   ADDITIONAL_HEADER_DIRS

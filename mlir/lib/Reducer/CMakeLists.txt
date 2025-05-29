@@ -1,4 +1,4 @@
-add_mlir_library(MLIRReduce
+add_mlir_upstream_library(MLIRReduce
    OptReductionPass.cpp
    ReductionNode.cpp
    ReductionTreePass.cpp

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRControlFlowToSPIRV
+add_mlir_conversion_upstream_library(MLIRControlFlowToSPIRV
   ControlFlowToSPIRV.cpp
   ControlFlowToSPIRVPass.cpp
 

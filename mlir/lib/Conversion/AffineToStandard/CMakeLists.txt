@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRAffineToStandard
+add_mlir_conversion_upstream_library(MLIRAffineToStandard
   AffineToStandard.cpp
 
   ADDITIONAL_HEADER_DIRS

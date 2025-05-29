@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTestDynDialect
+add_mlir_dialect_upstream_library(MLIRTestDynDialect
   TestDynDialect.cpp
 
   EXCLUDE_FROM_LIBMLIR

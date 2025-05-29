@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRFuncToLLVM
+add_mlir_conversion_upstream_library(MLIRFuncToLLVM
   FuncToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

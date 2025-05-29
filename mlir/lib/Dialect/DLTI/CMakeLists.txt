@@ -1,5 +1,5 @@
 add_subdirectory(TransformOps)
-add_mlir_dialect_library(MLIRDLTIDialect
+add_mlir_dialect_upstream_library(MLIRDLTIDialect
   DLTI.cpp
   Traits.cpp
 

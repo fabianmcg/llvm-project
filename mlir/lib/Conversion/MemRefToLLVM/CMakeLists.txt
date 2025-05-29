@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMemRefToLLVM
+add_mlir_conversion_upstream_library(MLIRMemRefToLLVM
   MemRefToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

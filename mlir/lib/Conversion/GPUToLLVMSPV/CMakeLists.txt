@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRGPUToLLVMSPV
+add_mlir_conversion_upstream_library(MLIRGPUToLLVMSPV
   GPUToLLVMSPV.cpp
 
   DEPENDS

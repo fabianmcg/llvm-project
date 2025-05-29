@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSCFToGPU
+add_mlir_conversion_upstream_library(MLIRSCFToGPU
   SCFToGPU.cpp
   SCFToGPUPass.cpp
 

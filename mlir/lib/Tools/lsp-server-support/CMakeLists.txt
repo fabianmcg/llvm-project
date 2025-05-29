@@ -1,4 +1,4 @@
-add_mlir_library(MLIRLspServerSupportLib
+add_mlir_upstream_library(MLIRLspServerSupportLib
   CompilationDatabase.cpp
   Logging.cpp
   Protocol.cpp

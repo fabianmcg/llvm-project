@@ -5,7 +5,7 @@
 # therefore it cannot be safely/correctly used across DLL boundaries.
 # Consequently, we avoid using the "mlir_xxx_utils" naming scheme, since
 # that is reserved/intended for shared libraries only.
-add_mlir_library(MLIRSparseTensorRuntime
+add_mlir_upstream_library(MLIRSparseTensorRuntime
   File.cpp
   MapRef.cpp
   Storage.cpp

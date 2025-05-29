@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRShapeOpsTransforms
+add_mlir_dialect_upstream_library(MLIRShapeOpsTransforms
   BufferizableOpInterfaceImpl.cpp
   OutlineShapeComputation.cpp
   RemoveShapeConstraints.cpp

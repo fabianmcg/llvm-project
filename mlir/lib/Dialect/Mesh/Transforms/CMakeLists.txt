@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMeshTransforms
+add_mlir_dialect_upstream_library(MLIRMeshTransforms
   Simplifications.cpp
   ShardingPropagation.cpp
   Spmdization.cpp

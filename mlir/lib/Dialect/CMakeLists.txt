@@ -48,7 +48,7 @@ set(LLVM_OPTIONAL_SOURCES
   Traits.cpp
 )
 
-add_mlir_library(MLIRDialect
+add_mlir_upstream_library(MLIRDialect
   Traits.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRVectorUtils
+add_mlir_dialect_upstream_library(MLIRVectorUtils
   VectorUtils.cpp
 
   ADDITIONAL_HEADER_DIRS

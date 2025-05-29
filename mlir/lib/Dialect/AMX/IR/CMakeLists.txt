@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAMXDialect
+add_mlir_dialect_upstream_library(MLIRAMXDialect
   AMXDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

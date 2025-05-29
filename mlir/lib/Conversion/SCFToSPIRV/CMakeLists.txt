@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSCFToSPIRV
+add_mlir_conversion_upstream_library(MLIRSCFToSPIRV
   SCFToSPIRV.cpp
   SCFToSPIRVPass.cpp
 

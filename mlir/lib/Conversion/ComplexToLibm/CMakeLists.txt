@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRComplexToLibm
+add_mlir_conversion_upstream_library(MLIRComplexToLibm
   ComplexToLibm.cpp
 
   ADDITIONAL_HEADER_DIRS

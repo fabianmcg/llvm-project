@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMathToEmitC
+add_mlir_conversion_upstream_library(MLIRMathToEmitC
   MathToEmitC.cpp
   MathToEmitCPass.cpp
 

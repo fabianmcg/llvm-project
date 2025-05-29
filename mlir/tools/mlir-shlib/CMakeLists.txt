@@ -31,7 +31,7 @@ if(MLIR_LINK_MLIR_DYLIB)
 endif()
 
 if(LLVM_BUILD_LLVM_DYLIB)
-  add_mlir_library(
+  add_mlir_upstream_library(
     MLIR
     SHARED
     EXCLUDE_FROM_LIBMLIR

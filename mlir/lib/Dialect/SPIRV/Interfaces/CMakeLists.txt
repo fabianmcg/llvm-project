@@ -1,4 +1,4 @@
-add_mlir_library(MLIRSPIRVImageInterfaces
+add_mlir_upstream_library(MLIRSPIRVImageInterfaces
   SPIRVImageInterfaces.cpp
 
   ADDITIONAL_HEADER_DIRS

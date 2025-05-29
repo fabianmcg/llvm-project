@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformDebugExtension
+add_mlir_dialect_upstream_library(MLIRTransformDebugExtension
   DebugExtension.cpp
   DebugExtensionOps.cpp
 

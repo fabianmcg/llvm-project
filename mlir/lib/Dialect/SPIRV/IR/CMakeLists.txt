@@ -2,7 +2,7 @@ set(LLVM_TARGET_DEFINITIONS SPIRVCanonicalization.td)
 mlir_tablegen(SPIRVCanonicalization.inc -gen-rewriters)
 add_public_tablegen_target(MLIRSPIRVCanonicalizationIncGen)
 
-add_mlir_dialect_library(MLIRSPIRVDialect
+add_mlir_dialect_upstream_library(MLIRSPIRVDialect
   AtomicOps.cpp
   CastOps.cpp
   ControlFlowOps.cpp

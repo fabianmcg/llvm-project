@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRLLVMIRTransforms
+add_mlir_dialect_upstream_library(MLIRLLVMIRTransforms
   AddComdats.cpp
   DIExpressionLegalization.cpp
   DIExpressionRewriter.cpp

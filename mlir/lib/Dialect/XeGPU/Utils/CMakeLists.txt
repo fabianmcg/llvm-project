@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRXeGPUUtils
+add_mlir_dialect_upstream_library(MLIRXeGPUUtils
   XeGPUUtils.cpp
 
   ADDITIONAL_HEADER_DIRS

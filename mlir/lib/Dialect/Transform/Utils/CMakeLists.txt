@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformDialectUtils
+add_mlir_dialect_upstream_library(MLIRTransformDialectUtils
   DiagnosedSilenceableFailure.cpp
   Utils.cpp
 

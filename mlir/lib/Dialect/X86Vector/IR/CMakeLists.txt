@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRX86VectorDialect
+add_mlir_dialect_upstream_library(MLIRX86VectorDialect
   X86VectorDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

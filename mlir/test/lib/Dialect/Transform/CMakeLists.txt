@@ -5,7 +5,7 @@ mlir_tablegen(TestTransformDialectExtensionTypes.h.inc -gen-typedef-decls -typed
 mlir_tablegen(TestTransformDialectExtensionTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=transform)
 add_public_tablegen_target(MLIRTestTransformDialectExtensionIncGen)
 
-add_mlir_library(MLIRTestTransformDialect
+add_mlir_upstream_library(MLIRTestTransformDialect
   TestPassStateExtensionCommunication.cpp
   TestTransformDialectExtension.cpp
   TestTransformDialectInterpreter.cpp

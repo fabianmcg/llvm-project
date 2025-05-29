@@ -31,7 +31,7 @@ set(LIBS
   MLIRVectorToLLVMPass
   )
 
-add_mlir_library(MLIRGPUTestPasses
+add_mlir_upstream_library(MLIRGPUTestPasses
   TestGpuMemoryPromotion.cpp
   TestGpuRewrite.cpp
 

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformPDLExtension
+add_mlir_dialect_upstream_library(MLIRTransformPDLExtension
   PDLExtension.cpp
   PDLExtensionOps.cpp
 

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRVectorTransformOps
+add_mlir_dialect_upstream_library(MLIRVectorTransformOps
   VectorTransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRXeGPUTransforms
+add_mlir_dialect_upstream_library(MLIRXeGPUTransforms
   XeGPUFoldAliasOps.cpp
   XeGPUSubgroupDistribute.cpp
   XeGPUUnroll.cpp

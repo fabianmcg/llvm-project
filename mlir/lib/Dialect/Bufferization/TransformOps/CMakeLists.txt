@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRBufferizationTransformOps
+add_mlir_dialect_upstream_library(MLIRBufferizationTransformOps
   BufferizationTransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

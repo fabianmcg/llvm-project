@@ -7,7 +7,7 @@ set(LLVM_OPTIONAL_SOURCES
   Target.cpp
   )
 
-add_mlir_translation_library(MLIRSPIRVBinaryUtils
+add_mlir_translation_upstream_library(MLIRSPIRVBinaryUtils
   SPIRVBinaryUtils.cpp
 
   LINK_LIBS PUBLIC
@@ -15,7 +15,7 @@ add_mlir_translation_library(MLIRSPIRVBinaryUtils
   MLIRSupport
   )
 
-add_mlir_translation_library(MLIRSPIRVTranslateRegistration
+add_mlir_translation_upstream_library(MLIRSPIRVTranslateRegistration
   TranslateRegistration.cpp
 
   LINK_LIBS PUBLIC
@@ -25,7 +25,7 @@ add_mlir_translation_library(MLIRSPIRVTranslateRegistration
   MLIRSupport
   )
 
-add_mlir_dialect_library(MLIRSPIRVTarget
+add_mlir_dialect_upstream_library(MLIRSPIRVTarget
   Target.cpp
 
   LINK_LIBS PUBLIC

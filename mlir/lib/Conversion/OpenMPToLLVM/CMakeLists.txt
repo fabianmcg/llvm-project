@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIROpenMPToLLVM
+add_mlir_conversion_upstream_library(MLIROpenMPToLLVM
   OpenMPToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSCFToControlFlow
+add_mlir_conversion_upstream_library(MLIRSCFToControlFlow
   SCFToControlFlow.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,6 +1,6 @@
 add_subdirectory(Utils)
 
-add_mlir_library(MLIRTransforms
+add_mlir_upstream_library(MLIRTransforms
   Canonicalizer.cpp
   CompositePass.cpp
   ControlFlowSink.cpp

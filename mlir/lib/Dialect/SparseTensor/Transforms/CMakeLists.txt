@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSparseTensorTransforms
+add_mlir_dialect_upstream_library(MLIRSparseTensorTransforms
   # Rewriting.
   BufferizableOpInterfaceImpl.cpp
   SparseAssembler.cpp

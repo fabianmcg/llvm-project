@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArithToLLVM
+add_mlir_conversion_upstream_library(MLIRArithToLLVM
   ArithToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

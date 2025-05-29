@@ -1,4 +1,4 @@
-add_mlir_upstream_c_api_library(MLIRCAPITransforms
+add_mlir_upstream_c_api_upstream_library(MLIRCAPITransforms
   Passes.cpp
   Rewrite.cpp
 

@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRBuiltinToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRBuiltinToLLVMIRTranslation
   BuiltinToLLVMIRTranslation.cpp
 
   LINK_COMPONENTS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRLLVMCommonConversion
+add_mlir_conversion_upstream_library(MLIRLLVMCommonConversion
   ConversionTarget.cpp
   LoweringOptions.cpp
   MemRefBuilder.cpp

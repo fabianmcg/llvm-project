@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRGPUPipelines
+add_mlir_dialect_upstream_library(MLIRGPUPipelines
   GPUToNVVMPipeline.cpp
 
   ADDITIONAL_HEADER_DIRS

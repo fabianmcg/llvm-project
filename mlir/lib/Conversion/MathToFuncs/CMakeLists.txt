@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRMathToFuncs
+add_mlir_conversion_upstream_library(MLIRMathToFuncs
   MathToFuncs.cpp
 
   ADDITIONAL_HEADER_DIRS

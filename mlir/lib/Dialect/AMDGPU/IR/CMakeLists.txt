@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAMDGPUDialect
+add_mlir_dialect_upstream_library(MLIRAMDGPUDialect
   AMDGPUDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

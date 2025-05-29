@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMPIDialect
+add_mlir_dialect_upstream_library(MLIRMPIDialect
   MPIOps.cpp
   MPI.cpp
 

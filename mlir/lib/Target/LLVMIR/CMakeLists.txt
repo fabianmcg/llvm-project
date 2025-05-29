@@ -16,7 +16,7 @@ set(LLVM_OPTIONAL_SOURCES
   )
 
 
-add_mlir_translation_library(MLIRTargetLLVMIRExport
+add_mlir_translation_upstream_library(MLIRTargetLLVMIRExport
   DebugTranslation.cpp
   LoopAnnotationTranslation.cpp
   ModuleTranslation.cpp
@@ -44,7 +44,7 @@ add_mlir_translation_library(MLIRTargetLLVMIRExport
   MLIRTransformUtils
   )
 
-add_mlir_translation_library(MLIRToLLVMIRTranslationRegistration
+add_mlir_translation_upstream_library(MLIRToLLVMIRTranslationRegistration
   ConvertToLLVMIR.cpp
 
   LINK_LIBS PUBLIC
@@ -62,7 +62,7 @@ add_mlir_translation_library(MLIRToLLVMIRTranslationRegistration
   MLIRVCIXToLLVMIRTranslation
   )
 
-add_mlir_translation_library(MLIRTargetLLVMIRImport
+add_mlir_translation_upstream_library(MLIRTargetLLVMIRImport
   DataLayoutImporter.cpp
   DebugImporter.cpp
   LoopAnnotationImporter.cpp
@@ -83,7 +83,7 @@ add_mlir_translation_library(MLIRTargetLLVMIRImport
   MLIRTranslateLib
   )
 
-add_mlir_translation_library(MLIRFromLLVMIRTranslationRegistration
+add_mlir_translation_upstream_library(MLIRFromLLVMIRTranslationRegistration
   ConvertFromLLVMIR.cpp
 
   LINK_LIBS PUBLIC

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRX86VectorTransforms
+add_mlir_dialect_upstream_library(MLIRX86VectorTransforms
   AVXTranspose.cpp
   LegalizeForLLVMExport.cpp
 

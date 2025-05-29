@@ -4,7 +4,7 @@ if(MLIR_ENABLE_PDL_IN_PATTERNMATCH)
   )
 endif()
 
-add_mlir_library(MLIRIR
+add_mlir_upstream_library(MLIRIR
   AffineExpr.cpp
   AffineMap.cpp
   AsmPrinter.cpp

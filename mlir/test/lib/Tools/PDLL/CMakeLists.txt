@@ -8,7 +8,7 @@ add_mlir_pdll_library(MLIRTestPDLLPatternsIncGen
   )
 
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestPDLL
+add_mlir_upstream_library(MLIRTestPDLL
   TestPDLL.cpp
 
   EXCLUDE_FROM_LIBMLIR

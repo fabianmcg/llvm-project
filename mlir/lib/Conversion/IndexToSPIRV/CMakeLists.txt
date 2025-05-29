@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRIndexToSPIRV
+add_mlir_conversion_upstream_library(MLIRIndexToSPIRV
   IndexToSPIRV.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRComplexDivisionConversion
+add_mlir_conversion_upstream_library(MLIRComplexDivisionConversion
   DivisionConverter.cpp
 
   LINK_COMPONENTS

@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRTargetCpp
+add_mlir_translation_upstream_library(MLIRTargetCpp
   TranslateRegistration.cpp
   TranslateToCpp.cpp
 

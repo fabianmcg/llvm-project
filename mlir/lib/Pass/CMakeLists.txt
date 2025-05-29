@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPass
+add_mlir_upstream_library(MLIRPass
   IRPrinting.cpp
   Pass.cpp
   PassCrashRecovery.cpp

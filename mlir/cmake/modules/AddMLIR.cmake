@@ -305,6 +305,17 @@ function(add_mlir_example_library name)
   endif()
 endfunction()
 
+
+function(_check_mlir_lib_name name)
+  if(${name} MATCHES "^MLIR.+")
+    get_property(IS_UPSTREAM TARGET ${name} PROPERTY MLIR_UPSTREAM_LIB)
+    if(NOT IS_UPSTREAM)
+      message(FATAL_ERROR "Library names starting with MLIR are reserved for upstream, use a different name for: `${name}`.")
+    endif()
+  endif()
+endfunction(_check_mlir_lib_name name)
+
+
 # Declare an mlir library which can be compiled in libMLIR.so
 # In addition to everything that llvm_add_library accepts, this
 # also has the following option:
@@ -325,7 +336,7 @@ endfunction()
 #   are compatible with building an object library.
 function(add_mlir_library name)
   cmake_parse_arguments(ARG
-    "SHARED;INSTALL_WITH_TOOLCHAIN;EXCLUDE_FROM_LIBMLIR;DISABLE_INSTALL;ENABLE_AGGREGATION;OBJECT"
+    "SHARED;INSTALL_WITH_TOOLCHAIN;UPSTREAM_LIB;EXCLUDE_FROM_LIBMLIR;DISABLE_INSTALL;ENABLE_AGGREGATION;OBJECT"
     ""
     "ADDITIONAL_HEADERS;DEPENDS;LINK_COMPONENTS;LINK_LIBS"
     ${ARGN})
@@ -342,7 +353,7 @@ function(add_mlir_library name)
     else()
       set(LIBTYPE STATIC)
     endif()
-  endif()
+  endif()  
 
   # Is an object library needed...?
   # Note that the XCode generator doesn't handle object libraries correctly and
@@ -396,6 +407,13 @@ function(add_mlir_library name)
   endif()
   set_target_properties(${name} PROPERTIES FOLDER "MLIR/Libraries")
 
+  if(ARG_UPSTREAM_LIB)
+    set_property(GLOBAL APPEND PROPERTY MLIR_UPSTREAM_LIBS ${name})
+    set_property(TARGET ${name} PROPERTY MLIR_UPSTREAM_LIB 1)
+  endif()
+
+  _check_mlir_lib_name(${name})
+
   # Setup aggregate.
   if(ARG_ENABLE_AGGREGATION)
     # Compute and store the properties needed to build aggregates.
@@ -437,6 +455,10 @@ function(add_mlir_library name)
   endif()
 endfunction(add_mlir_library)
 
+function(add_mlir_upstream_library name)
+  add_mlir_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_upstream_library)
+
 macro(add_mlir_tool name)
   llvm_add_tool(MLIR ${ARGV})
 endmacro()
@@ -460,6 +482,14 @@ function(get_mlir_filtered_link_libraries output)
   set(${output} "${_results}" PARENT_SCOPE)
 endfunction(get_mlir_filtered_link_libraries)
 
+
+function(_set_mlir_upstream_lib_tag VAR IS_UPSTREAM)
+  if(IS_UPSTREAM)
+    set(${VAR} "UPSTREAM_LIB" PARENT_SCOPE)
+  endif()
+endfunction(_set_mlir_upstream_lib_tag)
+
+
 # Declares an aggregate library. Such a library is a combination of arbitrary
 # regular add_mlir_library() libraries with the special feature that they can
 # be configured to statically embed some subset of their dependencies, as is
@@ -480,7 +510,7 @@ endfunction(get_mlir_filtered_link_libraries)
 # non nested cases involving the C-API.
 function(add_mlir_aggregate name)
   cmake_parse_arguments(ARG
-    "SHARED;STATIC"
+    "SHARED;STATIC;UPSTREAM_LIB"
     ""
     "PUBLIC_LIBS;EMBED_LIBS"
     ${ARGN})
@@ -566,8 +596,11 @@ function(add_mlir_aggregate name)
       "    DEPS = ${_local_deps}\n\n")
   endforeach()
 
+  _set_mlir_upstream_lib_tag(UPSTREAM_LIB_TAG ARG_UPSTREAM_LIB)
+
   add_mlir_library(${name}
     ${_libtype}
+    ${UPSTREAM_LIB_TAG}
     ${ARG_UNPARSED_ARGUMENTS}
     PARTIAL_SOURCES_INTENDED
     EXCLUDE_FROM_LIBMLIR
@@ -611,6 +644,10 @@ function(add_mlir_aggregate name)
   #   CONTENT "${_debugmsg}"
   # )
 endfunction(add_mlir_aggregate)
+
+function(add_mlir_upstream_aggregate name)
+  add_mlir_aggregate(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_upstream_aggregate)
 
 # Adds an MLIR library target for installation.
 # This is usually done as part of add_mlir_library but is broken out for cases
@@ -663,11 +700,19 @@ function(add_mlir_public_c_api_library name)
   )
 endfunction()
 
+function(add_mlir_public_c_api_upstream_library name)
+  add_mlir_public_c_api_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_public_c_api_upstream_library)
+
 # Declare the library associated with a dialect.
 function(add_mlir_dialect_library name)
   set_property(GLOBAL APPEND PROPERTY MLIR_DIALECT_LIBS ${name})
   add_mlir_library(${ARGV} DEPENDS mlir-headers)
 endfunction(add_mlir_dialect_library)
+
+function(add_mlir_dialect_upstream_library name)
+  add_mlir_dialect_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_dialect_upstream_library)
 
 # Declare the library associated with a conversion.
 function(add_mlir_conversion_library name)
@@ -675,17 +720,29 @@ function(add_mlir_conversion_library name)
   add_mlir_library(${ARGV} DEPENDS mlir-headers)
 endfunction(add_mlir_conversion_library)
 
+function(add_mlir_conversion_upstream_library name)
+  add_mlir_conversion_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_conversion_upstream_library)
+
 # Declare the library associated with an extension.
 function(add_mlir_extension_library name)
   set_property(GLOBAL APPEND PROPERTY MLIR_EXTENSION_LIBS ${name})
   add_mlir_library(${ARGV} DEPENDS mlir-headers)
 endfunction(add_mlir_extension_library)
 
+function(add_mlir_extension_upstream_library name)
+  add_mlir_extension_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_extension_upstream_library)
+
 # Declare the library associated with a translation.
 function(add_mlir_translation_library name)
   set_property(GLOBAL APPEND PROPERTY MLIR_TRANSLATION_LIBS ${name})
   add_mlir_library(${ARGV} DEPENDS mlir-headers)
 endfunction(add_mlir_translation_library)
+
+function(add_mlir_translation_upstream_library name)
+  add_mlir_translation_library(${ARGV} UPSTREAM_LIB)
+endfunction(add_mlir_translation_upstream_library)
 
 # Verification tools to aid debugging.
 function(mlir_check_link_libraries name)

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSCFToEmitC
+add_mlir_conversion_upstream_library(MLIRSCFToEmitC
   SCFToEmitC.cpp
 
   ADDITIONAL_HEADER_DIRS

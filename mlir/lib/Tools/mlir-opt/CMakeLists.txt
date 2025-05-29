@@ -1,4 +1,4 @@
-add_mlir_library(MLIROptLib
+add_mlir_upstream_library(MLIROptLib
   MlirOptMain.cpp
 
   ADDITIONAL_HEADER_DIRS

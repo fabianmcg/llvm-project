@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSPIRVModuleCombiner
+add_mlir_dialect_upstream_library(MLIRSPIRVModuleCombiner
   ModuleCombiner.cpp
 
   ADDITIONAL_HEADER_DIRS

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRVectorToArmSME
+add_mlir_conversion_upstream_library(MLIRVectorToArmSME
   VectorToArmSME.cpp
   VectorToArmSMEPass.cpp
 

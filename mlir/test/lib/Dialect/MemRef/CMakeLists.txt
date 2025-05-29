@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRMemRefTestPasses
+add_mlir_upstream_library(MLIRMemRefTestPasses
   TestComposeSubView.cpp
   TestEmulateNarrowType.cpp
   TestMultiBuffer.cpp

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRArithToAMDGPU
+add_mlir_conversion_upstream_library(MLIRArithToAMDGPU
   ArithToAMDGPU.cpp
 
   ADDITIONAL_HEADER_DIRS

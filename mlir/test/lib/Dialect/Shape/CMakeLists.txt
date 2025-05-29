@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRShapeTestPasses
+add_mlir_upstream_library(MLIRShapeTestPasses
   TestShapeFunctions.cpp
   TestShapeMappingAnalysis.cpp
 

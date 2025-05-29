@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRLinalgTestPasses
+add_mlir_upstream_library(MLIRLinalgTestPasses
   TestDataLayoutPropagation.cpp
   TestLinalgDecomposeOps.cpp
   TestLinalgDropUnitDims.cpp

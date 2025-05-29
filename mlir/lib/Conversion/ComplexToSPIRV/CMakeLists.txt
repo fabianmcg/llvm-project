@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRComplexToSPIRV
+add_mlir_conversion_upstream_library(MLIRComplexToSPIRV
   ComplexToSPIRV.cpp
   ComplexToSPIRVPass.cpp
 

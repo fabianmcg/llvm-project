@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTensorTransforms
+add_mlir_dialect_upstream_library(MLIRTensorTransforms
   BufferizableOpInterfaceImpl.cpp
   ConcatOpPatterns.cpp
   EmptyOpPatterns.cpp

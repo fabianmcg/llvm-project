@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestVectorToSPIRV
+add_mlir_upstream_library(MLIRTestVectorToSPIRV
   TestVectorReductionToSPIRVDotProd.cpp
 
   EXCLUDE_FROM_LIBMLIR

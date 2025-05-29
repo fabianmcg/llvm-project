@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTosaDialect
+add_mlir_dialect_upstream_library(MLIRTosaDialect
   IR/TosaOps.cpp
   IR/TosaCanonicalizations.cpp
   Utils/ConversionUtils.cpp
@@ -28,7 +28,7 @@ add_mlir_dialect_library(MLIRTosaDialect
   MLIRViewLikeInterface
   )
 
-add_mlir_dialect_library(MLIRTosaShardingInterfaceImpl
+add_mlir_dialect_upstream_library(MLIRTosaShardingInterfaceImpl
   IR/ShardingInterfaceImpl.cpp
 
   ADDITIONAL_HEADER_DIRS

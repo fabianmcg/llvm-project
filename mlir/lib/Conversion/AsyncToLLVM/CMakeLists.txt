@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRAsyncToLLVM
+add_mlir_conversion_upstream_library(MLIRAsyncToLLVM
   AsyncToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

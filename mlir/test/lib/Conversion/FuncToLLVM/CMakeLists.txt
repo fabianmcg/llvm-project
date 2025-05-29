@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestFuncToLLVM
+add_mlir_upstream_library(MLIRTestFuncToLLVM
   TestConvertCallOp.cpp
   TestConvertFuncOp.cpp
 

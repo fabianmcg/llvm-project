@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRSCFToOpenMP
+add_mlir_conversion_upstream_library(MLIRSCFToOpenMP
   SCFToOpenMP.cpp
 
   ADDITIONAL_HEADER_DIRS

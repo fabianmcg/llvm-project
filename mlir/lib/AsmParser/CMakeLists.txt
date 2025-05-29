@@ -1,4 +1,4 @@
-add_mlir_library(MLIRAsmParser
+add_mlir_upstream_library(MLIRAsmParser
   AffineParser.cpp
   AsmParserState.cpp
   AttributeParser.cpp

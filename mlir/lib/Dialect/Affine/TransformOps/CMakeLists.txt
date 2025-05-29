@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAffineTransformOps
+add_mlir_dialect_upstream_library(MLIRAffineTransformOps
   AffineTransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

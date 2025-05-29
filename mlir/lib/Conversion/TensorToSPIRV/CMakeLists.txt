@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRTensorToSPIRV
+add_mlir_conversion_upstream_library(MLIRTensorToSPIRV
   TensorToSPIRV.cpp
   TensorToSPIRVPass.cpp
 

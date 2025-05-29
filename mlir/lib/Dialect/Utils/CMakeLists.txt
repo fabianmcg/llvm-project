@@ -1,4 +1,4 @@
-add_mlir_library(MLIRDialectUtils
+add_mlir_upstream_library(MLIRDialectUtils
   IndexingUtils.cpp
   ReshapeOpsUtils.cpp
   StructuredOpsUtils.cpp

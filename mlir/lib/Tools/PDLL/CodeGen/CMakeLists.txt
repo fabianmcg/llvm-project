@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPDLLCodeGen
+add_mlir_upstream_library(MLIRPDLLCodeGen
   CPPGen.cpp
   MLIRGen.cpp
 

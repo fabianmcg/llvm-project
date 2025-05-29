@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformDialect
+add_mlir_dialect_upstream_library(MLIRTransformDialect
   TransformAttrs.cpp
   TransformDialect.cpp
   TransformOps.cpp

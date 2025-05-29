@@ -1,4 +1,4 @@
-add_mlir_library(MLIROpenACCMPCommon
+add_mlir_upstream_library(MLIROpenACCMPCommon
 AtomicInterfaces.cpp
 
 ADDITIONAL_HEADER_DIRS

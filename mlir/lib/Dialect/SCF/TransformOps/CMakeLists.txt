@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSCFTransformOps
+add_mlir_dialect_upstream_library(MLIRSCFTransformOps
   SCFTransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

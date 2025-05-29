@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIROpenACCTransforms
+add_mlir_dialect_upstream_library(MLIROpenACCTransforms
   LegalizeDataValues.cpp
 
   ADDITIONAL_HEADER_DIRS

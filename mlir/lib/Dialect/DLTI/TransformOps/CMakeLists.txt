@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRDLTITransformOps
+add_mlir_dialect_upstream_library(MLIRDLTITransformOps
   DLTITransformOps.cpp
 
   ADDITIONAL_HEADER_DIRS

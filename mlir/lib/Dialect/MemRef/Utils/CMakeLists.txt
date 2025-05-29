@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRMemRefUtils
+add_mlir_dialect_upstream_library(MLIRMemRefUtils
   MemRefUtils.cpp
 
   ADDITIONAL_HEADER_DIRS

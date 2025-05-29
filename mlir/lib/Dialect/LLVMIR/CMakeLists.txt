@@ -1,6 +1,6 @@
 add_subdirectory(Transforms)
 
-add_mlir_dialect_library(MLIRLLVMDialect
+add_mlir_dialect_upstream_library(MLIRLLVMDialect
   IR/FunctionCallUtils.cpp
   IR/LLVMAttrs.cpp
   IR/LLVMDialect.cpp
@@ -39,7 +39,7 @@ add_mlir_dialect_library(MLIRLLVMDialect
   MLIRSupport
   )
 
-add_mlir_dialect_library(MLIRNVVMDialect
+add_mlir_dialect_upstream_library(MLIRNVVMDialect
   IR/NVVMDialect.cpp
   IR/BasicPtxBuilderInterface.cpp
   IR/NVVMRequiresSMTraits.cpp
@@ -67,7 +67,7 @@ add_mlir_dialect_library(MLIRNVVMDialect
   MLIRInferIntRangeInterface
   )
 
-add_mlir_dialect_library(MLIRROCDLDialect
+add_mlir_dialect_upstream_library(MLIRROCDLDialect
   IR/ROCDLDialect.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -89,7 +89,7 @@ add_mlir_dialect_library(MLIRROCDLDialect
   MLIRSideEffectInterfaces
   )
 
-add_mlir_dialect_library(MLIRVCIXDialect
+add_mlir_dialect_upstream_library(MLIRVCIXDialect
   IR/VCIXDialect.cpp
 
   ADDITIONAL_HEADER_DIRS

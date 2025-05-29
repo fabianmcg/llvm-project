@@ -788,7 +788,7 @@ endif()
 # once ready.
 ################################################################################
 
-add_mlir_python_common_capi_library(MLIRPythonCAPI
+add_mlir_python_common_capi_upstream_library(MLIRPythonCAPI
   INSTALL_COMPONENT MLIRPythonModules
   INSTALL_DESTINATION python_packages/mlir_core/mlir/_mlir_libs
   OUTPUT_DIRECTORY "${MLIR_BINARY_DIR}/python_packages/mlir_core/mlir/_mlir_libs"

@@ -1,4 +1,4 @@
-add_mlir_library(MLIRQuery
+add_mlir_upstream_library(MLIRQuery
   Query.cpp
   QueryParser.cpp
 

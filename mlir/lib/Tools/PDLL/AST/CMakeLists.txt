@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPDLLAST
+add_mlir_upstream_library(MLIRPDLLAST
   Context.cpp
   Diagnostic.cpp
   NodePrinter.cpp

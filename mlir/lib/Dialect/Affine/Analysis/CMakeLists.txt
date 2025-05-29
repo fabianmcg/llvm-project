@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAffineAnalysis
+add_mlir_dialect_upstream_library(MLIRAffineAnalysis
   AffineAnalysis.cpp
   AffineStructures.cpp
   LoopAnalysis.cpp

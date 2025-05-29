@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRControlFlowToLLVM
+add_mlir_conversion_upstream_library(MLIRControlFlowToLLVM
   ControlFlowToLLVM.cpp
 
   ADDITIONAL_HEADER_DIRS

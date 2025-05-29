@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestReducer
+add_mlir_upstream_library(MLIRTestReducer
   MLIRTestReducer.cpp
 
   EXCLUDE_FROM_LIBMLIR

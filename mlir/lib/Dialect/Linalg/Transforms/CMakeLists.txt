@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRLinalgTransforms
+add_mlir_dialect_upstream_library(MLIRLinalgTransforms
   AllInterfaces.cpp
   BubbleUpExtractSlice.cpp
   BufferizableOpInterfaceImpl.cpp

@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPresburger
+add_mlir_upstream_library(MLIRPresburger
   Barvinok.cpp
   IntegerRelation.cpp
   LinearTransform.cpp

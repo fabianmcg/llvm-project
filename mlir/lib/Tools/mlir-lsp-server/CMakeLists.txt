@@ -1,4 +1,4 @@
-add_mlir_library(MLIRLspServerLib
+add_mlir_upstream_library(MLIRLspServerLib
   LSPServer.cpp
   MLIRServer.cpp
   MlirLspServerMain.cpp

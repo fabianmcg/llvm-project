@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRGPUDialect
+add_mlir_dialect_upstream_library(MLIRGPUDialect
   IR/GPUDialect.cpp
   IR/InferIntRangeInterfaceImpls.cpp
   IR/ValueBoundsOpInterfaceImpl.cpp
@@ -25,7 +25,7 @@ add_mlir_dialect_library(MLIRGPUDialect
   MLIRSupport
   )
 
-add_mlir_dialect_library(MLIRGPUTransforms
+add_mlir_dialect_upstream_library(MLIRGPUTransforms
   Transforms/AllReduceLowering.cpp
   Transforms/AsyncRegionRewriter.cpp
   Transforms/BufferDeallocationOpInterfaceImpl.cpp

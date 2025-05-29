@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRSMT
+add_mlir_dialect_upstream_library(MLIRSMT
   SMTAttributes.cpp
   SMTDialect.cpp
   SMTOps.cpp

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRQuantTransforms
+add_mlir_dialect_upstream_library(MLIRQuantTransforms
   LowerQuantOps.cpp
   NormalizeQuantTypes.cpp
   StripFuncQuantTypes.cpp

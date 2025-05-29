@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArithTransforms
+add_mlir_dialect_upstream_library(MLIRArithTransforms
   BufferDeallocationOpInterfaceImpl.cpp
   BufferizableOpInterfaceImpl.cpp
   BufferViewFlowOpInterfaceImpl.cpp

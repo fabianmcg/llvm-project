@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRNVGPUTestPasses
+add_mlir_upstream_library(MLIRNVGPUTestPasses
   TestNVGPUTransforms.cpp
 
   EXCLUDE_FROM_LIBMLIR

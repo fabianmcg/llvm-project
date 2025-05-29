@@ -1,4 +1,4 @@
-add_mlir_library(MLIRPluginsLib
+add_mlir_upstream_library(MLIRPluginsLib
   DialectPlugin.cpp
   PassPlugin.cpp
 

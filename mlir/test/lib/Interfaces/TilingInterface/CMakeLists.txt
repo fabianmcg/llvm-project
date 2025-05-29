@@ -3,7 +3,7 @@ mlir_tablegen(TestTilingInterfaceTransformOps.h.inc -gen-op-decls)
 mlir_tablegen(TestTilingInterfaceTransformOps.cpp.inc -gen-op-defs)
 add_public_tablegen_target(MLIRTestTilingInterfaceTransformOpsIncGen)
 
-add_mlir_library(MLIRTilingInterfaceTestPasses
+add_mlir_upstream_library(MLIRTilingInterfaceTestPasses
   TestTilingInterfaceTransformOps.cpp
 
   DEPENDS

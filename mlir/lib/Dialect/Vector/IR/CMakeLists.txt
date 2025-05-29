@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRVectorDialect
+add_mlir_dialect_upstream_library(MLIRVectorDialect
   VectorOps.cpp
   ValueBoundsOpInterfaceImpl.cpp
   ScalableValueBoundsConstraintSet.cpp

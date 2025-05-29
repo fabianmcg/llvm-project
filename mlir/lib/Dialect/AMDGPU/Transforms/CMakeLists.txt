@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRAMDGPUTransforms
+add_mlir_dialect_upstream_library(MLIRAMDGPUTransforms
   EmulateAtomics.cpp
   ResolveStridedMetadata.cpp
   TransferReadToLoad.cpp

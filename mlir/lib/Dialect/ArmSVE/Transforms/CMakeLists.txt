@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRArmSVETransforms
+add_mlir_dialect_upstream_library(MLIRArmSVETransforms
   LegalizeForLLVMExport.cpp
   LegalizeVectorStorage.cpp
 

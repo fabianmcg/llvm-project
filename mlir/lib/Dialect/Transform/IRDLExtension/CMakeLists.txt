@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIRTransformDialectIRDLExtension
+add_mlir_dialect_upstream_library(MLIRTransformDialectIRDLExtension
   IRDLExtension.cpp
   IRDLExtensionOps.cpp
 

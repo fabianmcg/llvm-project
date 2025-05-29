@@ -1,5 +1,5 @@
 # Exclude tests from libMLIR.so
-add_mlir_library(MLIRTestIR
+add_mlir_upstream_library(MLIRTestIR
   TestAffineWalk.cpp
   TestBytecodeRoundtrip.cpp
   TestBuiltinAttributeInterfaces.cpp

@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRSPIRVDeserialization
+add_mlir_translation_upstream_library(MLIRSPIRVDeserialization
   DeserializeOps.cpp
   Deserializer.cpp
   Deserialization.cpp

@@ -1,4 +1,4 @@
-add_mlir_conversion_library(MLIRUBToSPIRV
+add_mlir_conversion_upstream_library(MLIRUBToSPIRV
   UBToSPIRV.cpp
 
   ADDITIONAL_HEADER_DIRS

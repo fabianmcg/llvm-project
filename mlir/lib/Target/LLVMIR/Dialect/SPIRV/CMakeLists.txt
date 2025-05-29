@@ -1,4 +1,4 @@
-add_mlir_translation_library(MLIRSPIRVToLLVMIRTranslation
+add_mlir_translation_upstream_library(MLIRSPIRVToLLVMIRTranslation
   SPIRVToLLVMIRTranslation.cpp
 
   LINK_COMPONENTS

@@ -1,4 +1,4 @@
-add_mlir_dialect_library(MLIREmitCTransforms
+add_mlir_dialect_upstream_library(MLIREmitCTransforms
   Transforms.cpp
   FormExpressions.cpp
   TypeConversions.cpp
