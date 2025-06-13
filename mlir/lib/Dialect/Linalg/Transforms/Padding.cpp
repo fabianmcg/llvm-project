@@ -8,10 +8,12 @@
 
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Complex/IR/Complex.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Tensor/Utils/Utils.h"
 #include "mlir/Interfaces/ValueBoundsOpInterface.h"
 
 #define DEBUG_TYPE "linalg-padding"
@@ -22,69 +24,120 @@ using namespace mlir::linalg;
 #define DBGS() (llvm::dbgs() << "[" DEBUG_TYPE << "]: ")
 #define DBGSNL() (llvm::dbgs() << "\n")
 
-/// Compute the padded shape of the given operand. The operand is padded to a
-/// static bounding box according to the specified padding options.
-static LogicalResult computePaddedShape(linalg::LinalgOp opToPad,
-                                        OpOperand *opOperand,
-                                        const LinalgPaddingOptions &options,
-                                        SmallVector<int64_t> &paddedShape,
-                                        bool &alreadyHasRequestedShape) {
+namespace {
+/// Helper class for storing padding information.
+struct PaddingInfo {
+  PaddingInfo(int64_t padToMultipleOf = 1, OpFoldResult size = {})
+      : padToMultipleOf(padToMultipleOf), size(size) {}
+  bool isTrivial() const { return padToMultipleOf == 1 && size.isNull(); }
+  /// Pad the tensor to a multiple of.
+  int64_t padToMultipleOf = 1;
+  /// The size used for padding.
+  OpFoldResult size = {};
+};
+
+/// Helper class for storing and computing the padded shape.
+struct PaddedShape {
+  /// Initializes the shape information and returns whether the shape of the
+  /// operand will change.
+  bool initialize(linalg::LinalgOp opToPad, OpOperand *opOperand,
+                  const LinalgPaddingOptions &options);
+
+  /// Computs the padded shape.
+  void computePadding(OpBuilder &builder, Value operand);
+
+  /// Returns the new tensor type.
+  RankedTensorType getType(Type elemTy) {
+    return RankedTensorType::get(shape, elemTy);
+  }
+
+  /// Return the dynamic dimensions of the shape.
+  ValueRange getDynamicDims() { return dynDims; }
+
+private:
+  SmallVector<int64_t> shape;
+  SmallVector<Value> dynDims;
+  DenseMap<int64_t, PaddingInfo> dimToInfo;
+};
+} // namespace
+
+bool PaddedShape::initialize(linalg::LinalgOp opToPad, OpOperand *opOperand,
+                             const LinalgPaddingOptions &options) {
   AffineMap indexingMap = opToPad.getMatchingIndexingMap(opOperand);
-  ArrayRef<int64_t> shape = opToPad.getShape(opOperand);
+
+  // Initialize the padded shape.
+  llvm::append_range(shape, opToPad.getShape(opOperand));
+
+  // Return early if there's no padding involved.
+  if (!options.padToMultipleOf && !options.padToSizeOf)
+    return true;
 
   // Collect the shape dimensions that are a function of "paddingDimensions",
   // along with the multiple that they should be padded to ("1" if none).
-  alreadyHasRequestedShape = true;
-  DenseMap<int64_t, int64_t> shapeDimToMultiple;
-  for (const auto &dimEn : enumerate(options.paddingDimensions)) {
-    for (const auto &en : enumerate(indexingMap.getResults())) {
-      if (en.value().isFunctionOfDim(dimEn.value())) {
-        int64_t dimSize = shape[en.index()];
-        if (options.padToMultipleOf.has_value()) {
-          shapeDimToMultiple[en.index()] =
-              (*options.padToMultipleOf)[dimEn.index()];
-        } else {
-          shapeDimToMultiple[en.index()] = 1;
-        }
-        if (ShapedType::isDynamic(dimSize)) {
-          alreadyHasRequestedShape = false;
-        } else if (dimSize % shapeDimToMultiple[en.index()] != 0) {
+  bool alreadyHasRequestedShape = true;
+  for (const auto [dimIndex, dim] : enumerate(options.paddingDimensions)) {
+    for (const auto [exprIndex, expr] : enumerate(indexingMap.getResults())) {
+      if (expr.isFunctionOfDim(dim)) {
+        int64_t dimSize = shape[exprIndex];
+        PaddingInfo paddingInfo;
+        if (options.padToMultipleOf.has_value())
+          paddingInfo.padToMultipleOf = (*options.padToMultipleOf)[dimIndex];
+        if (options.padToSizeOf.has_value())
+          paddingInfo.size = (*options.padToSizeOf)[dimIndex];
+
+        // Skip if the padding information is trivial. Note that dynamic
+        // dimensions never have trivial padding information.
+        if (paddingInfo.isTrivial() && !ShapedType::isDynamic(dimSize))
+          continue;
+        dimToInfo[exprIndex] = paddingInfo;
+        if (ShapedType::isDynamic(dimSize) ||
+            dimSize % paddingInfo.padToMultipleOf != 0) {
           alreadyHasRequestedShape = false;
         }
       }
     }
   }
 
-  // Helper function to round a number up to a given multiple.
-  auto ceil = [](int64_t val, int64_t multiple) {
-    return ((val + multiple - 1) / multiple) * multiple;
-  };
+  return alreadyHasRequestedShape;
+}
 
-  // Upper bound the sizes to obtain a static bounding box.
-  paddedShape.assign(shape.begin(), shape.end());
-  for (int64_t i = 0, e = shape.size(); i < e; ++i) {
+void PaddedShape::computePadding(OpBuilder &builder, Value operand) {
+  Location loc = operand.getLoc();
+  AffineExpr sizeSym = builder.getAffineSymbolExpr(0);
+
+  // Compute the padding for each dimension.
+  for (auto &&[i, dim] : llvm::enumerate(shape)) {
     LLVM_DEBUG(DBGS() << "--compute padded size for dim " << i << "\n");
+
     // Skip dimensions that do not require padding.
-    if (!shapeDimToMultiple.contains(i)) {
+    if (!dimToInfo.contains(i)) {
       LLVM_DEBUG(DBGS() << "----dim does not require padding, SKIP\n");
+      if (ShapedType::isDynamic(dim)) {
+        dynDims.push_back(
+            cast<Value>(tensor::getMixedSize(builder, loc, operand, i)));
+      }
       continue;
     }
-    // Otherwise, try to compute a constant upper bound for the size value.
-    FailureOr<int64_t> upperBound =
-        ValueBoundsConstraintSet::computeConstantBound(
-            presburger::BoundType::UB,
-            {opOperand->get(),
-             /*dim=*/i},
-            /*stopCondition=*/nullptr, /*closedUB=*/true);
-    if (failed(upperBound)) {
-      LLVM_DEBUG(DBGS() << "----could not compute a bounding box for padding");
-      return failure();
-    }
-    paddedShape[i] = ceil(*upperBound, shapeDimToMultiple[i]);
-    LLVM_DEBUG(DBGS() << "----new dim size: " << paddedShape[i] << "\n");
-  }
+    PaddingInfo paddingInfo = dimToInfo[i];
+    OpFoldResult size = paddingInfo.size;
+    // Get the tensor dim size if none was provided.
+    if (size.isNull())
+      size = tensor::getMixedSize(builder, loc, operand, i);
 
-  return success();
+    // Compute the padded size to be a multiple of `padToMultipleOf`.
+    AffineExpr szExpr = (sizeSym).ceilDiv(paddingInfo.padToMultipleOf) *
+                        paddingInfo.padToMultipleOf;
+    OpFoldResult paddedSize =
+        affine::makeComposedFoldedAffineApply(builder, loc, szExpr, size);
+    assert(paddedSize && "invalid arguments to affine apply");
+    if (auto cstSzAttr = dyn_cast<Attribute>(paddedSize)) {
+      dim = cast<IntegerAttr>(cstSzAttr).getValue().getZExtValue();
+    } else {
+      dim = ShapedType::kDynamic;
+      dynDims.push_back(cast<Value>(paddedSize));
+    }
+    LLVM_DEBUG(DBGS() << "----new dim size: " << paddedSize << "\n");
+  }
 }
 
 /// Pad the `opOperand` in the "paddingDimensions" using the padding value and
@@ -107,13 +160,9 @@ static FailureOr<Value> padOperandToSmallestStaticBoundingBox(
        options.padToMultipleOf->size() == options.paddingDimensions.size()) &&
       "invalid number of elements in padToMultipleOf");
 
-  // Compute padded shape.
-  SmallVector<int64_t> paddedShape;
-  bool alreadyHasRequestedShape = false;
-  if (failed(computePaddedShape(opToPad, opOperand, options, paddedShape,
-                                alreadyHasRequestedShape)))
-    return rewriter.notifyMatchFailure(opToPad,
-                                       "--failed to compute padded shape");
+  // Initialize the padded shape.
+  PaddedShape shape;
+  bool alreadyHasRequestedShape = shape.initialize(opToPad, opOperand, options);
 
   // Return the unpadded operand if padding to a static shape is not needed and
   // if the nofold flag is not set.
@@ -140,13 +189,20 @@ static FailureOr<Value> padOperandToSmallestStaticBoundingBox(
         opToPad.getLoc(), cast<TypedAttr>(paddingAttr));
   }
 
-  // Pad the operand to the bounding box defined by `paddedShape`.
-  auto paddedTensorType = RankedTensorType::get(
-      paddedShape, getElementTypeOrSelf(opOperand->get()));
+  // If needed, the padding for each dimension.
+  if (!alreadyHasRequestedShape)
+    shape.computePadding(rewriter, opOperand->get());
+
+  // Compute the new tensor type.
+  RankedTensorType paddedTensorType =
+      shape.getType(getElementTypeOrSelf(opOperand->get()));
   LLVM_DEBUG(DBGS() << "--SUCCESS, makeComposedPadHighOp with type: "
-                    << paddedTensorType);
+                    << paddedTensorType << "\n");
+
+  // Pad the operand to the bounding box defined by `shape`.
   return makeComposedPadHighOp(rewriter, opToPad->getLoc(), paddedTensorType,
-                               opOperand->get(), paddingValue, nofold);
+                               opOperand->get(), paddingValue, nofold,
+                               shape.getDynamicDims());
 }
 
 LogicalResult

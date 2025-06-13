@@ -295,6 +295,12 @@ struct LinalgPaddingOptions {
     padToMultipleOf.emplace(m.begin(), m.end());
     return *this;
   }
+  /// A list of sizes to which each padding dimension should be padded to.
+  std::optional<SmallVector<OpFoldResult>> padToSizeOf;
+  LinalgPaddingOptions &setPadToSizeOf(ArrayRef<OpFoldResult> m) {
+    padToSizeOf.emplace(m.begin(), m.end());
+    return *this;
+  }
   /// A flag for every operand to mark the PadOp as nofold which enables
   /// packing for statically shaped operands.
   SmallVector<bool> nofoldFlags;
