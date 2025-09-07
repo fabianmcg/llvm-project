@@ -387,8 +387,7 @@ struct ParallelOpLowering : public OpRewritePattern<scf::ParallelOp> {
     reductionVariables.reserve(parallelOp.getNumReductions());
     auto ptrType = LLVM::LLVMPointerType::get(parallelOp.getContext());
     for (Value init : parallelOp.getInitVals()) {
-      assert((LLVM::isCompatibleType(init.getType()) ||
-              isa<LLVM::PointerElementTypeInterface>(init.getType())) &&
+      assert((LLVM::isCompatibleType(init.getType())) &&
              "cannot create a reduction variable if the type is not an LLVM "
              "pointer element");
       Value storage = LLVM::AllocaOp::create(rewriter, loc, ptrType,

@@ -94,9 +94,7 @@ def LLVM_NonLoadableTargetExtType : Type<
 // Type constraint accepting any LLVM type that can be loaded or stored, i.e. a
 // type that has size (not void, function, opaque struct type or target
 // extension type which does not support memory operations).
-def LLVM_LoadableType : Type<
-  Or<[CPred<"mlir::LLVM::isLoadableType($_self)">,
-      LLVM_PointerElementTypeInterface.predicate]>,
+def LLVM_LoadableType : Type<CPred<"mlir::LLVM::isLoadableType($_self)">,
   "LLVM type with size">;
 
 // Type constraint accepting any LLVM aggregate type, i.e. structure or array.

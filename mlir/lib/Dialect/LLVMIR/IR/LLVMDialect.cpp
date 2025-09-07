@@ -2443,10 +2443,10 @@ static bool isZeroAttribute(Attribute value) {
 }
 
 LogicalResult GlobalOp::verify() {
-  bool validType = isCompatibleOuterType(getType())
-                       ? !llvm::isa<LLVMVoidType, LLVMTokenType,
-                                    LLVMMetadataType, LLVMLabelType>(getType())
-                       : llvm::isa<PointerElementTypeInterface>(getType());
+  bool validType =
+      isCompatibleOuterType(getType()) &&
+      !llvm::isa<LLVMVoidType, LLVMTokenType, LLVMMetadataType, LLVMLabelType>(
+          getType());
   if (!validType)
     return emitOpError(
         "expects type to be a valid element type for an LLVM global");
@@ -2664,10 +2664,10 @@ ParseResult AliasOp::parse(OpAsmParser &parser, OperationState &result) {
 }
 
 LogicalResult AliasOp::verify() {
-  bool validType = isCompatibleOuterType(getType())
-                       ? !llvm::isa<LLVMVoidType, LLVMTokenType,
-                                    LLVMMetadataType, LLVMLabelType>(getType())
-                       : llvm::isa<PointerElementTypeInterface>(getType());
+  bool validType =
+      isCompatibleOuterType(getType()) &&
+      !llvm::isa<LLVMVoidType, LLVMTokenType, LLVMMetadataType, LLVMLabelType>(
+          getType());
   if (!validType)
     return emitOpError(
         "expects type to be a valid element type for an LLVM global alias");
