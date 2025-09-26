@@ -433,6 +433,12 @@ public:
   /// Get the configuration of the solver.
   const DataFlowConfig &getConfig() const { return config; }
 
+  using LookupStateFn =
+      llvm::function_ref<const AnalysisState *(LatticeAnchor, TypeID)>;
+
+  using GetOrCreateStateFn =
+      llvm::function_ref<AnalysisState *(LatticeAnchor, TypeID)>;
+
 private:
   /// Configuration of the dataflow solver.
   DataFlowConfig config;
