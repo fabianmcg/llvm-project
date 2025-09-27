@@ -24,6 +24,8 @@ include "mlir/IR/OpAsmInterface.td"
 
 def AlignmentProp : OptionalProp<I64Prop>;
 
+def ContiguityProp : IntArrayProp<I32Prop, "memory access contiguity information">;
+
 //===----------------------------------------------------------------------===//
 // Common types
 //===----------------------------------------------------------------------===//
@@ -44,6 +46,15 @@ def Ptr_IntLikeType :AnyTypeOf<[
   Ptr_ShapedValueType<[AnySignlessIntegerOrIndex], [HasRankPred]>,
   AnySignlessIntegerOrIndex
 ]>;
+
+// A shaped pointer type with value semantics.
+def Ptr_ShapedPtrType : Ptr_ShapedValueType<[Ptr_PtrType], [HasRankPred]>;
+
+// A shaped mask type with value semantics.
+def Ptr_ShapedMaskType : Ptr_ShapedValueType<[I1], [HasRankPred]>;
+
+// A shaped mask type with value semantics.
+def Ptr_ShapedAnyType : Ptr_ShapedValueType<[AnyType], [HasRankPred]>;
 
 // A shaped value type of rank 1 of any element type.
 def Ptr_Any1DType :
@@ -470,6 +481,102 @@ def Ptr_PtrDiffOp : Pointer_Op<"ptr_diff", [
     Type getIntType();
   }];
   let hasVerifier = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// ReadOp
+//===----------------------------------------------------------------------===//
+
+def Ptr_ReadOp : Pointer_Op<"read", [
+    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+    TypesMatchWith<"result and mask must be compatible", "result", "mask", [{
+      ::llvm::cast<ShapedType>($_self).clone(
+        IntegerType::get($_self.getContext(), 1))
+    }]>,
+    AllTypesMatch<["result", "passthrough"]>,
+    // Check the shapes are compatible and both use the same shaped container
+    // type.
+    AllShapesMatch<["result", "ptr"]>, AllTypeIDsMatch<["result", "ptr"]>
+  ]> {
+  let summary = "Read operation";
+  let description = [{
+    The `read` operation is a high-level operation that performs a read
+    from multiple memory locations specified by `ptr` based on a mask `mask`.
+    Elements of the result, corresponding to masked-off lanes, are taken from
+    the `passthrough` operand.
+
+    The `mask` operand is a shaped type of `i1` elements that must have the same
+    shape as the result type.
+
+    The alignment property describes the alignment (in bytes) of each memory
+    location being accessed.
+
+    The `contiguity` property is an integer array with the same rank as the
+    result, where each element describes memory access contiguity for the
+    corresponding dimension. The precise semantics of this property are
+    given by:
+    Let `c1, c2, ..., cn` be the elements of the contiguity array, and
+    `s1, s2, ..., sn` be the corresponding elements of the result shape.
+    The following rules and restrictions apply:
+      1. `ck` must be strictly positive for all k.
+      2. `ck` must divide `sk` for all k.
+      3. Given arbitrary but valid indices `j1, ..., jn`, then the memory ranges
+         given by:
+           - `ptr[j1, ..., jk-1, l * ck : (l + 1) * ck, ji+1, ..., jn]` for
+           `l = 0, 1, ..., sk / ck - 1`
+         are contiguous for all k.
+
+    Depending on the values of `mask` and `contiguity`, the operation can be
+    lowered to either:
+    1. A `ptr.load`, if the mask is all ones, and there's a dimension where all
+       the accesses are contiguous.
+    2. A `ptr.masked_load`, if the mask is not all ones, and there's a dimension
+       where all the accesses are contiguous. 
+    3. A `ptr.gather` in all other cases.
+
+    Examples:
+    ```mlir
+    // Read a vector in row-major order
+    %result = ptr.read %ptr, %mask, %passthrough contiguity = [1, 4] :
+      vector<4x4x!ptr.ptr<#ptr.generic_space>> -> vector<4x4xf32>
+
+    // Read a vector in column-major order with alignment
+    %result = ptr.read %ptr, %mask, %passthrough alignment = 8
+      contiguity = [4, 1] :
+      vector<4x4x!ptr.ptr<#ptr.generic_space>> -> vector<4x4xf32>
+
+    // Gather a vector from memory
+    %result = ptr.read %ptr, %mask, %passthrough alignment = 8
+      contiguity = [1, 1] :
+      vector<4x4x!ptr.ptr<#ptr.generic_space>> -> vector<4x4xf32>
+    ```
+  }];
+  let arguments = (ins Ptr_ShapedPtrType:$ptr,
+                       Ptr_ShapedMaskType:$mask,
+                       Ptr_ShapedMaskType:$passthrough,
+                       AlignmentProp:$alignment,
+                       ContiguityProp:$contiguity);
+  let results = (outs Ptr_ShapedMaskType:$result);
+  let assemblyFormat = [{
+    $ptr `,` $mask `,` $passthrough (`alignment` `=` $alignment^)?
+    `contiguity` `=` $contiguity attr-dict `:` type($ptrs) `->` type($result)
+  }];
+  let builders = [
+    OpBuilder<(ins "Value":$ptr, "Value":$mask, "Value":$passthrough,
+                   CArg<"unsigned", "0">:$alignment,
+                   CArg<"ArrayRef<int32_t>", "{}">:$contiguity)>,
+    OpBuilder<(ins "Value":$ptr, "Value":$mask, "Value":$passthrough,
+                   "bool":$isContiguous, CArg<"unsigned", "0">:$alignment)>
+  ];
+  let hasVerifier = 1;
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType();
+
+    /// Returns true if the read has gather semantics, ie. there's no dimension
+    /// where all the accesses are contiguous.
+    bool hasGatherSemantics();
+  }];
 }
 
 //===----------------------------------------------------------------------===//
