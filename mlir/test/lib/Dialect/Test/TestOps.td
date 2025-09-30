@@ -2577,6 +2577,66 @@ def TestNoTerminatorOp : TEST_Op<"switch_with_no_break", [
   }];
 }
 
+def YieldToR0Op : TEST_Op<"to_r0", [
+    Pure, Terminator,
+    DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface, [
+      "getSuccessorRegions"
+    ]>
+  ]> {
+  let assemblyFormat = [{
+    attr-dict
+  }];
+}
+
+def YieldToR1Op : TEST_Op<"to_r1", [
+    Pure, Terminator,
+    DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface, [
+      "getSuccessorRegions"
+    ]>
+  ]> {
+  let assemblyFormat = [{
+    attr-dict
+  }];
+}
+
+def YieldToR1R2Op : TEST_Op<"to_r1_or_r2", [
+    Pure, Terminator,
+    DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface, [
+      "getSuccessorRegions"
+    ]>
+  ]> {
+  let assemblyFormat = [{
+    attr-dict
+  }];
+}
+
+def YieldToParentOp : TEST_Op<"to_parent", [
+    Pure, Terminator,
+    DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface, [
+      "getSuccessorRegions"
+    ]>
+  ]> {
+  let assemblyFormat = [{
+    attr-dict
+  }];
+}
+
+def RegionCFOp : TEST_Op<"region_cf", [
+    DeclareOpInterfaceMethods<RegionBranchOpInterface, [
+      "getSuccessorRegions"
+    ]>
+  ]> {
+  let regions = (region AnyRegion:$r0,
+                        AnyRegion:$r1,
+                        AnyRegion:$r2);
+  let assemblyFormat = [{
+    attr-dict-with-keyword
+    `r0` $r0
+    `r1` $r1
+    `r2` $r2
+  }];
+}
+
 //===----------------------------------------------------------------------===//
 // Test TableGen generated build() methods
 //===----------------------------------------------------------------------===//

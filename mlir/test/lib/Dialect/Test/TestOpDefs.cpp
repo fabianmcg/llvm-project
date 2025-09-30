@@ -1480,3 +1480,75 @@ test::TestCreateTensorOp::getBufferType(
   return cast<mlir::bufferization::BufferLikeType>(test::TestMemrefType::get(
       getContext(), type.getShape(), type.getElementType(), nullptr));
 }
+
+//===----------------------------------------------------------------------===//
+
+void YieldToR0Op::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  regions.push_back(
+      RegionSuccessor(&(getOperation()->getParentOp()->getRegion(0))));
+}
+
+MutableOperandRange
+YieldToR0Op::getMutableSuccessorOperands(RegionBranchPoint point) {
+  return getOperation();
+}
+
+void YieldToR1Op::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  regions.push_back(
+      RegionSuccessor(&(getOperation()->getParentOp()->getRegion(1))));
+}
+
+MutableOperandRange
+YieldToR1Op::getMutableSuccessorOperands(RegionBranchPoint point) {
+  return getOperation();
+}
+
+void YieldToR1R2Op::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  regions.push_back(
+      RegionSuccessor(&(getOperation()->getParentOp()->getRegion(1))));
+  regions.push_back(
+      RegionSuccessor(&(getOperation()->getParentOp()->getRegion(2))));
+}
+
+MutableOperandRange
+YieldToR1R2Op::getMutableSuccessorOperands(::mlir::RegionBranchPoint point) {
+  return getOperation();
+}
+
+void YieldToParentOp::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  regions.push_back(RegionSuccessor());
+}
+
+MutableOperandRange
+YieldToParentOp::getMutableSuccessorOperands(::mlir::RegionBranchPoint point) {
+  return getOperation();
+}
+
+void RegionCFOp::getSuccessorRegions(
+    RegionBranchPoint point, SmallVectorImpl<RegionSuccessor> &regions) {
+  // On entry always branch to 0.
+  if (point.isParent()) {
+    regions.push_back(RegionSuccessor(&getR0()));
+    return;
+  }
+  // On R0 branch to R1 or R2.
+  if (point == RegionBranchPoint(getR0())) {
+    regions.push_back(RegionSuccessor(&getR1()));
+    regions.push_back(RegionSuccessor(&getR2()));
+    return;
+  }
+  // On R1 branch to R0.
+  if (point == RegionBranchPoint(getR1())) {
+    regions.push_back(RegionSuccessor(&getR0()));
+    return;
+  }
+  // On R2 branch to parent.
+  if (point == RegionBranchPoint(getR2())) {
+    regions.push_back(RegionSuccessor());
+    return;
+  }
+}
