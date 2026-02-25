@@ -62,7 +62,8 @@ public:
   }
 
   Value visitAddExpr(AffineBinaryOpExpr expr) {
-    return buildBinaryExpr<arith::AddIOp>(expr);
+    return buildBinaryExpr<arith::AddIOp>(expr,
+                                          arith::IntegerOverflowFlags::nsw);
   }
 
   Value visitMulExpr(AffineBinaryOpExpr expr) {
