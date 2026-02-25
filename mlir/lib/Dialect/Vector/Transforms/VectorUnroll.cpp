@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/Dialect/Vector/Transforms/LoweringPatterns.h"
 #include "mlir/Dialect/Vector/Transforms/VectorTransforms.h"
@@ -67,7 +68,8 @@ static SmallVector<Value> sliceLoadStoreIndices(PatternRewriter &rewriter,
     if (offset != 0) {
       indices[start + i] = arith::AddIOp::create(
           rewriter, loc, originalIndices[start + i],
-          arith::ConstantIndexOp::create(rewriter, loc, offset));
+          arith::ConstantIndexOp::create(rewriter, loc, offset),
+          arith::IntegerOverflowFlags::nsw);
     }
   }
   return indices;
@@ -1632,12 +1634,11 @@ void mlir::vector::populateVectorUnrollPatterns(
                UnrollContractionPattern, UnrollElementwisePattern,
                UnrollReductionPattern, UnrollMultiReductionPattern,
                UnrollTransposePattern, UnrollGatherPattern, UnrollLoadPattern,
-               UnrollStorePattern, UnrollBroadcastPattern, UnrollFromElements,
-               UnrollToElements, UnrollStepPattern, UnrollShapeCastPattern,
-               UnrollCreateMaskPattern, UnrollConstantMaskPattern,
-               UnrollBitCastPattern, UnrollInterleavePattern,
-               UnrollDeinterleavePattern>(patterns.getContext(), options,
-                                          benefit);
+               UnrollStorePattern, UnrollBroadcastPattern, UnrollStepPattern,
+               UnrollShapeCastPattern, UnrollCreateMaskPattern,
+               UnrollConstantMaskPattern, UnrollBitCastPattern,
+               UnrollInterleavePattern, UnrollDeinterleavePattern>(
+      patterns.getContext(), options, benefit);
 }
 
 void mlir::vector::populateVectorToElementsUnrollPatterns(
