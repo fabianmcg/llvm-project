@@ -93,8 +93,9 @@ static AffineApplyOp createSubApply(RewriterBase &rewriter,
                                rhsOperands);
 }
 
-FailureOr<AffineApplyOp> mlir::affine::decompose(RewriterBase &rewriter,
-                                                 AffineApplyOp op) {
+FailureOr<AffineApplyOp>
+mlir::affine::decompose(RewriterBase &rewriter, AffineApplyOp op,
+                        DecomposeAffineApplyMode mode) {
   // 1. Preconditions: only handle dimensionless AffineApplyOp maps with a
   // top-level binary expression that we can reassociate (i.e. add or mul).
   AffineMap m = op.getAffineMap();
@@ -148,6 +149,13 @@ FailureOr<AffineApplyOp> mlir::affine::decompose(RewriterBase &rewriter,
     return getMaxSymbol(e1) < getMaxSymbol(e2);
   });
   LDBG() << "--sorted subexprs: " << llvm::interleaved(subExpressions);
+
+  // 3b. In CSE-friendly mode, reverse so that high-symbol (shared) operands
+  // are merged first and constants/low-symbol (unique) operands are folded
+  // last. This makes intermediate results identical across affine.apply ops
+  // that share all operands except a constant.
+  if (mode == DecomposeAffineApplyMode::CSEFriendly)
+    std::reverse(subExpressions.begin(), subExpressions.end());
 
   // 4. Merge sorted subExpressions iteratively, thus achieving reassociation.
   auto s0 = getAffineSymbolExpr(0, ctx);

@@ -66,6 +66,19 @@ void populateAffineExpandIndexOpsAsAffinePatterns(RewritePatternSet &patterns);
 /// operands come first in the operand list.
 void reorderOperandsByHoistability(RewriterBase &rewriter, AffineApplyOp op);
 
+/// Controls the merge order when decomposing affine.apply operations.
+enum class DecomposeAffineApplyMode {
+  /// Merge sub-expressions from lowest to highest max-symbol dependency.
+  /// Constants and loop-invariant terms become the accumulator seed, producing
+  /// intermediate results that are maximally hoistable by LICM.
+  LICMFriendly,
+  /// Merge sub-expressions from highest to lowest max-symbol dependency.
+  /// Constants and low-symbol terms are folded in last, so two affine.apply
+  /// ops that share all operands except a constant produce identical
+  /// intermediate chains that CSE can deduplicate.
+  CSEFriendly,
+};
+
 /// Split an "affine.apply" operation into smaller ops.
 /// This reassociates a large AffineApplyOp into an ordered list of smaller
 /// AffineApplyOps. This can be used right before lowering affine ops to arith
@@ -74,7 +87,10 @@ void reorderOperandsByHoistability(RewriterBase &rewriter, AffineApplyOp op);
 /// decompose into smaller AffineApplyOps.
 /// Note that this can be undone by canonicalization which tries to
 /// maximally compose chains of AffineApplyOps.
-FailureOr<AffineApplyOp> decompose(RewriterBase &rewriter, AffineApplyOp op);
+FailureOr<AffineApplyOp>
+decompose(RewriterBase &rewriter, AffineApplyOp op,
+          DecomposeAffineApplyMode mode =
+              DecomposeAffineApplyMode::LICMFriendly);
 
 /// Reify a bound for the given variable in terms of SSA values for which
 /// `stopCondition` is met.
