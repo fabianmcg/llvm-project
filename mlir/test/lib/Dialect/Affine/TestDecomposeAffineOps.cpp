@@ -34,7 +34,14 @@ struct TestDecomposeAffineOps
     return "Tests affine ops decomposition utility functions.";
   }
   TestDecomposeAffineOps() = default;
-  TestDecomposeAffineOps(const TestDecomposeAffineOps &pass) = default;
+  TestDecomposeAffineOps(const TestDecomposeAffineOps &other)
+      : PassWrapper(other) {
+    cseFriendly = other.cseFriendly;
+  }
+
+  Option<bool> cseFriendly{*this, "cse-friendly",
+                           llvm::cl::desc("Use CSE-friendly decomposition"),
+                           llvm::cl::init(false)};
 
   void runOnOperation() override;
 };
@@ -43,10 +50,12 @@ struct TestDecomposeAffineOps
 
 void TestDecomposeAffineOps::runOnOperation() {
   IRRewriter rewriter(&getContext());
+  auto mode = cseFriendly ? DecomposeAffineApplyMode::CSEFriendly
+                          : DecomposeAffineApplyMode::LICMFriendly;
   this->getOperation().walk([&](AffineApplyOp op) {
     rewriter.setInsertionPoint(op);
     reorderOperandsByHoistability(rewriter, op);
-    (void)decompose(rewriter, op);
+    (void)decompose(rewriter, op, mode);
   });
 }
 
