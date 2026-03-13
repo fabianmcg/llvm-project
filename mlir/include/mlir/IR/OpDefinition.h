@@ -2156,9 +2156,48 @@ protected:
   friend InterfaceBase;
 };
 
+namespace detail {
+/// Detection trait for OpState-derived types.  Checks for the public
+/// operator Operation*() conversion that all OpState subclasses inherit.
+template <typename T, typename = void>
+struct IsOpStateLike : std::false_type {};
+template <typename T>
+struct IsOpStateLike<T, std::void_t<
+    std::enable_if_t<std::is_class_v<T>>,
+    decltype(static_cast<::mlir::Operation *>(std::declval<T &>()))>>
+    : std::true_type {};
+} // namespace detail
+
 } // namespace mlir
 
 namespace llvm {
+
+/// Cast between OpState-derived value types (e.g., OpInterface -> ConcreteOp).
+/// The default CastInfo for value types returns a reference from castFailed(),
+/// which creates a dangling reference (undefined behavior). This
+/// specialization returns by value and routes through Operation * for the
+/// actual type check.
+template <typename To, typename From>
+struct CastInfo<
+    To, From,
+    std::enable_if_t<::mlir::detail::IsOpStateLike<To>::value &&
+                     ::mlir::detail::IsOpStateLike<From>::value &&
+                     !std::is_same_v<std::remove_cv_t<To>,
+                                     std::remove_cv_t<From>>>>
+    : public NullableValueCastFailed<To>,
+      public DefaultDoCastIfPossible<To, From,
+                                     CastInfo<To, From>> {
+  static bool isPossible(From &f) {
+    // Use the const operator Operation*() (not getOperation() which is
+    // non-const) so this works when From is const-qualified.
+    ::mlir::Operation *op = f;
+    return CastInfo<To, ::mlir::Operation *>::isPossible(op);
+  }
+  static To doCast(From &f) {
+    ::mlir::Operation *op = f;
+    return To(op);
+  }
+};
 
 template <typename T>
 struct DenseMapInfo<T,
