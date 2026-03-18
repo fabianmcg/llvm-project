@@ -878,6 +878,21 @@ declare_mlir_python_extension(MLIRPythonExtension.MLIRPythonSupport
     IRTypes.cpp
 )
 
+# If bindings are not enabled, we just declare the sources and exit.
+# NOTE: That we skip stubgen because they require nanobind to be present.
+if(NOT MLIR_ENABLE_BINDINGS_PYTHON)
+  _flatten_mlir_python_targets(mlir_python_sources_deps MLIRPythonSources)
+  add_custom_target("mlir-python-sources" DEPENDS ${mlir_python_sources_deps})
+  if(NOT LLVM_ENABLE_IDE)
+    add_llvm_install_targets(install-mlir-python-sources
+      DEPENDS mlir-python-sources
+      COMPONENT mlir-python-sources
+    )
+  endif()
+  return()
+endif()
+
+
 ################################################################################
 # Common CAPI dependency DSO.
 # All python extensions must link through one DSO which exports the CAPI, and

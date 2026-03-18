@@ -192,6 +192,8 @@ set(MLIR_PYTHON_PACKAGE_PREFIX "mlir"
   embedded in a relocatable way).")
 set(MLIR_ENABLE_BINDINGS_PYTHON 0 CACHE BOOL
        "Enables building of Python bindings.")
+set(MLIR_ENABLE_PYTHON_SOURCES 0 CACHE BOOL
+  "Enables building of Python sources.")
 set(MLIR_ENABLE_PYTHON_STABLE_ABI 0 CACHE BOOL
        "Build Python bindings against the stable ABI (abi3, PEP 384) for \
        cross-version compatibility. Requires Python 3.12+.")
@@ -275,7 +277,7 @@ endif()
 # Generally things after this point may depend on MLIR_ALL_LIBS or libMLIR.so.
 add_subdirectory(tools)
 
-if(MLIR_ENABLE_BINDINGS_PYTHON)
+if(MLIR_ENABLE_BINDINGS_PYTHON OR MLIR_ENABLE_PYTHON_SOURCES)
   # Python sources: built extensions come in via lib/Bindings/Python
   add_subdirectory(python)
 endif()
