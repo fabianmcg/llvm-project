@@ -205,6 +205,11 @@ struct AffineInlinerInterface : public DialectInlinerInterface {
   /// dialect, can be inlined into the given region, false otherwise.
   bool isLegalToInline(Operation *op, Region *region, bool wouldBeCloned,
                        IRMapping &valueMapping) const final {
+    // Affine computation ops without regions have no AffineScope baggage and
+    // are ery useful independently of affine analyses.
+    if (!isa<AffineForOp, AffineParallelOp, AffineIfOp>(op))
+      return true;
+
     // Always allow inlining affine operations into a region that is marked as
     // affine scope, or into affine loops and conditionals. There are some edge
     // cases when inlining *into* affine structures, but that is handled in the
