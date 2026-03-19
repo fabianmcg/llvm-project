@@ -148,6 +148,24 @@ func.func @valid_symbol_affine_scope(%n : index, %A : memref<?xf32>) {
 
 // -----
 
+// CHECK-LABEL: func @linearize_index_by_strides_static
+//       CHECK:   affine.linearize_index_by_strides[%{{.*}}, %{{.*}}] by (8, 512) : index
+func.func @linearize_index_by_strides_static(%a: index, %b: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (8, 512) : index
+  return %0 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @linearize_index_by_strides_dynamic
+//       CHECK:   affine.linearize_index_by_strides
+func.func @linearize_index_by_strides_dynamic(%a: index, %b: index, %s0: index, %s1: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (%s0, %s1) : index
+  return %0 : index
+}
+
+// -----
+
 // Test dimension constraints for linearize_index and delinearize_index
 
 // CHECK-LABEL: func @valid_dim_linearize_delinearize

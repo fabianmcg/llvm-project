@@ -97,6 +97,19 @@ func.func @delinearize_vector_unroll(%vec: vector<2xindex>) -> (vector<2xindex>,
 
 // -----
 
+//   CHECK-DAG:   #[[$map0:.+]] = affine_map<()[s0, s1] -> (s0 * 8 + s1 * 512)>
+
+// CHECK-LABEL: @linearize_index_by_strides_static
+//  CHECK-SAME:   (%[[A:.+]]: index, %[[B:.+]]: index)
+//       CHECK:   %[[RES:.+]] = affine.apply #[[$map0]]()[%[[A]], %[[B]]]
+//       CHECK:   return %[[RES]]
+func.func @linearize_index_by_strides_static(%a: index, %b: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (8, 512) : index
+  return %0 : index
+}
+
+// -----
+
 // Vector linearize: unrolled to per-element affine.apply.
 
 // CHECK-DAG:   #[[$LIN:.+]] = affine_map<()[s0, s1] -> (s0 * 8 + s1)>
@@ -143,4 +156,17 @@ func.func @linearize_vector_unroll(%v0: vector<2xindex>, %v1: vector<2xindex>) -
 func.func @delinearize_2d_vector_unroll(%vec: vector<2x2xindex>) -> (vector<2x2xindex>, vector<2x2xindex>) {
   %0:2 = affine.delinearize_index %vec into (4, 8) : vector<2x2xindex>, vector<2x2xindex>
   return %0#0, %0#1 : vector<2x2xindex>, vector<2x2xindex>
+}
+
+// -----
+
+//   CHECK-DAG:   #[[$map0:.+]] = affine_map<()[s0, s1, s2, s3] -> (s0 * s1 + s2 * s3)>
+
+// CHECK-LABEL: @linearize_index_by_strides_dynamic
+//  CHECK-SAME:   (%[[A:.+]]: index, %[[B:.+]]: index, %[[S0:.+]]: index, %[[S1:.+]]: index)
+//       CHECK:   %[[RES:.+]] = affine.apply #[[$map0]]()[%[[A]], %[[S0]], %[[B]], %[[S1]]]
+//       CHECK:   return %[[RES]]
+func.func @linearize_index_by_strides_dynamic(%a: index, %b: index, %s0: index, %s1: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (%s0, %s1) : index
+  return %0 : index
 }
