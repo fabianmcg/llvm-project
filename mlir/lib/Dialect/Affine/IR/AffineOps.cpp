@@ -5689,6 +5689,148 @@ void affine::AffineLinearizeIndexOp::getCanonicalizationPatterns(
 }
 
 //===----------------------------------------------------------------------===//
+// AffineLinearizeIndexByStridesOp
+//===----------------------------------------------------------------------===//
+
+void AffineLinearizeIndexByStridesOp::build(OpBuilder &builder,
+                                            OperationState &result,
+                                            ValueRange multiIndex,
+                                            ArrayRef<int64_t> strides) {
+  SmallVector<OpFoldResult> stridesOfr;
+  for (int64_t s : strides)
+    stridesOfr.push_back(builder.getIndexAttr(s));
+  build(builder, result, multiIndex, stridesOfr);
+}
+
+void AffineLinearizeIndexByStridesOp::build(OpBuilder &builder,
+                                            OperationState &result,
+                                            ValueRange multiIndex,
+                                            ArrayRef<OpFoldResult> strides) {
+  SmallVector<Value> dynamicStrides;
+  SmallVector<int64_t> staticStrides;
+  dispatchIndexOpFoldResults(strides, dynamicStrides, staticStrides);
+
+  result.addTypes(builder.getIndexType());
+  result.addOperands(multiIndex);
+  result.addOperands(dynamicStrides);
+  result.addAttribute(getStaticStridesAttrName(result.name),
+                      builder.getDenseI64ArrayAttr(staticStrides));
+  result.addAttribute(getOperandSegmentSizeAttr(),
+                      builder.getDenseI32ArrayAttr(
+                          {static_cast<int32_t>(multiIndex.size()),
+                           static_cast<int32_t>(dynamicStrides.size())}));
+}
+
+LogicalResult AffineLinearizeIndexByStridesOp::verify() {
+  if (getMultiIndex().size() != getStaticStrides().size())
+    return emitOpError("expected same number of indices and strides, got ")
+           << getMultiIndex().size() << " and " << getStaticStrides().size();
+  return success();
+}
+
+OpFoldResult AffineLinearizeIndexByStridesOp::fold(FoldAdaptor adaptor) {
+  // Empty indices -> 0.
+  if (getMultiIndex().empty())
+    return IntegerAttr::get(IndexType::get(getContext()), 0);
+
+  // Single index with stride 1 -> the index itself.
+  if (getMultiIndex().size() == 1 && getStaticStrides()[0] == 1)
+    return getMultiIndex().front();
+
+  // All-constant: evaluate the dot product.
+  SmallVector<int64_t> indices;
+  for (auto attr : adaptor.getMultiIndex()) {
+    if (!attr)
+      return {};
+    indices.push_back(cast<IntegerAttr>(attr).getInt());
+  }
+  ArrayRef<int64_t> strides = getStaticStrides();
+  // All strides must be static for constant folding.
+  for (int64_t s : strides)
+    if (s == ShapedType::kDynamic)
+      return {};
+  int64_t result = 0;
+  for (auto [idx, stride] : llvm::zip_equal(indices, strides))
+    result += idx * stride;
+  return IntegerAttr::get(IndexType::get(getContext()), result);
+}
+
+namespace {
+/// Drop components where the index is known to be zero (contributes nothing
+/// to the dot product).
+struct DropLinearizeByStridesZeroIndex final
+    : OpRewritePattern<affine::AffineLinearizeIndexByStridesOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(affine::AffineLinearizeIndexByStridesOp op,
+                                PatternRewriter &rewriter) const override {
+    SmallVector<Value> newIndices;
+    SmallVector<OpFoldResult> newStrides;
+    SmallVector<OpFoldResult> strides = op.getMixedStrides();
+
+    for (auto [index, stride] :
+         llvm::zip_equal(op.getMultiIndex(), strides)) {
+      if (matchPattern(index, m_Zero()))
+        continue;
+      newIndices.push_back(index);
+      newStrides.push_back(stride);
+    }
+
+    if (newIndices.size() == op.getMultiIndex().size())
+      return failure();
+
+    if (newIndices.empty()) {
+      rewriter.replaceOpWithNewOp<arith::ConstantIndexOp>(op, 0);
+      return success();
+    }
+    rewriter.replaceOpWithNewOp<affine::AffineLinearizeIndexByStridesOp>(
+        op, newIndices, newStrides);
+    return success();
+  }
+};
+
+/// Drop components where the stride is known to be zero (contributes nothing
+/// to the dot product).
+struct DropLinearizeByStridesZeroStride final
+    : OpRewritePattern<affine::AffineLinearizeIndexByStridesOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(affine::AffineLinearizeIndexByStridesOp op,
+                                PatternRewriter &rewriter) const override {
+    SmallVector<Value> newIndices;
+    SmallVector<OpFoldResult> newStrides;
+    SmallVector<OpFoldResult> strides = op.getMixedStrides();
+
+    for (auto [index, stride] :
+         llvm::zip_equal(op.getMultiIndex(), strides)) {
+      std::optional<int64_t> strideVal = getConstantIntValue(stride);
+      if (strideVal && *strideVal == 0)
+        continue;
+      newIndices.push_back(index);
+      newStrides.push_back(stride);
+    }
+
+    if (newIndices.size() == op.getMultiIndex().size())
+      return failure();
+
+    if (newIndices.empty()) {
+      rewriter.replaceOpWithNewOp<arith::ConstantIndexOp>(op, 0);
+      return success();
+    }
+    rewriter.replaceOpWithNewOp<affine::AffineLinearizeIndexByStridesOp>(
+        op, newIndices, newStrides);
+    return success();
+  }
+};
+} // namespace
+
+void affine::AffineLinearizeIndexByStridesOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns, MLIRContext *context) {
+  patterns.add<DropLinearizeByStridesZeroIndex,
+               DropLinearizeByStridesZeroStride>(context);
+}
+
+//===----------------------------------------------------------------------===//
 // TableGen'd op method definitions
 //===----------------------------------------------------------------------===//
 

@@ -147,6 +147,29 @@ struct LowerLinearizeIndexOps final : OpRewritePattern<AffineLinearizeIndexOp> {
   }
 };
 
+/// Lowers `affine.linearize_index_by_strides` to `affine.apply` with an
+/// explicit stride dot-product map: result = sum(idx_i * stride_i).
+struct LowerLinearizeIndexByStridesOps final
+    : OpRewritePattern<AffineLinearizeIndexByStridesOp> {
+  using OpRewritePattern::OpRewritePattern;
+  LogicalResult matchAndRewrite(AffineLinearizeIndexByStridesOp op,
+                                PatternRewriter &rewriter) const override {
+    if (op.getMultiIndex().empty()) {
+      rewriter.replaceOpWithNewOp<arith::ConstantIndexOp>(op, 0);
+      return success();
+    }
+
+    SmallVector<OpFoldResult> indices = getAsOpFoldResult(op.getMultiIndex());
+    auto &&[linearExpr, operands] = computeLinearIndex(
+        rewriter.getIndexAttr(0), op.getMixedStrides(), indices);
+    OpFoldResult result = affine::makeComposedFoldedAffineApply(
+        rewriter, op.getLoc(), linearExpr, operands);
+    rewriter.replaceOp(
+        op, getValueOrCreateConstantIntOp(rewriter, op.getLoc(), result));
+    return success();
+  }
+};
+
 class ExpandAffineIndexOpsAsAffinePass
     : public affine::impl::AffineExpandIndexOpsAsAffineBase<
           ExpandAffineIndexOpsAsAffinePass> {
@@ -166,7 +189,8 @@ public:
 
 void mlir::affine::populateAffineExpandIndexOpsAsAffinePatterns(
     RewritePatternSet &patterns) {
-  patterns.insert<LowerDelinearizeIndexOps, LowerLinearizeIndexOps>(
+  patterns.insert<LowerDelinearizeIndexOps, LowerLinearizeIndexOps,
+                  LowerLinearizeIndexByStridesOps>(
       patterns.getContext());
 }
 

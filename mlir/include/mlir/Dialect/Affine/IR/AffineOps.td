@@ -1285,6 +1285,73 @@ def AffineLinearizeIndexOp : Affine_Op<"linearize_index",
 }
 
 //===----------------------------------------------------------------------===//
+// AffineLinearizeIndexByStridesOp
+//===----------------------------------------------------------------------===//
+
+def AffineLinearizeIndexByStridesOp : Affine_Op<"linearize_index_by_strides",
+    [Pure, AttrSizedOperandSegments]> {
+  let summary = "linearize a multi-index using explicit strides";
+  let description = [{
+    The `affine.linearize_index_by_strides` operation takes a sequence of index
+    values and a sequence of strides of the same length and computes:
+
+    ```
+    result = sum(i = 0 to N-1) %idx_i * stride_i
+    ```
+
+    Unlike `affine.linearize_index` where strides are implicitly derived as
+    suffix products of a basis, here the strides are explicit parameters. This
+    supports non-contiguous layouts where `stride_i != product(basis[i+1:])`.
+
+    Example:
+
+    ```mlir
+    %linear_index = affine.linearize_index_by_strides [%idx_0, %idx_1] by (8, 512)
+      : index
+    ```
+
+    In the above example, `%linear_index` conceptually holds the following:
+
+    ```mlir
+    #map = affine_map<(d0, d1) -> (d0 * 8 + d1 * 512)>
+    %linear_index = affine.apply #map(%idx_0, %idx_1)
+    ```
+
+    In contrast, `affine.linearize_index` derives strides as suffix products of
+    a basis (e.g., basis `(2, 3, 5)` gives strides `(15, 5, 1)`). This
+    operation takes the strides directly, supporting non-contiguous layouts
+    where strides are not suffix products of any basis.
+  }];
+
+  let arguments = (ins Variadic<Index>:$multi_index,
+    Variadic<Index>:$dynamic_strides,
+    DenseI64ArrayAttr:$static_strides);
+  let results = (outs Index:$linear_index);
+
+  let assemblyFormat = [{
+    `[` $multi_index `]` `by`
+    custom<DynamicIndexList>($dynamic_strides, $static_strides, "{}", "::mlir::AsmParser::Delimiter::Paren")
+    attr-dict `:` type($linear_index)
+  }];
+
+  let builders = [
+    OpBuilder<(ins "ValueRange":$multi_index, "ArrayRef<int64_t>":$strides)>,
+    OpBuilder<(ins "ValueRange":$multi_index, "ArrayRef<OpFoldResult>":$strides)>
+  ];
+
+  let extraClassDeclaration = [{
+    SmallVector<OpFoldResult> getMixedStrides() {
+      OpBuilder builder(getContext());
+      return ::mlir::getMixedValues(getStaticStrides(), getDynamicStrides(), builder);
+    }
+  }];
+
+  let hasVerifier = 1;
+  let hasFolder = 1;
+  let hasCanonicalizer = 1;
+}
+
+//===----------------------------------------------------------------------===//
 // AffineDmaStartOp
 //===----------------------------------------------------------------------===//
 
