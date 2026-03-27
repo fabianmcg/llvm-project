@@ -43,12 +43,15 @@ static std::optional<StringRef> getDefaultValueFromInit(const Init *def) {
   return value && !value->empty() ? value : std::nullopt;
 }
 
-Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
-  // Populate parameters from the "dagParams" DAG field.
-  const DagInit *dag = def->getValueAsDag("dagParams");
+/// Populates the common builder fields (dagParams, body, odsCppDeprecated)
+/// into \p builder from \p record.
+static void populateCommonBuilderFields(const Record *record,
+                                        ArrayRef<llvm::SMLoc> loc,
+                                        ods::Builder &builder) {
+  const DagInit *dag = record->getValueAsDag("dagParams");
   auto *defInit = dyn_cast<DefInit>(dag->getOperator());
   if (!defInit || defInit->getDef()->getName() != "ins")
-    PrintFatalError(def->getLoc(), "expected 'ins' in builders");
+    PrintFatalError(record->getLoc(), "expected 'ins' in builders");
 
   bool seenDefaultValue = false;
   for (unsigned i = 0, e = dag->getNumArgs(); i < e; ++i) {
@@ -61,10 +64,8 @@ Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
     StringRef cppType = getCppTypeFromInit(paramValue);
     std::optional<StringRef> defaultValue = getDefaultValueFromInit(paramValue);
 
-    Parameter param(name, cppType, defaultValue);
+    ods::Builder::Parameter param(name, cppType, defaultValue);
 
-    // Similarly to C++, once an argument with a default value is detected, the
-    // following arguments must have default values as well.
     if (param.getDefaultValue()) {
       seenDefaultValue = true;
     } else if (seenDefaultValue) {
@@ -72,17 +73,37 @@ Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
                       "expected an argument with default value after other "
                       "arguments with default values");
     }
-    parameters.emplace_back(param);
+    builder.parameters.emplace_back(param);
   }
 
-  // Populate the body field.
-  std::optional<StringRef> bodyStr = def->getValueAsOptionalString("body");
+  std::optional<StringRef> bodyStr = record->getValueAsOptionalString("body");
   if (bodyStr && !bodyStr->empty())
-    body = bodyStr->str();
+    builder.body = bodyStr->str();
 
-  // Populate the deprecated message field.
   std::optional<StringRef> msg =
-      def->getValueAsOptionalString("odsCppDeprecated");
+      record->getValueAsOptionalString("odsCppDeprecated");
   if (msg && !msg->empty())
-    deprecatedMessage = msg->str();
+    builder.deprecatedMessage = msg->str();
+}
+
+ods::Builder tblgen::builderFromRecord(const llvm::Record *record,
+                                       ArrayRef<llvm::SMLoc> loc) {
+  ods::Builder builder;
+  populateCommonBuilderFields(record, loc, builder);
+  return builder;
+}
+
+ods::Builder tblgen::attrOrTypeBuilderFromRecord(const llvm::Record *record,
+                                                 ArrayRef<llvm::SMLoc> loc) {
+  ods::Builder builder;
+  populateCommonBuilderFields(record, loc, builder);
+
+  std::optional<StringRef> returnTypeStr =
+      record->getValueAsOptionalString("returnType");
+  if (returnTypeStr && !returnTypeStr->empty())
+    builder.returnType = returnTypeStr->str();
+
+  builder.inferredContextParameter =
+      record->getValueAsBit("hasInferredContextParam");
+  return builder;
 }

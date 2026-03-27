@@ -25,19 +25,6 @@ using llvm::RecordVal;
 using llvm::StringInit;
 
 //===----------------------------------------------------------------------===//
-// AttrOrTypeBuilder
-//===----------------------------------------------------------------------===//
-
-std::optional<StringRef> AttrOrTypeBuilder::getReturnType() const {
-  std::optional<StringRef> type = def->getValueAsOptionalString("returnType");
-  return type && !type->empty() ? type : std::nullopt;
-}
-
-bool AttrOrTypeBuilder::hasInferredContextParameter() const {
-  return def->getValueAsBit("hasInferredContextParam");
-}
-
-//===----------------------------------------------------------------------===//
 // AttrOrTypeDef
 //===----------------------------------------------------------------------===//
 
@@ -47,7 +34,9 @@ AttrOrTypeDef::AttrOrTypeDef(const Record *def) : def(def) {
       dyn_cast_or_null<ListInit>(def->getValueInit("builders"));
   if (builderList && !builderList->empty()) {
     for (const Init *init : builderList->getElements()) {
-      AttrOrTypeBuilder builder(cast<DefInit>(init)->getDef(), def->getLoc());
+      AttrOrTypeBuilder builder =
+          tblgen::attrOrTypeBuilderFromRecord(cast<DefInit>(init)->getDef(),
+                                             def->getLoc());
 
       // Ensure that all parameters have names.
       for (const AttrOrTypeBuilder::Parameter &param :

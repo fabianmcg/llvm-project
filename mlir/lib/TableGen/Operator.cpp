@@ -801,7 +801,8 @@ void Operator::populateOpStructure() {
   auto *builderList = dyn_cast_or_null<ListInit>(def.getValueInit("builders"));
   if (builderList && !builderList->empty()) {
     for (const Init *init : builderList->getElements())
-      builders.emplace_back(cast<DefInit>(init)->getDef(), def.getLoc());
+      builders.push_back(
+          tblgen::builderFromRecord(cast<DefInit>(init)->getDef(), def.getLoc()));
   } else if (skipDefaultBuilders()) {
     PrintFatalError(
         def.getLoc(),

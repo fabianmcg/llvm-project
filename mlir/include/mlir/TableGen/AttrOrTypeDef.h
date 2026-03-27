@@ -29,21 +29,9 @@ class SMLoc;
 namespace mlir {
 namespace tblgen {
 
-//===----------------------------------------------------------------------===//
-// AttrOrTypeBuilder
-//===----------------------------------------------------------------------===//
-
-/// Wrapper class that represents a Tablegen AttrOrTypeBuilder.
-class AttrOrTypeBuilder : public Builder {
-public:
-  using Builder::Builder;
-
-  /// Returns an optional builder return type.
-  std::optional<StringRef> getReturnType() const;
-
-  /// Returns true if this builder is able to infer the MLIRContext parameter.
-  bool hasInferredContextParameter() const;
-};
+// Re-export the ODS type so existing callers using tblgen::AttrOrTypeBuilder
+// continue to work unchanged.
+using AttrOrTypeBuilder = mlir::ods::Builder;
 
 //===----------------------------------------------------------------------===//
 // AttrOrTypeParameter

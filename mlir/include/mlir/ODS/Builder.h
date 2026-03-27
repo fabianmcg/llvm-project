@@ -83,10 +83,27 @@ public:
     return StringRef(*deprecatedMessage);
   }
 
-protected:
+  /// Returns the optional return type for attr/type builders (empty for op
+  /// builders).
+  std::optional<StringRef> getReturnType() const {
+    if (!returnType)
+      return std::nullopt;
+    return StringRef(*returnType);
+  }
+
+  /// Returns true if this attr/type builder can infer the MLIRContext
+  /// parameter.
+  bool hasInferredContextParameter() const { return inferredContextParameter; }
+
+// All fields are public so that free factory functions (e.g.,
+// tblgen::builderFromRecord) can populate them without requiring friendship.
+// Callers should use the accessor methods above for read access.
+public:
   SmallVector<Parameter> parameters;
   std::optional<std::string> body;
   std::optional<std::string> deprecatedMessage;
+  std::optional<std::string> returnType;
+  bool inferredContextParameter{false};
 };
 
 } // namespace ods

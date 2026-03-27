@@ -1,4 +1,4 @@
-//===- Builder.h - Builder classes ------------------------------*- C++ -*-===//
+//===- Builder.h - TableGen builder definitions -----------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,8 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// TableGen wrapper around ODS Builder. Derives from mlir::ods::Builder and
-// populates the ODS fields from an llvm::Record in its constructor.
+// Free functions for constructing mlir::ods::Builder from llvm::Record.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,24 +24,20 @@ class SMLoc;
 namespace mlir {
 namespace tblgen {
 
-/// TableGen wrapper for a builder method. Derives from mlir::ods::Builder and
-/// additionally stores the underlying llvm::Record. All ODS fields are
-/// populated eagerly in the constructor.
-class Builder : public mlir::ods::Builder {
-public:
-  // Re-export the ODS Parameter type so existing callers using
-  // tblgen::Builder::Parameter continue to work.
-  using Parameter = mlir::ods::Builder::Parameter;
+// Re-export the ODS type so existing callers using tblgen::Builder and
+// tblgen::Builder::Parameter continue to work unchanged.
+using Builder = mlir::ods::Builder;
 
-  /// Constructs a Builder from the given Record instance.
-  Builder(const llvm::Record *record, ArrayRef<SMLoc> loc);
+/// Constructs an ods::Builder for an op builder by reading the common fields
+/// (dagParams, body, odsCppDeprecated) from the TableGen record.
+ods::Builder builderFromRecord(const llvm::Record *record,
+                               ArrayRef<SMLoc> loc);
 
-  /// Returns the underlying TableGen record.
-  const llvm::Record *getDef() const { return def; }
-
-protected:
-  const llvm::Record *def;
-};
+/// Constructs an ods::Builder for an AttrOrTypeDef builder, reading the common
+/// fields plus the attr/type-specific returnType and hasInferredContextParam
+/// fields.
+ods::Builder attrOrTypeBuilderFromRecord(const llvm::Record *record,
+                                         ArrayRef<SMLoc> loc);
 
 } // namespace tblgen
 } // namespace mlir
