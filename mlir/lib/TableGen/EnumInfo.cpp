@@ -24,6 +24,10 @@ EnumCase::EnumCase(const Record *record) : def(record) {
   symbol = def->getValueAsString("symbol").str();
   str = def->getValueAsString("str").str();
   value = def->getValueAsInt("value");
+  isBitEnumCaseGroup = def->isSubClassOf("BitEnumCaseGroup") ||
+                       def->isSubClassOf("BitEnumAttrCaseGroup");
+  isBitEnumCaseBit = def->isSubClassOf("BitEnumCaseBit") ||
+                     def->isSubClassOf("BitEnumAttrCaseBit");
 }
 
 EnumCase::EnumCase(const DefInit *init) : EnumCase(init->getDef()) {}
@@ -59,14 +63,24 @@ EnumInfo::EnumInfo(const Record *record) : def(record) {
   bitEnumPrimaryGroups =
       bitEnum && def->getValueAsBit("printBitEnumPrimaryGroups");
   bitEnumQuoted = bitEnum && def->getValueAsBit("printBitEnumQuoted");
+  if (bitEnum)
+    separator = def->getValueAsString("separator").str();
 
   // Cache cases as ods::EnumCase objects.
   const auto *inits = def->getValueAsListInit("enumerants");
   cases.reserve(inits->size());
-  for (const Init *init : *inits)
-    cases.emplace_back(llvm::cast<DefInit>(init)->getDef()->getValueAsString("symbol"),
-                       llvm::cast<DefInit>(init)->getDef()->getValueAsString("str"),
-                       llvm::cast<DefInit>(init)->getDef()->getValueAsInt("value"));
+  for (const Init *init : *inits) {
+    const Record *caseRecord = llvm::cast<DefInit>(init)->getDef();
+    cases.emplace_back(caseRecord->getValueAsString("symbol"),
+                       caseRecord->getValueAsString("str"),
+                       caseRecord->getValueAsInt("value"));
+    cases.back().isBitEnumCaseGroup =
+        caseRecord->isSubClassOf("BitEnumCaseGroup") ||
+        caseRecord->isSubClassOf("BitEnumAttrCaseGroup");
+    cases.back().isBitEnumCaseBit =
+        caseRecord->isSubClassOf("BitEnumCaseBit") ||
+        caseRecord->isSubClassOf("BitEnumAttrCaseBit");
+  }
 }
 
 EnumInfo::EnumInfo(const Record &record) : EnumInfo(&record) {}

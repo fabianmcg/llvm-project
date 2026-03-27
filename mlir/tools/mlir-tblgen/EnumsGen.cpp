@@ -225,7 +225,7 @@ inline ::llvm::raw_ostream &operator<<(::llvm::raw_ostream &p, {0} value) {{
       return PrintFatalError(
           "bit enum " + qualName +
           " cannot be printed unquoted with cases that cannot be keywords");
-    StringRef separator = enumInfo.getDef().getValueAsString("separator");
+    StringRef separator = enumInfo.getSeparator();
     StringRef parseSeparatorFn =
         llvm::StringSwitch<StringRef>(separator.trim())
             .Case("|", "parseOptionalVerticalBar")
@@ -493,18 +493,14 @@ static void emitSymToStrFnForBitEnum(const Record &enumDef, raw_ostream &os) {
     // Emit comparisons for group bit cases in reverse tablegen declaration
     // order, removing bits for groups with all bits present.
     for (const auto &enumerant : llvm::reverse(enumerants)) {
-      if ((enumerant.getValue() != 0) &&
-          (enumerant.getDef().isSubClassOf("BitEnumCaseGroup") ||
-           enumerant.getDef().isSubClassOf("BitEnumAttrCaseGroup"))) {
+      if ((enumerant.getValue() != 0) && enumerant.getIsBitEnumCaseGroup()) {
         os << formatv(formatCompareRemove, enumerant.getValue(),
                       enumerant.getStr(), enumInfo.getUnderlyingType());
       }
     }
     // Emit comparisons for individual bit cases in tablegen declaration order.
     for (const auto &enumerant : enumerants) {
-      if ((enumerant.getValue() != 0) &&
-          (enumerant.getDef().isSubClassOf("BitEnumCaseBit") ||
-           enumerant.getDef().isSubClassOf("BitEnumAttrCaseBit")))
+      if ((enumerant.getValue() != 0) && enumerant.getIsBitEnumCaseBit())
         os << formatv(formatCompare, enumerant.getValue(), enumerant.getStr());
     }
   } else {

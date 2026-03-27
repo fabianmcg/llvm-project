@@ -43,10 +43,22 @@ public:
   // Returns the integer value of this enum case.
   int64_t getValue() const { return value; }
 
-protected:
+  // Returns true if this case is a bit enum group (a combination of bits).
+  // Covers both BitEnumCaseGroup and BitEnumAttrCaseGroup subclasses.
+  bool getIsBitEnumCaseGroup() const { return isBitEnumCaseGroup; }
+
+  // Returns true if this case is an individual bit in a bit enum.
+  // Covers both BitEnumCaseBit and BitEnumAttrCaseBit subclasses.
+  bool getIsBitEnumCaseBit() const { return isBitEnumCaseBit; }
+
+// All fields are public so that free factory functions can populate them
+// without requiring friendship.
+public:
   std::string symbol;
   std::string str;
   int64_t value{0};
+  bool isBitEnumCaseGroup{false};
+  bool isBitEnumCaseBit{false};
 };
 
 /// Pure C++ model for an MLIR ODS enum definition. Fields are populated
@@ -117,7 +129,14 @@ public:
   // Returns whether bit enum values should be quoted.
   bool printBitEnumQuoted() const { return bitEnumQuoted; }
 
-protected:
+  // Returns the separator string used when printing bit enum values unquoted
+  // (e.g. "|" or ","). Only meaningful for bit enums with printBitEnumQuoted
+  // == false.
+  StringRef getSeparator() const { return separator; }
+
+// All fields are public so that free factory functions can populate them
+// without requiring friendship.
+public:
   std::string enumClassName;
   std::string cppNamespace;
   std::string summary;
@@ -129,6 +148,8 @@ protected:
   std::string symbolToStringFnRetType;
   std::string maxEnumValFnName;
   std::string specializedAttrClassName;
+  /// Separator for bit enum values when printed unquoted; empty otherwise.
+  std::string separator;
   std::vector<ods::EnumCase> cases;
   int64_t bitwidth{0};
   bool enumAttr{false};
