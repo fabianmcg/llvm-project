@@ -545,8 +545,8 @@ void OpOrAdaptorHelper::computeAttrMetadata() {
   }
 
   // Store the metadata in sorted order.
-  SmallVector<AttributeMetadata> sortedAttrMetadata =
-      llvm::to_vector(llvm::make_second_range(attrMetadata.takeVector()));
+  SmallVector<AttributeMetadata, 4> sortedAttrMetadata =
+      llvm::to_vector<4>(llvm::make_second_range(attrMetadata.takeVector()));
   llvm::sort(sortedAttrMetadata,
              [](const AttributeMetadata &lhs, const AttributeMetadata &rhs) {
                return lhs.attrName < rhs.attrName;

@@ -23,8 +23,9 @@ public:
 
   static bool classof(const Constraint *c) { return c->getKind() == CK_Region; }
 
-  // Returns true if this region is variadic.
-  bool isVariadic() const;
+  // Returns true if this region is variadic. Reads from the cached ODS field
+  // set during Constraint construction.
+  bool isVariadic() const { return mlir::ods::Constraint::isVariadic(); }
 };
 
 // A struct bundling a region's constraint and its name.

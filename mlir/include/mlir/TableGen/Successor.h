@@ -25,8 +25,9 @@ public:
     return c->getKind() == CK_Successor;
   }
 
-  // Returns true if this successor is variadic.
-  bool isVariadic() const;
+  // Returns true if this successor is variadic. Reads from the cached ODS field
+  // set during Constraint construction.
+  bool isVariadic() const { return mlir::ods::Constraint::isVariadic(); }
 };
 
 // A struct bundling a successor's constraint and its name.

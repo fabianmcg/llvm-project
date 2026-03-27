@@ -67,6 +67,10 @@ public:
     return StringRef(*cppFunctionName);
   }
 
+  /// Returns true if this constraint is variadic. Applies to Region, Successor,
+  /// and TypeConstraint subclasses; false for all others.
+  bool isVariadic() const { return variadic; }
+
   bool operator==(const Constraint &other) const {
     return kind == other.kind && summary == other.summary &&
            conditionTemplate == other.conditionTemplate;
@@ -83,6 +87,7 @@ protected:
   std::string defName;
   std::string uniqueDefName;
   std::optional<std::string> cppFunctionName;
+  bool variadic{false};
 };
 
 } // namespace ods

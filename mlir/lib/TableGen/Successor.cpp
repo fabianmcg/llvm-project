@@ -7,17 +7,9 @@
 //===----------------------------------------------------------------------===//
 //
 // Successor wrapper to simplify using TableGen Record defining a MLIR
-// Successor.
+// Successor. isVariadic() is now inlined via the cached ods::Constraint::variadic
+// field.
 //
 //===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Successor.h"
-#include "llvm/TableGen/Record.h"
-
-using namespace mlir;
-using namespace mlir::tblgen;
-
-// Returns true if this successor is variadic.
-bool Successor::isVariadic() const {
-  return def->isSubClassOf("VariadicSuccessor");
-}

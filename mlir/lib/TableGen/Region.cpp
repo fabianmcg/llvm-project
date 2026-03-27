@@ -7,14 +7,8 @@
 //===----------------------------------------------------------------------===//
 //
 // Region wrapper to simplify using TableGen Record defining a MLIR Region.
+// isVariadic() is now inlined via the cached ods::Constraint::variadic field.
 //
 //===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Region.h"
-#include "llvm/TableGen/Record.h"
-
-using namespace mlir;
-using namespace mlir::tblgen;
-
-// Returns true if this region is variadic.
-bool Region::isVariadic() const { return def->isSubClassOf("VariadicRegion"); }

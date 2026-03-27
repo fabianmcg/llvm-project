@@ -92,6 +92,19 @@ void Constraint::populate() {
       def->getValueAsOptionalString("cppFunctionName");
   if (cppName && !cppName->empty())
     cppFunctionName = cppName->str();
+
+  // variadic: kind-specific subclass check
+  switch (kind) {
+  case CK_Region:
+    variadic = def->isSubClassOf("VariadicRegion");
+    break;
+  case CK_Successor:
+    variadic = def->isSubClassOf("VariadicSuccessor");
+    break;
+  default:
+    variadic = false;
+    break;
+  }
 }
 
 Pred Constraint::getPredicate() const {
