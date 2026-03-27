@@ -6,21 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Builder wrapper to simplify using TableGen Record for building
-// operations/types/etc.
+// TableGen wrapper around ODS Builder. Derives from mlir::ods::Builder and
+// populates the ODS fields from an llvm::Record in its constructor.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TABLEGEN_BUILDER_H_
 #define MLIR_TABLEGEN_BUILDER_H_
 
+#include "mlir/ODS/Builder.h"
 #include "mlir/Support/LLVM.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
 
 namespace llvm {
-class Init;
 class Record;
 class SMLoc;
 } // namespace llvm
@@ -28,59 +25,23 @@ class SMLoc;
 namespace mlir {
 namespace tblgen {
 
-/// Wrapper class with helper methods for accessing Builders defined in
-/// TableGen.
-class Builder {
+/// TableGen wrapper for a builder method. Derives from mlir::ods::Builder and
+/// additionally stores the underlying llvm::Record. All ODS fields are
+/// populated eagerly in the constructor.
+class Builder : public mlir::ods::Builder {
 public:
-  /// This class represents a single parameter to a builder method.
-  class Parameter {
-  public:
-    /// Return a string containing the C++ type of this parameter.
-    StringRef getCppType() const;
+  // Re-export the ODS Parameter type so existing callers using
+  // tblgen::Builder::Parameter continue to work.
+  using Parameter = mlir::ods::Builder::Parameter;
 
-    /// Return an optional string containing the name of this parameter. If
-    /// std::nullopt, no name was specified for this parameter by the user.
-    std::optional<StringRef> getName() const { return name; }
-
-    /// Return an optional string containing the default value to use for this
-    /// parameter.
-    std::optional<StringRef> getDefaultValue() const;
-
-  private:
-    Parameter(std::optional<StringRef> name, const llvm::Init *def)
-        : name(name), def(def) {}
-
-    /// The optional name of the parameter.
-    std::optional<StringRef> name;
-
-    /// The tablegen definition of the parameter. This is either a StringInit,
-    /// or a CArg DefInit.
-    const llvm::Init *def;
-
-    // Allow access to the constructor.
-    friend Builder;
-  };
-
-  /// Construct a builder from the given Record instance.
+  /// Constructs a Builder from the given Record instance.
   Builder(const llvm::Record *record, ArrayRef<SMLoc> loc);
 
-  /// Return a list of parameters used in this build method.
-  ArrayRef<Parameter> getParameters() const { return parameters; }
-
-  /// Return an optional string containing the body of the builder.
-  std::optional<StringRef> getBody() const;
-
-  /// Return the deprecation message of the builder.
-  /// Empty optional if the builder is not deprecated.
-  std::optional<StringRef> getDeprecatedMessage() const;
+  /// Returns the underlying TableGen record.
+  const llvm::Record *getDef() const { return def; }
 
 protected:
-  /// The TableGen definition of this builder.
   const llvm::Record *def;
-
-private:
-  /// A collection of parameters to the builder.
-  SmallVector<Parameter> parameters;
 };
 
 } // namespace tblgen

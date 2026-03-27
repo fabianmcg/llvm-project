@@ -30,6 +30,7 @@
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/TableGen/Error.h"
 #include "llvm/TableGen/Parser.h"
+#include "llvm/TableGen/Record.h"
 #include <optional>
 #include <string>
 
@@ -130,7 +131,7 @@ private:
 
   /// Lookup ODS information for the given operation, returns nullptr if no
   /// information is found.
-  const ods::Operation *lookupODSOperation(std::optional<StringRef> opName) {
+  const pdll::ods::Operation *lookupODSOperation(std::optional<StringRef> opName) {
     return opName ? ctx.getODSContext().lookupOperation(*opName) : nullptr;
   }
 
@@ -427,18 +428,18 @@ private:
                       SmallVectorImpl<ast::Expr *> &results);
   LogicalResult
   validateOperationOperands(SMRange loc, std::optional<StringRef> name,
-                            const ods::Operation *odsOp,
+                            const pdll::ods::Operation *odsOp,
                             SmallVectorImpl<ast::Expr *> &operands);
   LogicalResult validateOperationResults(SMRange loc,
                                          std::optional<StringRef> name,
-                                         const ods::Operation *odsOp,
+                                         const pdll::ods::Operation *odsOp,
                                          SmallVectorImpl<ast::Expr *> &results);
   void checkOperationResultTypeInferrence(SMRange loc, StringRef name,
-                                          const ods::Operation *odsOp);
+                                          const pdll::ods::Operation *odsOp);
   LogicalResult validateOperationOperandsOrResults(
       StringRef groupName, SMRange loc, std::optional<SMRange> odsOpLoc,
       std::optional<StringRef> name, SmallVectorImpl<ast::Expr *> &values,
-      ArrayRef<ods::OperandOrResult> odsValues, ast::Type singleTy,
+      ArrayRef<pdll::ods::OperandOrResult> odsValues, ast::Type singleTy,
       ast::RangeType rangeTy);
   FailureOr<ast::TupleExpr *> createTupleExpr(SMRange loc,
                                               ArrayRef<ast::Expr *> elements,
@@ -666,7 +667,7 @@ LogicalResult Parser::convertOpExpressionTo(
   if (type == valueTy) {
     // If the operation is registered, we can verify if it can ever have a
     // single result.
-    if (const ods::Operation *odsOp = exprType.getODSOperation()) {
+    if (const pdll::ods::Operation *odsOp = exprType.getODSOperation()) {
       if (odsOp->getResults().empty()) {
         return emitErrorFn()->attachNote(
             llvm::formatv("see the definition of `{0}`, which was defined "
@@ -676,9 +677,9 @@ LogicalResult Parser::convertOpExpressionTo(
       }
 
       unsigned numSingleResults = llvm::count_if(
-          odsOp->getResults(), [](const ods::OperandOrResult &result) {
+          odsOp->getResults(), [](const pdll::ods::OperandOrResult &result) {
             return result.getVariableLengthKind() ==
-                   ods::VariableLengthKind::Single;
+                   pdll::ods::VariableLengthKind::Single;
           });
       if (numSingleResults > 1) {
         return emitErrorFn()->attachNote(
@@ -870,15 +871,15 @@ void Parser::processTdIncludeRecords(const llvm::RecordKeeper &tdRecords,
   // Return the length kind of the given value.
   auto getLengthKind = [](const auto &value) {
     if (value.isOptional())
-      return ods::VariableLengthKind::Optional;
-    return value.isVariadic() ? ods::VariableLengthKind::Variadic
-                              : ods::VariableLengthKind::Single;
+      return pdll::ods::VariableLengthKind::Optional;
+    return value.isVariadic() ? pdll::ods::VariableLengthKind::Variadic
+                              : pdll::ods::VariableLengthKind::Single;
   };
 
   // Insert a type constraint into the ODS context.
-  ods::Context &odsContext = ctx.getODSContext();
+  pdll::ods::Context &odsContext = ctx.getODSContext();
   auto addTypeConstraint = [&](const tblgen::NamedTypeConstraint &cst)
-      -> const ods::TypeConstraint & {
+      -> const pdll::ods::TypeConstraint & {
     return odsContext.insertTypeConstraint(
         cst.constraint.getUniqueDefName(),
         processDoc(cst.constraint.getSummary()), cst.constraint.getCppType());
@@ -2792,7 +2793,7 @@ FailureOr<ast::Type> Parser::validateMemberAccess(ast::Expr *parentExpr,
       return valueRangeTy;
 
     // Verify member access based on the operation type.
-    if (const ods::Operation *odsOp = opType.getODSOperation()) {
+    if (const pdll::ods::Operation *odsOp = opType.getODSOperation()) {
       auto results = odsOp->getResults();
 
       // Handle indexed results.
@@ -2840,7 +2841,7 @@ FailureOr<ast::OperationExpr *> Parser::createOperationExpr(
     MutableArrayRef<ast::NamedAttributeDecl *> attributes,
     SmallVectorImpl<ast::Expr *> &results) {
   std::optional<StringRef> opNameRef = name->getName();
-  const ods::Operation *odsOp = lookupODSOperation(opNameRef);
+  const pdll::ods::Operation *odsOp = lookupODSOperation(opNameRef);
 
   // Verify the inputs operands.
   if (failed(validateOperationOperands(loc, opNameRef, odsOp, operands)))
@@ -2880,7 +2881,7 @@ FailureOr<ast::OperationExpr *> Parser::createOperationExpr(
 
 LogicalResult
 Parser::validateOperationOperands(SMRange loc, std::optional<StringRef> name,
-                                  const ods::Operation *odsOp,
+                                  const pdll::ods::Operation *odsOp,
                                   SmallVectorImpl<ast::Expr *> &operands) {
   return validateOperationOperandsOrResults(
       "operand", loc, odsOp ? odsOp->getLoc() : std::optional<SMRange>(), name,
@@ -2891,7 +2892,7 @@ Parser::validateOperationOperands(SMRange loc, std::optional<StringRef> name,
 
 LogicalResult
 Parser::validateOperationResults(SMRange loc, std::optional<StringRef> name,
-                                 const ods::Operation *odsOp,
+                                 const pdll::ods::Operation *odsOp,
                                  SmallVectorImpl<ast::Expr *> &results) {
   return validateOperationOperandsOrResults(
       "result", loc, odsOp ? odsOp->getLoc() : std::optional<SMRange>(), name,
@@ -2901,7 +2902,7 @@ Parser::validateOperationResults(SMRange loc, std::optional<StringRef> name,
 }
 
 void Parser::checkOperationResultTypeInferrence(SMRange loc, StringRef opName,
-                                                const ods::Operation *odsOp) {
+                                                const pdll::ods::Operation *odsOp) {
   // If the operation might not have inferrence support, emit a warning to the
   // user. We don't emit an error because the interface might be added to the
   // operation at runtime. It's rare, but it could still happen. We emit a
@@ -2924,7 +2925,7 @@ void Parser::checkOperationResultTypeInferrence(SMRange loc, StringRef opName,
   // "zero-results", and we don't want to warn when that is the expected
   // behavior.
   bool requiresInferrence =
-      llvm::any_of(odsOp->getResults(), [](const ods::OperandOrResult &result) {
+      llvm::any_of(odsOp->getResults(), [](const pdll::ods::OperandOrResult &result) {
         return !result.isVariableLength();
       });
   if (requiresInferrence && !odsOp->hasResultTypeInferrence()) {
@@ -2945,7 +2946,7 @@ void Parser::checkOperationResultTypeInferrence(SMRange loc, StringRef opName,
 LogicalResult Parser::validateOperationOperandsOrResults(
     StringRef groupName, SMRange loc, std::optional<SMRange> odsOpLoc,
     std::optional<StringRef> name, SmallVectorImpl<ast::Expr *> &values,
-    ArrayRef<ods::OperandOrResult> odsValues, ast::Type singleTy,
+    ArrayRef<pdll::ods::OperandOrResult> odsValues, ast::Type singleTy,
     ast::RangeType rangeTy) {
   // All operation types accept a single range parameter.
   if (values.size() == 1) {

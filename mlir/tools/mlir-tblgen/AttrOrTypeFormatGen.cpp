@@ -449,7 +449,7 @@ void DefFormat::genVariableParser(ParameterElement *el, FmtContext &ctx,
               dyn_cast<llvm::DefInit>(dialectValue->getValue())) {
         Dialect dialect(dialectInit->getDef());
         auto cppNamespace = dialect.getCppNamespace();
-        std::string name = dialect.getCppClassName();
+        std::string name = dialect.getCppClassName().str();
         if (name != "BuiltinDialect" || cppNamespace != "::mlir") {
           dialectLoading = ("\nodsParser.getContext()->getOrLoadDialect<" +
                             cppNamespace + "::" + name + ">();")

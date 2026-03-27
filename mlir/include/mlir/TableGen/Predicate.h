@@ -6,18 +6,19 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Wrapper around predicates defined in TableGen.
+// TableGen wrappers around ODS predicate classes. Each tblgen class derives
+// from its mlir::ods counterpart, additionally stores a const llvm::Record*,
+// and overrides getCondition() to read from the record rather than from
+// pre-built ODS fields.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TABLEGEN_PREDICATE_H_
 #define MLIR_TABLEGEN_PREDICATE_H_
 
+#include "mlir/ODS/Predicate.h"
 #include "mlir/Support/LLVM.h"
 #include "llvm/ADT/Hashing.h"
-
-#include <string>
-#include <vector>
 
 namespace llvm {
 class Init;
@@ -29,35 +30,30 @@ class SMLoc;
 namespace mlir {
 namespace tblgen {
 
-// A logical predicate.  This class must closely follow the definition of
-// TableGen class 'Pred'.
-class Pred {
+// TableGen wrapper for a logical predicate. Derives from mlir::ods::Pred and
+// additionally stores the underlying llvm::Record. Equality and hashing use
+// pointer identity on the record (TableGen records are globally unique per
+// compilation). getCondition() reads from the record directly and overrides
+// the ods implementation so that this object need not pre-populate ODS fields.
+class Pred : public mlir::ods::Pred {
 public:
-  // Constructs the null Predicate (e.g., always true).
+  // Constructs the null predicate.
   explicit Pred() {}
-  // Construct a Predicate from a record.
+  // Construct a Pred from a TableGen record.
   explicit Pred(const llvm::Record *record);
-  // Construct a Predicate from an initializer.
+  // Construct a Pred from a TableGen initializer.
   explicit Pred(const llvm::Init *init);
 
-  // Check if the predicate is defined.  Callers may use this to interpret the
-  // missing predicate as either true (e.g. in filters) or false (e.g. in
-  // precondition verification).
+  // Check if the predicate is defined.
   bool isNull() const { return def == nullptr; }
 
-  // Get the predicate condition.  This may dispatch to getConditionImpl() of
-  // the underlying predicate type.
-  std::string getCondition() const;
-
-  // Whether the predicate is a combination of other predicates, i.e. an
-  // record of type CombinedPred.
-  bool isCombined() const;
-
-  // Get the location of the predicate.
-  ArrayRef<SMLoc> getLoc() const;
+  // Get the condition by dispatching through the record type, overriding the
+  // ODS implementation so that we do not need pre-built child objects.
+  std::string getCondition() const override;
 
   // Records are pointer-comparable.
   bool operator==(const Pred &other) const { return def == other.def; }
+  bool operator!=(const Pred &other) const { return def != other.def; }
 
   // Return true if the predicate is not null.
   operator bool() const { return def; }
@@ -67,6 +63,9 @@ public:
     return llvm::hash_value(pred.def);
   }
 
+  // Get the location of the predicate record.
+  ArrayRef<SMLoc> getLoc() const;
+
   /// Return the underlying def.
   const llvm::Record &getDef() const { return *def; }
 
@@ -75,54 +74,77 @@ protected:
   const llvm::Record *def{nullptr};
 };
 
-// A logical predicate wrapping a C expression.  This class must closely follow
-// the definition of TableGen class 'CPred'.
-class CPred : public Pred {
+// TableGen wrapper for a C-expression predicate. Derives from
+// mlir::ods::CPred; the expression field is populated from the record in the
+// constructor so the inherited getCondition() works correctly.
+class CPred : public mlir::ods::CPred {
 public:
   // Construct a CPred from a record.
   explicit CPred(const llvm::Record *record);
-  // Construct a CPred an initializer.
+  // Construct a CPred from an initializer.
   explicit CPred(const llvm::Init *init);
 
-  // Get the predicate condition.
-  std::string getConditionImpl() const;
+  /// Return the underlying def.
+  const llvm::Record &getDef() const { return *def; }
+
+protected:
+  const llvm::Record *def{nullptr};
 };
 
-// A logical predicate that is a combination of other predicates.  This class
-// must closely follow the definition of TableGen class 'CombinedPred'.
-class CombinedPred : public Pred {
+// TableGen wrapper for a combined predicate. Derives from
+// mlir::ods::CombinedPred. getCondition() is overridden to read child
+// records lazily from the record instead of requiring pre-built ODS children.
+class CombinedPred : public mlir::ods::CombinedPred {
 public:
   // Construct a CombinedPred from a record.
   explicit CombinedPred(const llvm::Record *record);
   // Construct a CombinedPred from an initializer.
   explicit CombinedPred(const llvm::Init *init);
 
-  // Get the predicate condition.
-  std::string getConditionImpl() const;
+  // Override to use record-based tree building.
+  std::string getCondition() const override;
 
-  // Get the definition of the combiner used in this predicate.
+  // Get the definition of the combiner kind record.
   const llvm::Record *getCombinerDef() const;
 
-  // Get the predicates that are combined by this predicate.
+  // Get the child predicate records.
   std::vector<const llvm::Record *> getChildren() const;
+
+  /// Return the underlying def.
+  const llvm::Record &getDef() const { return *def; }
+
+protected:
+  const llvm::Record *def{nullptr};
 };
 
-// A combined predicate that requires all child predicates of 'CPred' type to
-// have their expression rewritten with a simple string substitution rule.
-class SubstLeavesPred : public CombinedPred {
+// TableGen wrapper for a SubstLeaves combined predicate.
+class SubstLeavesPred : public mlir::ods::SubstLeavesPred {
 public:
-  // Get the replacement pattern.
-  StringRef getPattern() const;
-  // Get the string used to replace the pattern.
-  StringRef getReplacement() const;
+  explicit SubstLeavesPred(const llvm::Record *record);
+
+  // Override to use record-based tree building.
+  std::string getCondition() const override;
+
+  /// Return the underlying def.
+  const llvm::Record &getDef() const { return *def; }
+
+protected:
+  const llvm::Record *def{nullptr};
 };
 
-// A combined predicate that prepends a prefix and appends a suffix to the
-// predicate string composed from a child predicate.
-class ConcatPred : public CombinedPred {
+// TableGen wrapper for a Concat combined predicate.
+class ConcatPred : public mlir::ods::ConcatPred {
 public:
-  StringRef getPrefix() const;
-  StringRef getSuffix() const;
+  explicit ConcatPred(const llvm::Record *record);
+
+  // Override to use record-based tree building.
+  std::string getCondition() const override;
+
+  /// Return the underlying def.
+  const llvm::Record &getDef() const { return *def; }
+
+protected:
+  const llvm::Record *def{nullptr};
 };
 
 } // namespace tblgen

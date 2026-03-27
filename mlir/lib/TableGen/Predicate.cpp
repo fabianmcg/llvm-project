@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Wrapper around predicates defined in TableGen.
+// TableGen wrappers around ODS predicate classes.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,57 +23,259 @@ using llvm::Init;
 using llvm::Record;
 using llvm::SpecificBumpPtrAllocator;
 
-// Construct a Predicate from a record.
+//===----------------------------------------------------------------------===//
+// Helpers
+//===----------------------------------------------------------------------===//
+
+// Derive the ods::Pred::Kind from a TableGen record.
+static ods::Pred::Kind getKindFromRecord(const Record *record) {
+  if (!record)
+    return ods::Pred::Kind::Null;
+  if (record->isSubClassOf("CPred"))
+    return ods::Pred::Kind::CPred;
+  if (record->isSubClassOf("CombinedPred")) {
+    return llvm::StringSwitch<ods::Pred::Kind>(
+               record->getValueAsDef("kind")->getName())
+        .Case("PredCombinerAnd", ods::Pred::Kind::And)
+        .Case("PredCombinerOr", ods::Pred::Kind::Or)
+        .Case("PredCombinerNot", ods::Pred::Kind::Not)
+        .Case("PredCombinerSubstLeaves", ods::Pred::Kind::SubstLeaves)
+        .Case("PredCombinerConcat", ods::Pred::Kind::Concat)
+        .Default(ods::Pred::Kind::Null);
+  }
+  return ods::Pred::Kind::Null;
+}
+
+// Extract the llvm::Record from an Init, or return nullptr.
+static const Record *recordFromInit(const Init *init) {
+  if (const auto *defInit = dyn_cast_or_null<llvm::DefInit>(init))
+    return defInit->getDef();
+  return nullptr;
+}
+
+// Extract the CPred expression string from an Init, or return "".
+static std::string cpredExprFromInit(const Init *init) {
+  const Record *rec = recordFromInit(init);
+  if (rec && rec->isSubClassOf("CPred"))
+    return std::string(rec->getValueAsString("predExpr"));
+  return "";
+}
+
+//===----------------------------------------------------------------------===//
+// Pred
+//===----------------------------------------------------------------------===//
+
 Pred::Pred(const Record *record) : def(record) {
   assert(def->isSubClassOf("Pred") &&
          "must be a subclass of TableGen 'Pred' class");
+  kind = getKindFromRecord(def);
 }
 
-// Construct a Predicate from an initializer.
 Pred::Pred(const Init *init) {
-  if (const auto *defInit = dyn_cast_or_null<llvm::DefInit>(init))
+  if (const auto *defInit = dyn_cast_or_null<llvm::DefInit>(init)) {
     def = defInit->getDef();
-}
-
-std::string Pred::getCondition() const {
-  // Static dispatch to subclasses.
-  if (def->isSubClassOf("CombinedPred"))
-    return static_cast<const CombinedPred *>(this)->getConditionImpl();
-  if (def->isSubClassOf("CPred"))
-    return static_cast<const CPred *>(this)->getConditionImpl();
-  llvm_unreachable("Pred::getCondition must be overridden in subclasses");
-}
-
-bool Pred::isCombined() const {
-  return def && def->isSubClassOf("CombinedPred");
+    kind = getKindFromRecord(def);
+  }
 }
 
 ArrayRef<SMLoc> Pred::getLoc() const { return def->getLoc(); }
 
-CPred::CPred(const Record *record) : Pred(record) {
-  assert(def->isSubClassOf("CPred") &&
-         "must be a subclass of Tablegen 'CPred' class");
-}
-
-CPred::CPred(const Init *init) : Pred(init) {
-  assert((!def || def->isSubClassOf("CPred")) &&
-         "must be a subclass of Tablegen 'CPred' class");
-}
-
-// Get condition of the C Predicate.
-std::string CPred::getConditionImpl() const {
+std::string Pred::getCondition() const {
   assert(!isNull() && "null predicate does not have a condition");
-  return std::string(def->getValueAsString("predExpr"));
+  // Dispatch to the appropriate subclass based on the record type.
+  if (def->isSubClassOf("CombinedPred"))
+    return CombinedPred(def).getCondition();
+  if (def->isSubClassOf("CPred"))
+    return std::string(def->getValueAsString("predExpr"));
+  llvm_unreachable("unsupported predicate type in Pred::getCondition");
 }
 
-CombinedPred::CombinedPred(const Record *record) : Pred(record) {
+//===----------------------------------------------------------------------===//
+// CPred
+//===----------------------------------------------------------------------===//
+
+CPred::CPred(const Record *record)
+    : ods::CPred(record->getValueAsString("predExpr")), def(record) {
+  assert(def->isSubClassOf("CPred") &&
+         "must be a subclass of TableGen 'CPred' class");
+}
+
+CPred::CPred(const Init *init) : ods::CPred(cpredExprFromInit(init)) {
+  def = recordFromInit(init);
+  assert((!def || def->isSubClassOf("CPred")) &&
+         "must be a subclass of TableGen 'CPred' class");
+}
+
+//===----------------------------------------------------------------------===//
+// Record-based tree building for CombinedPred::getCondition()
+//
+// This keeps the original buildPredicateTree logic working from records,
+// so that CombinedPred does not need pre-built ODS children.
+//===----------------------------------------------------------------------===//
+
+namespace {
+
+enum class PredCombinerKind {
+  Leaf,
+  And,
+  Or,
+  Not,
+  SubstLeaves,
+  Concat,
+  False,
+  True
+};
+
+struct PredNode {
+  PredCombinerKind kind;
+  SmallVector<PredNode *, 4> children;
+  std::string expr;
+  std::string prefix;
+  std::string suffix;
+};
+
+using Subst = std::pair<StringRef, StringRef>;
+
+} // namespace
+
+static PredCombinerKind getPredCombinerKind(const Record *record) {
+  if (!record->isSubClassOf("CombinedPred"))
+    return PredCombinerKind::Leaf;
+  return llvm::StringSwitch<PredCombinerKind>(
+             record->getValueAsDef("kind")->getName())
+      .Case("PredCombinerAnd", PredCombinerKind::And)
+      .Case("PredCombinerOr", PredCombinerKind::Or)
+      .Case("PredCombinerNot", PredCombinerKind::Not)
+      .Case("PredCombinerSubstLeaves", PredCombinerKind::SubstLeaves)
+      .Case("PredCombinerConcat", PredCombinerKind::Concat)
+      .Default(PredCombinerKind::Leaf);
+}
+
+static void performSubstitutions(std::string &str,
+                                 ArrayRef<Subst> substitutions) {
+  for (const auto &subst : llvm::reverse(substitutions)) {
+    auto pos = str.find(subst.first);
+    while (pos != std::string::npos) {
+      str.replace(pos, subst.first.size(), std::string(subst.second));
+      pos += subst.second.size();
+      pos = str.find(subst.first, pos);
+    }
+  }
+}
+
+static PredNode *
+buildPredicateTree(const Record *root,
+                   SpecificBumpPtrAllocator<PredNode> &allocator,
+                   ArrayRef<Subst> substitutions) {
+  auto *rootNode = allocator.Allocate();
+  new (rootNode) PredNode;
+  rootNode->kind = getPredCombinerKind(root);
+
+  if (!root->isSubClassOf("CombinedPred")) {
+    // Leaf: CPred or similar.
+    rootNode->expr = std::string(root->getValueAsString("predExpr"));
+    performSubstitutions(rootNode->expr, substitutions);
+    return rootNode;
+  }
+
+  auto allSubstitutions = llvm::to_vector<4>(substitutions);
+  if (rootNode->kind == PredCombinerKind::SubstLeaves) {
+    allSubstitutions.push_back(
+        {root->getValueAsString("pattern"),
+         root->getValueAsString("replacement")});
+  } else if (rootNode->kind == PredCombinerKind::Concat) {
+    rootNode->prefix = std::string(root->getValueAsString("prefix"));
+    performSubstitutions(rootNode->prefix, substitutions);
+    rootNode->suffix = std::string(root->getValueAsString("suffix"));
+    performSubstitutions(rootNode->suffix, substitutions);
+  }
+
+  for (const Record *child : root->getValueAsListOfDefs("children")) {
+    PredNode *childTree = buildPredicateTree(child, allocator, allSubstitutions);
+    rootNode->children.push_back(childTree);
+  }
+  return rootNode;
+}
+
+static std::string combineBinary(ArrayRef<std::string> children,
+                                 const std::string &combiner,
+                                 std::string init) {
+  if (children.empty())
+    return init;
+  int size = static_cast<int>(children.size());
+  if (size == 1)
+    return children.front();
+  std::string str;
+  llvm::raw_string_ostream os(str);
+  os << '(' << children.front() << ')';
+  for (int i = 1; i < size; ++i)
+    os << ' ' << combiner << " (" << children[i] << ')';
+  return str;
+}
+
+static std::string combineNot(ArrayRef<std::string> children) {
+  assert(children.size() == 1 && "expected exactly one child predicate of Not");
+  return (Twine("!(") + children.front() + Twine(')')).str();
+}
+
+static std::string getCombinedCondition(const PredNode &root) {
+  if (root.kind == PredCombinerKind::Leaf)
+    return root.expr;
+  if (root.kind == PredCombinerKind::True)
+    return "true";
+  if (root.kind == PredCombinerKind::False)
+    return "false";
+
+  SmallVector<std::string, 4> childExpressions;
+  childExpressions.reserve(root.children.size());
+  for (const PredNode *child : root.children)
+    childExpressions.push_back(getCombinedCondition(*child));
+
+  if (root.kind == PredCombinerKind::And)
+    return combineBinary(childExpressions, "&&", "true");
+  if (root.kind == PredCombinerKind::Or)
+    return combineBinary(childExpressions, "||", "false");
+  if (root.kind == PredCombinerKind::Not)
+    return combineNot(childExpressions);
+  if (root.kind == PredCombinerKind::Concat) {
+    assert(childExpressions.size() == 1 &&
+           "ConcatPred should only have one child");
+    return root.prefix + childExpressions.front() + root.suffix;
+  }
+  if (root.kind == PredCombinerKind::SubstLeaves) {
+    assert(childExpressions.size() == 1 &&
+           "substitution predicate must have one child");
+    return childExpressions[0];
+  }
+
+  llvm_unreachable("unsupported predicate kind");
+}
+
+//===----------------------------------------------------------------------===//
+// CombinedPred
+//===----------------------------------------------------------------------===//
+
+CombinedPred::CombinedPred(const Record *record)
+    : ods::CombinedPred(getKindFromRecord(record), {}), def(record) {
   assert(def->isSubClassOf("CombinedPred") &&
-         "must be a subclass of Tablegen 'CombinedPred' class");
+         "must be a subclass of TableGen 'CombinedPred' class");
 }
 
-CombinedPred::CombinedPred(const Init *init) : Pred(init) {
-  assert((!def || def->isSubClassOf("CombinedPred")) &&
-         "must be a subclass of Tablegen 'CombinedPred' class");
+CombinedPred::CombinedPred(const Init *init)
+    : ods::CombinedPred(ods::Pred::Kind::Null, {}) {
+  if (const auto *defInit = dyn_cast_or_null<llvm::DefInit>(init)) {
+    def = defInit->getDef();
+    assert((!def || def->isSubClassOf("CombinedPred")) &&
+           "must be a subclass of TableGen 'CombinedPred' class");
+    if (def)
+      kind = getKindFromRecord(def);
+  }
+}
+
+std::string CombinedPred::getCondition() const {
+  SpecificBumpPtrAllocator<PredNode> allocator;
+  PredNode *predicateTree = buildPredicateTree(def, allocator, {});
+  return getCombinedCondition(*predicateTree);
 }
 
 const Record *CombinedPred::getCombinerDef() const {
@@ -87,304 +289,32 @@ std::vector<const Record *> CombinedPred::getChildren() const {
   return def->getValueAsListOfDefs("children");
 }
 
-namespace {
-// Kinds of nodes in a logical predicate tree.
-enum class PredCombinerKind {
-  Leaf,
-  And,
-  Or,
-  Not,
-  SubstLeaves,
-  Concat,
-  // Special kinds that are used in simplification.
-  False,
-  True
-};
+//===----------------------------------------------------------------------===//
+// SubstLeavesPred
+//===----------------------------------------------------------------------===//
 
-// A node in a logical predicate tree.
-struct PredNode {
-  PredCombinerKind kind;
-  const Pred *predicate;
-  SmallVector<PredNode *, 4> children;
-  std::string expr;
+SubstLeavesPred::SubstLeavesPred(const Record *record)
+    : ods::SubstLeavesPred(record->getValueAsString("pattern"),
+                           record->getValueAsString("replacement"), {}),
+      def(record) {}
 
-  // Prefix and suffix are used by ConcatPred.
-  std::string prefix;
-  std::string suffix;
-};
-} // namespace
-
-// Get a predicate tree node kind based on the kind used in the predicate
-// TableGen record.
-static PredCombinerKind getPredCombinerKind(const Pred &pred) {
-  if (!pred.isCombined())
-    return PredCombinerKind::Leaf;
-
-  const auto &combinedPred = static_cast<const CombinedPred &>(pred);
-  return StringSwitch<PredCombinerKind>(
-             combinedPred.getCombinerDef()->getName())
-      .Case("PredCombinerAnd", PredCombinerKind::And)
-      .Case("PredCombinerOr", PredCombinerKind::Or)
-      .Case("PredCombinerNot", PredCombinerKind::Not)
-      .Case("PredCombinerSubstLeaves", PredCombinerKind::SubstLeaves)
-      .Case("PredCombinerConcat", PredCombinerKind::Concat);
-}
-
-namespace {
-// Substitution<pattern, replacement>.
-using Subst = std::pair<StringRef, StringRef>;
-} // namespace
-
-/// Perform the given substitutions on 'str' in-place.
-static void performSubstitutions(std::string &str,
-                                 ArrayRef<Subst> substitutions) {
-  // Apply all parent substitutions from innermost to outermost.
-  for (const auto &subst : llvm::reverse(substitutions)) {
-    auto pos = str.find(subst.first);
-    while (pos != std::string::npos) {
-      str.replace(pos, subst.first.size(), std::string(subst.second));
-      // Skip the newly inserted substring, which itself may consider the
-      // pattern to match.
-      pos += subst.second.size();
-      // Find the next possible match position.
-      pos = str.find(subst.first, pos);
-    }
-  }
-}
-
-// Build the predicate tree starting from the top-level predicate, which may
-// have children, and perform leaf substitutions inplace.  Note that after
-// substitution, nodes are still pointing to the original TableGen record.
-// All nodes are created within "allocator".
-static PredNode *
-buildPredicateTree(const Pred &root,
-                   SpecificBumpPtrAllocator<PredNode> &allocator,
-                   ArrayRef<Subst> substitutions) {
-  auto *rootNode = allocator.Allocate();
-  new (rootNode) PredNode;
-  rootNode->kind = getPredCombinerKind(root);
-  rootNode->predicate = &root;
-  if (!root.isCombined()) {
-    rootNode->expr = root.getCondition();
-    performSubstitutions(rootNode->expr, substitutions);
-    return rootNode;
-  }
-
-  // If the current combined predicate is a leaf substitution, append it to the
-  // list before continuing.
-  auto allSubstitutions = llvm::to_vector<4>(substitutions);
-  if (rootNode->kind == PredCombinerKind::SubstLeaves) {
-    const auto &substPred = static_cast<const SubstLeavesPred &>(root);
-    allSubstitutions.push_back(
-        {substPred.getPattern(), substPred.getReplacement()});
-
-    // If the current predicate is a ConcatPred, record the prefix and suffix.
-  } else if (rootNode->kind == PredCombinerKind::Concat) {
-    const auto &concatPred = static_cast<const ConcatPred &>(root);
-    rootNode->prefix = std::string(concatPred.getPrefix());
-    performSubstitutions(rootNode->prefix, substitutions);
-    rootNode->suffix = std::string(concatPred.getSuffix());
-    performSubstitutions(rootNode->suffix, substitutions);
-  }
-
-  // Build child subtrees.
-  auto combined = static_cast<const CombinedPred &>(root);
-  for (const auto *record : combined.getChildren()) {
-    auto *childTree =
-        buildPredicateTree(Pred(record), allocator, allSubstitutions);
-    rootNode->children.push_back(childTree);
-  }
-  return rootNode;
-}
-
-// Simplify a predicate tree rooted at "node" using the predicates that are
-// known to be true(false).  For AND(OR) combined predicates, if any of the
-// children is known to be false(true), the result is also false(true).
-// Furthermore, for AND(OR) combined predicates, children that are known to be
-// true(false) don't have to be checked dynamically.
-static PredNode *
-propagateGroundTruth(PredNode *node,
-                     const llvm::SmallPtrSetImpl<Pred *> &knownTruePreds,
-                     const llvm::SmallPtrSetImpl<Pred *> &knownFalsePreds) {
-  // If the current predicate is known to be true or false, change the kind of
-  // the node and return immediately.
-  if (knownTruePreds.count(node->predicate) != 0) {
-    node->kind = PredCombinerKind::True;
-    node->children.clear();
-    return node;
-  }
-  if (knownFalsePreds.count(node->predicate) != 0) {
-    node->kind = PredCombinerKind::False;
-    node->children.clear();
-    return node;
-  }
-
-  // If the current node is a substitution, stop recursion now.
-  // The expressions in the leaves below this node were rewritten, but the nodes
-  // still point to the original predicate records.  While the original
-  // predicate may be known to be true or false, it is not necessarily the case
-  // after rewriting.
-  // TODO: we can support ground truth for rewritten
-  // predicates by either (a) having our own unique'ing of the predicates
-  // instead of relying on TableGen record pointers or (b) taking ground truth
-  // values optionally prefixed with a list of substitutions to apply, e.g.
-  // "predX is true by itself as well as predSubY leaf substitution had been
-  // applied to it".
-  if (node->kind == PredCombinerKind::SubstLeaves) {
-    return node;
-  }
-
-  if (node->kind == PredCombinerKind::And && node->children.empty()) {
-    node->kind = PredCombinerKind::True;
-    return node;
-  }
-
-  if (node->kind == PredCombinerKind::Or && node->children.empty()) {
-    node->kind = PredCombinerKind::False;
-    return node;
-  }
-
-  // Otherwise, look at child nodes.
-
-  // Move child nodes into some local variable so that they can be optimized
-  // separately and re-added if necessary.
-  llvm::SmallVector<PredNode *, 4> children;
-  std::swap(node->children, children);
-
-  for (auto &child : children) {
-    // First, simplify the child.  This maintains the predicate as it was.
-    auto *simplifiedChild =
-        propagateGroundTruth(child, knownTruePreds, knownFalsePreds);
-
-    // Just add the child if we don't know how to simplify the current node.
-    if (node->kind != PredCombinerKind::And &&
-        node->kind != PredCombinerKind::Or) {
-      node->children.push_back(simplifiedChild);
-      continue;
-    }
-
-    // Second, based on the type define which known values of child predicates
-    // immediately collapse this predicate to a known value, and which others
-    // may be safely ignored.
-    //   OR(..., True, ...) = True
-    //   OR(..., False, ...) = OR(..., ...)
-    //   AND(..., False, ...) = False
-    //   AND(..., True, ...) = AND(..., ...)
-    auto collapseKind = node->kind == PredCombinerKind::And
-                            ? PredCombinerKind::False
-                            : PredCombinerKind::True;
-    auto eraseKind = node->kind == PredCombinerKind::And
-                         ? PredCombinerKind::True
-                         : PredCombinerKind::False;
-    const auto &collapseList =
-        node->kind == PredCombinerKind::And ? knownFalsePreds : knownTruePreds;
-    const auto &eraseList =
-        node->kind == PredCombinerKind::And ? knownTruePreds : knownFalsePreds;
-    if (simplifiedChild->kind == collapseKind ||
-        collapseList.count(simplifiedChild->predicate) != 0) {
-      node->kind = collapseKind;
-      node->children.clear();
-      return node;
-    }
-    if (simplifiedChild->kind == eraseKind ||
-        eraseList.count(simplifiedChild->predicate) != 0) {
-      continue;
-    }
-    node->children.push_back(simplifiedChild);
-  }
-  return node;
-}
-
-// Combine a list of predicate expressions using a binary combiner.  If a list
-// is empty, return "init".
-static std::string combineBinary(ArrayRef<std::string> children,
-                                 const std::string &combiner,
-                                 std::string init) {
-  if (children.empty())
-    return init;
-
-  auto size = children.size();
-  if (size == 1)
-    return children.front();
-
-  std::string str;
-  llvm::raw_string_ostream os(str);
-  os << '(' << children.front() << ')';
-  for (unsigned i = 1; i < size; ++i) {
-    os << ' ' << combiner << " (" << children[i] << ')';
-  }
-  return str;
-}
-
-// Prepend negation to the only condition in the predicate expression list.
-static std::string combineNot(ArrayRef<std::string> children) {
-  assert(children.size() == 1 && "expected exactly one child predicate of Neg");
-  return (Twine("!(") + children.front() + Twine(')')).str();
-}
-
-// Recursively traverse the predicate tree in depth-first post-order and build
-// the final expression.
-static std::string getCombinedCondition(const PredNode &root) {
-  // Immediately return for non-combiner predicates that don't have children.
-  if (root.kind == PredCombinerKind::Leaf)
-    return root.expr;
-  if (root.kind == PredCombinerKind::True)
-    return "true";
-  if (root.kind == PredCombinerKind::False)
-    return "false";
-
-  // Recurse into children.
-  llvm::SmallVector<std::string, 4> childExpressions;
-  childExpressions.reserve(root.children.size());
-  for (const auto &child : root.children)
-    childExpressions.push_back(getCombinedCondition(*child));
-
-  // Combine the expressions based on the predicate node kind.
-  if (root.kind == PredCombinerKind::And)
-    return combineBinary(childExpressions, "&&", "true");
-  if (root.kind == PredCombinerKind::Or)
-    return combineBinary(childExpressions, "||", "false");
-  if (root.kind == PredCombinerKind::Not)
-    return combineNot(childExpressions);
-  if (root.kind == PredCombinerKind::Concat) {
-    assert(childExpressions.size() == 1 &&
-           "ConcatPred should only have one child");
-    return root.prefix + childExpressions.front() + root.suffix;
-  }
-
-  // Substitutions were applied before so just ignore them.
-  if (root.kind == PredCombinerKind::SubstLeaves) {
-    assert(childExpressions.size() == 1 &&
-           "substitution predicate must have one child");
-    return childExpressions[0];
-  }
-
-  llvm::PrintFatalError(root.predicate->getLoc(), "unsupported predicate kind");
-}
-
-std::string CombinedPred::getConditionImpl() const {
+std::string SubstLeavesPred::getCondition() const {
   SpecificBumpPtrAllocator<PredNode> allocator;
-  auto *predicateTree = buildPredicateTree(*this, allocator, {});
-  predicateTree =
-      propagateGroundTruth(predicateTree,
-                           /*knownTruePreds=*/llvm::SmallPtrSet<Pred *, 2>(),
-                           /*knownFalsePreds=*/llvm::SmallPtrSet<Pred *, 2>());
-
+  PredNode *predicateTree = buildPredicateTree(def, allocator, {});
   return getCombinedCondition(*predicateTree);
 }
 
-StringRef SubstLeavesPred::getPattern() const {
-  return def->getValueAsString("pattern");
-}
+//===----------------------------------------------------------------------===//
+// ConcatPred
+//===----------------------------------------------------------------------===//
 
-StringRef SubstLeavesPred::getReplacement() const {
-  return def->getValueAsString("replacement");
-}
+ConcatPred::ConcatPred(const Record *record)
+    : ods::ConcatPred(record->getValueAsString("prefix"),
+                      record->getValueAsString("suffix"), {}),
+      def(record) {}
 
-StringRef ConcatPred::getPrefix() const {
-  return def->getValueAsString("prefix");
-}
-
-StringRef ConcatPred::getSuffix() const {
-  return def->getValueAsString("suffix");
+std::string ConcatPred::getCondition() const {
+  SpecificBumpPtrAllocator<PredNode> allocator;
+  PredNode *predicateTree = buildPredicateTree(def, allocator, {});
+  return getCombinedCondition(*predicateTree);
 }

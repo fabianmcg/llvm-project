@@ -40,6 +40,9 @@ llvm_add_library(MLIRTableGen STATIC
   ADDITIONAL_HEADER_DIRS
   ${MLIR_MAIN_INCLUDE_DIR}/mlir/TableGen
   ${MLIR_MAIN_INCLUDE_DIR}/mlir/Support
+
+  LINK_LIBS PUBLIC
+  MLIROds
 )
 set_target_properties(MLIRTableGen PROPERTIES FOLDER "MLIR/Tablegenning")
 

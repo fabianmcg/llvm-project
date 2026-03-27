@@ -18,28 +18,23 @@ using llvm::Init;
 using llvm::Record;
 using llvm::StringInit;
 
-//===----------------------------------------------------------------------===//
-// Builder::Parameter
-//===----------------------------------------------------------------------===//
-
-/// Return a string containing the C++ type of this parameter.
-StringRef Builder::Parameter::getCppType() const {
+/// Returns the C++ type string for a builder parameter whose TableGen
+/// definition is either a StringInit (the type string directly) or a CArg
+/// DefInit (a record with a "type" field).
+static StringRef getCppTypeFromInit(const Init *def) {
   if (const auto *stringInit = dyn_cast<StringInit>(def))
     return stringInit->getValue();
   const Record *record = cast<DefInit>(def)->getDef();
-  // Inlining the first part of `Record::getValueAsString` to give better
-  // error messages.
   const llvm::RecordVal *type = record->getValue("type");
-  if (!type || !type->getValue()) {
+  if (!type || !type->getValue())
     llvm::PrintFatalError("Builder DAG arguments must be either strings or "
                           "defs which inherit from CArg");
-  }
   return record->getValueAsString("type");
 }
 
-/// Return an optional string containing the default value to use for this
-/// parameter.
-std::optional<StringRef> Builder::Parameter::getDefaultValue() const {
+/// Returns the default value for a builder parameter, or std::nullopt if the
+/// parameter has no default. Only CArg DefInits carry default values.
+static std::optional<StringRef> getDefaultValueFromInit(const Init *def) {
   if (isa<StringInit>(def))
     return std::nullopt;
   const Record *record = cast<DefInit>(def)->getDef();
@@ -48,12 +43,8 @@ std::optional<StringRef> Builder::Parameter::getDefaultValue() const {
   return value && !value->empty() ? value : std::nullopt;
 }
 
-//===----------------------------------------------------------------------===//
-// Builder
-//===----------------------------------------------------------------------===//
-
 Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
-  // Initialize the parameters of the builder.
+  // Populate parameters from the "dagParams" DAG field.
   const DagInit *dag = def->getValueAsDag("dagParams");
   auto *defInit = dyn_cast<DefInit>(dag->getOperator());
   if (!defInit || defInit->getDef()->getName() != "ins")
@@ -63,9 +54,14 @@ Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
   for (unsigned i = 0, e = dag->getNumArgs(); i < e; ++i) {
     const StringInit *paramName = dag->getArgName(i);
     const Init *paramValue = dag->getArg(i);
-    Parameter param(paramName ? paramName->getValue()
-                              : std::optional<StringRef>(),
-                    paramValue);
+
+    std::optional<StringRef> name =
+        paramName ? std::optional<StringRef>(paramName->getValue())
+                  : std::nullopt;
+    StringRef cppType = getCppTypeFromInit(paramValue);
+    std::optional<StringRef> defaultValue = getDefaultValueFromInit(paramValue);
+
+    Parameter param(name, cppType, defaultValue);
 
     // Similarly to C++, once an argument with a default value is detected, the
     // following arguments must have default values as well.
@@ -78,16 +74,15 @@ Builder::Builder(const Record *record, ArrayRef<SMLoc> loc) : def(record) {
     }
     parameters.emplace_back(param);
   }
-}
 
-/// Return an optional string containing the body of the builder.
-std::optional<StringRef> Builder::getBody() const {
-  std::optional<StringRef> body = def->getValueAsOptionalString("body");
-  return body && !body->empty() ? body : std::nullopt;
-}
+  // Populate the body field.
+  std::optional<StringRef> bodyStr = def->getValueAsOptionalString("body");
+  if (bodyStr && !bodyStr->empty())
+    body = bodyStr->str();
 
-std::optional<StringRef> Builder::getDeprecatedMessage() const {
-  std::optional<StringRef> message =
+  // Populate the deprecated message field.
+  std::optional<StringRef> msg =
       def->getValueAsOptionalString("odsCppDeprecated");
-  return message && !message->empty() ? message : std::nullopt;
+  if (msg && !msg->empty())
+    deprecatedMessage = msg->str();
 }

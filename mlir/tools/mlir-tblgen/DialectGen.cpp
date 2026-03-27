@@ -243,7 +243,7 @@ static void emitDialectDecl(Dialect &dialect, raw_ostream &os) {
     DialectNamespaceEmitter nsEmitter(os, dialect);
 
     // Emit the start of the decl.
-    std::string cppName = dialect.getCppClassName();
+    std::string cppName = dialect.getCppClassName().str();
     StringRef superClassName =
         dialect.isExtensible() ? "ExtensibleDialect" : "Dialect";
 
@@ -349,7 +349,7 @@ static const char *const dialectDestructorStr = R"(
 
 static void emitDialectDef(Dialect &dialect, const RecordKeeper &records,
                            raw_ostream &os) {
-  std::string cppClassName = dialect.getCppClassName();
+  std::string cppClassName = dialect.getCppClassName().str();
 
   // Emit the TypeID explicit specializations to have a single symbol def.
   if (!dialect.getCppNamespace().empty())
