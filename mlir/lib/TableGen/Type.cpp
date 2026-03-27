@@ -5,10 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// Type wrapper to simplify using TableGen Record defining a MLIR Type.
-//
-//===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Type.h"
 #include "mlir/TableGen/Dialect.h"
@@ -19,50 +15,38 @@ using namespace mlir;
 using namespace mlir::tblgen;
 using llvm::Record;
 
-TypeConstraint::TypeConstraint(const llvm::DefInit *init)
-    : TypeConstraint(init->getDef()) {}
-
-bool TypeConstraint::isOptional() const {
-  return def->isSubClassOf("Optional");
-}
-
-bool TypeConstraint::isVariadic() const {
-  return def->isSubClassOf("Variadic");
-}
-
-bool TypeConstraint::isVariadicOfVariadic() const {
-  return def->isSubClassOf("VariadicOfVariadic");
-}
-
-StringRef TypeConstraint::getVariadicOfVariadicSegmentSizeAttr() const {
-  assert(isVariadicOfVariadic());
-  return def->getValueAsString("segmentAttrName");
-}
-
-// Returns the builder call for this constraint if this is a buildable type,
-// returns std::nullopt otherwise.
-std::optional<StringRef> TypeConstraint::getBuilderCall() const {
+static std::optional<std::string>
+computeBuilderCall(const llvm::Record *def, bool isVariableLength) {
   const Record *baseType = def;
-  if (isVariableLength())
+  if (isVariableLength)
     baseType = baseType->getValueAsDef("baseType");
 
-  // Check to see if this type constraint has a builder call.
   const llvm::RecordVal *builderCall = baseType->getValue("builderCall");
   if (!builderCall || !builderCall->getValue())
     return std::nullopt;
-  return TypeSwitch<const llvm::Init *, std::optional<StringRef>>(
+  return llvm::TypeSwitch<const llvm::Init *, std::optional<std::string>>(
              builderCall->getValue())
-      .Case([&](const llvm::StringInit *init) {
+      .Case([](const llvm::StringInit *init) -> std::optional<std::string> {
         StringRef value = init->getValue();
-        return value.empty() ? std::optional<StringRef>() : value;
+        return value.empty() ? std::nullopt
+                             : std::optional<std::string>(value.str());
       })
       .Default(std::nullopt);
 }
 
-// Return the C++ type for this type (which may just be ::mlir::Type).
-StringRef TypeConstraint::getCppType() const {
-  return def->getValueAsString("cppType");
+TypeConstraint::TypeConstraint(const llvm::Record *record)
+    : Constraint(record) {
+  optional = def->isSubClassOf("Optional");
+  variadicOfVariadic = def->isSubClassOf("VariadicOfVariadic");
+  if (variadicOfVariadic)
+    segmentSizeAttr =
+        def->getValueAsString("segmentAttrName").str();
+  builderCall = computeBuilderCall(def, isVariableLength());
+  cppType = def->getValueAsString("cppType").str();
 }
+
+TypeConstraint::TypeConstraint(const llvm::DefInit *init)
+    : TypeConstraint(init->getDef()) {}
 
 Type::Type(const Record *record) : TypeConstraint(record) {}
 

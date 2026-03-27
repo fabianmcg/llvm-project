@@ -101,6 +101,9 @@ void Constraint::populate() {
   case CK_Successor:
     variadic = def->isSubClassOf("VariadicSuccessor");
     break;
+  case CK_Type:
+    variadic = def->isSubClassOf("Variadic");
+    break;
   default:
     variadic = false;
     break;
