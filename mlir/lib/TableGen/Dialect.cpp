@@ -1,4 +1,4 @@
-//===- Dialect.cpp - Dialect wrapper class --------------------------------===//
+//===- Dialect.cpp - Dialect free function --------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -22,48 +22,63 @@ static StringRef getAsStringOrEmpty(const llvm::Record &record,
   return "";
 }
 
-Dialect::Dialect(const llvm::Record *def) : def(def) {
+ods::Dialect tblgen::dialectFromRecord(const llvm::Record *def) {
+  ods::Dialect dialect;
   if (!def)
-    return;
+    return dialect;
 
-  defined = true;
+  dialect.defined = true;
 
   // Populate string fields.
-  name = std::string(def->getValueAsString("name"));
-  cppNamespace = std::string(def->getValueAsString("cppNamespace"));
+  dialect.name = std::string(def->getValueAsString("name"));
+  dialect.cppNamespace = std::string(def->getValueAsString("cppNamespace"));
 
   // cppClassName is derived from the record name by removing underscores.
-  cppClassName = def->getName().str();
-  llvm::erase(cppClassName, '_');
+  dialect.cppClassName = def->getName().str();
+  llvm::erase(dialect.cppClassName, '_');
 
-  summary = std::string(getAsStringOrEmpty(*def, "summary"));
-  description = std::string(getAsStringOrEmpty(*def, "description"));
+  dialect.summary = std::string(getAsStringOrEmpty(*def, "summary"));
+  dialect.description = std::string(getAsStringOrEmpty(*def, "description"));
 
   // Populate dependent dialects.
   for (StringRef d : def->getValueAsListOfStrings("dependentDialects"))
-    dependentDialects.push_back(d.str());
+    dialect.dependentDialects.push_back(d.str());
 
   // Populate extra class declaration.
   StringRef extraDecl = def->getValueAsString("extraClassDeclaration");
   if (!extraDecl.empty())
-    extraClassDeclaration = extraDecl.str();
+    dialect.extraClassDeclaration = extraDecl.str();
 
   // Populate boolean flags.
-  canonicalizer = def->getValueAsBit("hasCanonicalizer");
-  constantMaterializer = def->getValueAsBit("hasConstantMaterializer");
-  nonDefaultDestructor = def->getValueAsBit("hasNonDefaultDestructor");
-  operationAttrVerify = def->getValueAsBit("hasOperationAttrVerify");
-  regionArgAttrVerify = def->getValueAsBit("hasRegionArgAttrVerify");
-  regionResultAttrVerify = def->getValueAsBit("hasRegionResultAttrVerify");
-  operationInterfaceFallback =
+  dialect.canonicalizer = def->getValueAsBit("hasCanonicalizer");
+  dialect.constantMaterializer = def->getValueAsBit("hasConstantMaterializer");
+  dialect.nonDefaultDestructor = def->getValueAsBit("hasNonDefaultDestructor");
+  dialect.operationAttrVerify = def->getValueAsBit("hasOperationAttrVerify");
+  dialect.regionArgAttrVerify = def->getValueAsBit("hasRegionArgAttrVerify");
+  dialect.regionResultAttrVerify =
+      def->getValueAsBit("hasRegionResultAttrVerify");
+  dialect.operationInterfaceFallback =
       def->getValueAsBit("hasOperationInterfaceFallback");
-  defaultAttributePrinterParser =
+  dialect.defaultAttributePrinterParser =
       def->getValueAsBit("useDefaultAttributePrinterParser");
-  defaultTypePrinterParser =
+  dialect.defaultTypePrinterParser =
       def->getValueAsBit("useDefaultTypePrinterParser");
-  extensible = def->getValueAsBit("isExtensible");
-}
+  dialect.extensible = def->getValueAsBit("isExtensible");
 
-const llvm::DagInit *Dialect::getDiscardableAttributes() const {
-  return def->getValueAsDag("discardableAttrs");
+  // Populate discardable attributes from the "discardableAttrs" dag field.
+  const llvm::DagInit *discardableAttrDag =
+      def->getValueAsDag("discardableAttrs");
+  for (int i = 0, e = discardableAttrDag->getNumArgs(); i != e; ++i) {
+    const llvm::Init *arg = discardableAttrDag->getArg(i);
+    StringRef givenName = discardableAttrDag->getArgNameStr(i);
+    if (givenName.empty())
+      llvm::PrintFatalError(def->getLoc(),
+                            "discardable attributes must be named");
+    ods::DiscardableAttrInfo info;
+    info.name = givenName.str();
+    info.type = arg->getAsUnquotedString();
+    dialect.discardableAttributes.push_back(std::move(info));
+  }
+
+  return dialect;
 }

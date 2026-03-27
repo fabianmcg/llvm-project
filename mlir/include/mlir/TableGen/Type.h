@@ -13,9 +13,9 @@
 #ifndef MLIR_TABLEGEN_TYPE_H_
 #define MLIR_TABLEGEN_TYPE_H_
 
+#include "mlir/ODS/Dialect.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Constraint.h"
-#include "mlir/TableGen/Dialect.h"
 
 namespace llvm {
 class DefInit;
@@ -80,7 +80,7 @@ public:
   explicit Type(const llvm::Record *record);
 
   // Returns the dialect for the type if defined.
-  Dialect getDialect() const;
+  ods::Dialect getDialect() const;
 };
 
 } // namespace tblgen

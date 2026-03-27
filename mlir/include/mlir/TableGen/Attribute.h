@@ -25,7 +25,6 @@ class Record;
 
 namespace mlir {
 namespace tblgen {
-class Dialect;
 class Type;
 
 // Wrapper class with helper methods for accessing attribute constraints defined
@@ -134,9 +133,8 @@ public:
     return mlir::ods::Attribute::getDerivedCodeBody();
   }
 
-  // Returns the dialect for the attribute if defined. Returns a tblgen::Dialect
-  // wrapping the underlying record.
-  Dialect getDialect() const;
+  // Returns the dialect for the attribute if defined.
+  ods::Dialect getDialect() const;
 
   // Returns the TableGen definition this Attribute was constructed from.
   const llvm::Record &getDef() const;

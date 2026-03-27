@@ -13,12 +13,12 @@
 #ifndef MLIR_TABLEGEN_OPERATOR_H_
 #define MLIR_TABLEGEN_OPERATOR_H_
 
+#include "mlir/ODS/Dialect.h"
 #include "mlir/ODS/Operator.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Argument.h"
 #include "mlir/TableGen/Attribute.h"
 #include "mlir/TableGen/Builder.h"
-#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Property.h"
 #include "mlir/TableGen/Region.h"
 #include "mlir/TableGen/Successor.h"
@@ -334,7 +334,7 @@ public:
   const llvm::Record &getDef() const;
 
   /// Returns the dialect of the op.
-  const Dialect &getDialect() const { return dialect; }
+  const ods::Dialect &getDialect() const { return dialect; }
 
   /// Prints the contents in this operator to the given `os`. This is used for
   /// debugging purposes.
@@ -408,7 +408,7 @@ private:
       const llvm::StringMap<int> &argumentsAndResultsIndex);
 
   /// The dialect of this op.
-  Dialect dialect;
+  ods::Dialect dialect;
 
   /// The operands of the op.
   SmallVector<NamedTypeConstraint, 4> operands;

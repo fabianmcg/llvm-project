@@ -17,6 +17,7 @@
 #include "mlir/Support/IndentedOstream.h"
 #include "mlir/TableGen/AttrOrTypeDef.h"
 #include "mlir/TableGen/Attribute.h"
+#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/EnumInfo.h"
 #include "mlir/TableGen/GenInfo.h"
 #include "mlir/TableGen/Operator.h"
@@ -38,6 +39,7 @@
 using namespace llvm;
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::Dialect;
 using mlir::tblgen::Operator;
 
 //===----------------------------------------------------------------------===//
@@ -552,7 +554,10 @@ static bool emitDialectDoc(const DialectRecords &records, raw_ostream &os) {
 static std::optional<DialectRecords>
 collectRecords(const RecordKeeper &records) {
   auto dialectDefs = records.getAllDerivedDefinitionsIfDefined("Dialect");
-  SmallVector<Dialect> dialects(dialectDefs.begin(), dialectDefs.end());
+  std::vector<Dialect> dialects;
+  dialects.reserve(dialectDefs.size());
+  for (const Record *def : dialectDefs)
+    dialects.push_back(tblgen::dialectFromRecord(def));
   std::optional<Dialect> dialect = findDialectToGenerate(dialects);
   if (!dialect)
     return std::nullopt;

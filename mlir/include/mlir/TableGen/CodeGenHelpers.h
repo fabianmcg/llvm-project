@@ -14,8 +14,8 @@
 #ifndef MLIR_TABLEGEN_CODEGENHELPERS_H
 #define MLIR_TABLEGEN_CODEGENHELPERS_H
 
+#include "mlir/ODS/Dialect.h"
 #include "mlir/TableGen/Constraint.h"
-#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Format.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/MapVector.h"
@@ -42,7 +42,7 @@ std::string strfmt(const char *fmt, Parameters &&...parameters) {
 // A helper RAII class to emit nested namespaces for a dialect.
 class DialectNamespaceEmitter {
 public:
-  DialectNamespaceEmitter(raw_ostream &os, const Dialect &dialect) {
+  DialectNamespaceEmitter(raw_ostream &os, const ods::Dialect &dialect) {
     if (!dialect)
       return;
     nsEmitter.emplace(os, dialect.getCppNamespace());

@@ -9,15 +9,16 @@
 #ifndef MLIR_TOOLS_MLIRTBLGEN_DIALECTGENUTILITIES_H_
 #define MLIR_TOOLS_MLIRTBLGEN_DIALECTGENUTILITIES_H_
 
+#include "mlir/ODS/Dialect.h"
 #include "mlir/Support/LLVM.h"
 
 namespace mlir {
 namespace tblgen {
-class Dialect;
 
 /// Find the dialect selected by the user to generate for. Returns std::nullopt
 /// if no dialect was found, or if more than one potential dialect was found.
-std::optional<Dialect> findDialectToGenerate(ArrayRef<Dialect> dialects);
+std::optional<ods::Dialect> findDialectToGenerate(ArrayRef<ods::Dialect> dialects);
+
 } // namespace tblgen
 } // namespace mlir
 

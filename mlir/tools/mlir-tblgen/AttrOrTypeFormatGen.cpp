@@ -10,6 +10,7 @@
 #include "FormatGen.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/AttrOrTypeDef.h"
+#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Format.h"
 #include "mlir/TableGen/GenInfo.h"
 #include "llvm/ADT/BitVector.h"
@@ -25,6 +26,7 @@
 
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::Dialect;
 
 using llvm::formatv;
 
@@ -447,7 +449,7 @@ void DefFormat::genVariableParser(ParameterElement *el, FmtContext &ctx,
     if (dialectValue) {
       if (auto *dialectInit =
               dyn_cast<llvm::DefInit>(dialectValue->getValue())) {
-        Dialect dialect(dialectInit->getDef());
+        Dialect dialect = tblgen::dialectFromRecord(dialectInit->getDef());
         auto cppNamespace = dialect.getCppNamespace();
         std::string name = dialect.getCppClassName().str();
         if (name != "BuiltinDialect" || cppNamespace != "::mlir") {

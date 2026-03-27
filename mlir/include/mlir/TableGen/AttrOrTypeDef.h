@@ -28,7 +28,6 @@ class SMLoc;
 
 namespace mlir {
 namespace tblgen {
-class Dialect;
 
 //===----------------------------------------------------------------------===//
 // AttrOrTypeBuilder
@@ -155,9 +154,8 @@ class AttrOrTypeDef : public mlir::ods::AttrOrTypeDef {
 public:
   explicit AttrOrTypeDef(const llvm::Record *def);
 
-  /// Get the dialect for which this def belongs. Returns a tblgen::Dialect
-  /// object (not an ods::Dialect reference). Shadows ods::AttrOrTypeDef::getDialect().
-  Dialect getDialect() const;
+  /// Get the dialect for which this def belongs.
+  ods::Dialect getDialect() const;
 
   /// Returns the name of this AttrOrTypeDef record.
   StringRef getName() const { return mlir::ods::AttrOrTypeDef::getName(); }

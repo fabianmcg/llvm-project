@@ -50,6 +50,6 @@ TypeConstraint::TypeConstraint(const llvm::DefInit *init)
 
 Type::Type(const Record *record) : TypeConstraint(record) {}
 
-Dialect Type::getDialect() const {
-  return Dialect(def->getValueAsDef("dialect"));
+ods::Dialect Type::getDialect() const {
+  return tblgen::dialectFromRecord(def->getValueAsDef("dialect"));
 }

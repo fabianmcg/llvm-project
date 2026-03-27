@@ -26,7 +26,6 @@ class Record;
 
 namespace mlir {
 namespace tblgen {
-class Dialect;
 class Type;
 class Pred;
 

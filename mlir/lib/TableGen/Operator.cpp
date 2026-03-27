@@ -12,6 +12,7 @@
 
 #include "mlir/TableGen/Operator.h"
 #include "mlir/TableGen/Argument.h"
+#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Predicate.h"
 #include "mlir/TableGen/Trait.h"
 #include "mlir/TableGen/Type.h"
@@ -39,7 +40,7 @@ using llvm::Record;
 using llvm::StringInit;
 
 Operator::Operator(const Record &def)
-    : dialect(def.getValueAsDef("opDialect")), def(def) {
+    : dialect(dialectFromRecord(def.getValueAsDef("opDialect"))), def(def) {
   // The first `_` in the op's TableGen def name is treated as separating the
   // dialect prefix and the op class name. The dialect prefix will be ignored if
   // not empty. Otherwise, if def name starts with a `_`, the `_` is considered

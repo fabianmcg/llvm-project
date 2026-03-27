@@ -121,7 +121,7 @@ AttrOrTypeDef::AttrOrTypeDef(const Record *def) : def(def) {
     const auto *dialectInit =
         dyn_cast<DefInit>(def->getValue("dialect")->getValue());
     if (dialectInit)
-      dialect = Dialect(dialectInit->getDef());
+      dialect = tblgen::dialectFromRecord(dialectInit->getDef());
 
     name = def->getName().str();
     cppClassName = def->getValueAsString("cppClassName").str();
@@ -179,10 +179,10 @@ AttrOrTypeDef::AttrOrTypeDef(const Record *def) : def(def) {
   // https://llvm.org/PR56415
 }
 
-Dialect AttrOrTypeDef::getDialect() const {
+ods::Dialect AttrOrTypeDef::getDialect() const {
   const auto *dialectInit =
       dyn_cast<DefInit>(def->getValue("dialect")->getValue());
-  return Dialect(dialectInit ? dialectInit->getDef() : nullptr);
+  return tblgen::dialectFromRecord(dialectInit ? dialectInit->getDef() : nullptr);
 }
 
 unsigned AttrOrTypeDef::getNumParameters() const {

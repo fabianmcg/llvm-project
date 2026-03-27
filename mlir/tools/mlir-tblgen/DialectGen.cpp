@@ -14,6 +14,7 @@
 #include "DialectGenUtilities.h"
 #include "mlir/TableGen/Class.h"
 #include "mlir/TableGen/CodeGenHelpers.h"
+#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Format.h"
 #include "mlir/TableGen/GenInfo.h"
 #include "mlir/TableGen/Interfaces.h"
@@ -31,6 +32,8 @@
 
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::DiscardableAttrInfo;
+using mlir::ods::Dialect;
 using llvm::Record;
 using llvm::RecordKeeper;
 
@@ -46,20 +49,6 @@ using DialectFilterIterator =
                           std::function<bool(const Record *)>>;
 } // namespace
 
-static void populateDiscardableAttributes(
-    Dialect &dialect, const llvm::DagInit *discardableAttrDag,
-    SmallVector<std::pair<std::string, std::string>> &discardableAttributes) {
-  for (int i : llvm::seq<int>(0, discardableAttrDag->getNumArgs())) {
-    const llvm::Init *arg = discardableAttrDag->getArg(i);
-
-    StringRef givenName = discardableAttrDag->getArgNameStr(i);
-    if (givenName.empty())
-      PrintFatalError(dialect.getDef()->getLoc(),
-                      "discardable attributes must be named");
-    discardableAttributes.push_back(
-        {givenName.str(), arg->getAsUnquotedString()});
-  }
-}
 
 /// Given a set of records for a T, filter the ones that correspond to
 /// the given dialect.
@@ -73,8 +62,8 @@ filterForDialect(ArrayRef<Record *> records, Dialect &dialect) {
           DialectFilterIterator(records.end(), records.end(), filterFn)};
 }
 
-std::optional<Dialect>
-tblgen::findDialectToGenerate(ArrayRef<Dialect> dialects) {
+std::optional<ods::Dialect>
+tblgen::findDialectToGenerate(ArrayRef<ods::Dialect> dialects) {
   if (dialects.empty()) {
     llvm::errs() << "no dialect was found\n";
     return std::nullopt;
@@ -276,20 +265,13 @@ static void emitDialectDecl(Dialect &dialect, raw_ostream &os) {
     if (dialect.hasOperationInterfaceFallback())
       os << operationInterfaceFallbackDecl;
 
-    const llvm::DagInit *discardableAttrDag =
-        dialect.getDiscardableAttributes();
-    SmallVector<std::pair<std::string, std::string>> discardableAttributes;
-    populateDiscardableAttributes(dialect, discardableAttrDag,
-                                  discardableAttributes);
-
-    for (const auto &attrPair : discardableAttributes) {
+    for (const DiscardableAttrInfo &info : dialect.getDiscardableAttributes()) {
       std::string camelNameUpper = llvm::convertToCamelFromSnakeCase(
-          attrPair.first, /*capitalizeFirst=*/true);
+          info.name, /*capitalizeFirst=*/true);
       std::string camelName = llvm::convertToCamelFromSnakeCase(
-          attrPair.first, /*capitalizeFirst=*/false);
-      os << llvm::formatv(discardableAttrHelperDecl, camelNameUpper,
-                          attrPair.first, attrPair.second, camelName,
-                          dialect.getName());
+          info.name, /*capitalizeFirst=*/false);
+      os << llvm::formatv(discardableAttrHelperDecl, camelNameUpper, info.name,
+                          info.type, camelName, dialect.getName());
     }
 
     if (std::optional<StringRef> extraDecl = dialect.getExtraClassDeclaration())
@@ -310,7 +292,10 @@ static bool emitDialectDecls(const RecordKeeper &records, raw_ostream &os) {
   if (dialectDefs.empty())
     return false;
 
-  SmallVector<Dialect> dialects(dialectDefs.begin(), dialectDefs.end());
+  std::vector<Dialect> dialects;
+  dialects.reserve(dialectDefs.size());
+  for (const Record *def : dialectDefs)
+    dialects.push_back(tblgen::dialectFromRecord(def));
   std::optional<Dialect> dialect = findDialectToGenerate(dialects);
   if (!dialect)
     return true;
@@ -376,16 +361,12 @@ static void emitDialectDef(Dialect &dialect, const RecordKeeper &records,
   StringRef superClassName =
       dialect.isExtensible() ? "ExtensibleDialect" : "Dialect";
 
-  const llvm::DagInit *discardableAttrDag = dialect.getDiscardableAttributes();
-  SmallVector<std::pair<std::string, std::string>> discardableAttributes;
-  populateDiscardableAttributes(dialect, discardableAttrDag,
-                                discardableAttributes);
   std::string discardableAttributesInit;
-  for (const auto &attrPair : discardableAttributes) {
+  for (const DiscardableAttrInfo &info : dialect.getDiscardableAttributes()) {
     std::string camelName = llvm::convertToCamelFromSnakeCase(
-        attrPair.first, /*capitalizeFirst=*/false);
-    llvm::raw_string_ostream os(discardableAttributesInit);
-    os << ", " << camelName << "AttrName(context)";
+        info.name, /*capitalizeFirst=*/false);
+    llvm::raw_string_ostream attrOs(discardableAttributesInit);
+    attrOs << ", " << camelName << "AttrName(context)";
   }
 
   os << llvm::formatv(dialectConstructorStr, cppClassName,
@@ -402,7 +383,10 @@ static bool emitDialectDefs(const RecordKeeper &records, raw_ostream &os) {
   if (dialectDefs.empty())
     return false;
 
-  SmallVector<Dialect> dialects(dialectDefs.begin(), dialectDefs.end());
+  std::vector<Dialect> dialects;
+  dialects.reserve(dialectDefs.size());
+  for (const Record *def : dialectDefs)
+    dialects.push_back(tblgen::dialectFromRecord(def));
   std::optional<Dialect> dialect = findDialectToGenerate(dialects);
   if (!dialect)
     return true;

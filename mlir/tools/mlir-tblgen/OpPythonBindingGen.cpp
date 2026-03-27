@@ -27,6 +27,7 @@
 
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::Dialect;
 using llvm::formatv;
 using llvm::Record;
 using llvm::RecordKeeper;
@@ -986,7 +987,7 @@ populateBuilderLinesAttr(const Operator &op, ArrayRef<std::string> argNames,
     Attribute baseAttr = attribute->attr.getBaseAttr();
     Dialect attrDialect = baseAttr.isSubClassOf("EnumAttr")
                               ? baseAttr.getDialect()
-                              : Dialect(nullptr);
+                              : Dialect{};
     std::string attrBuilderKey = attrDialect
                                      ? formatv("{0}.{1}", attrDialect.getName(),
                                                attribute->attr.getAttrDefName())

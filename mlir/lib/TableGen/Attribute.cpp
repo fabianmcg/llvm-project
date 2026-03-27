@@ -75,11 +75,11 @@ Attribute::Attribute(const Record *record) : AttrConstraint(record) {
   if (derivedAttr)
     derivedCodeBody = def->getValueAsString("body").str();
 
-  // Populate the ods::Dialect field (slice from tblgen::Dialect to ods::Dialect).
+  // Populate the ods::Dialect field.
   const llvm::RecordVal *dialectRecord = def->getValue("dialect");
   if (dialectRecord && dialectRecord->getValue()) {
     if (const DefInit *init = dyn_cast<DefInit>(dialectRecord->getValue()))
-      dialect = Dialect(init->getDef());
+      dialect = tblgen::dialectFromRecord(init->getDef());
   }
 }
 
@@ -97,13 +97,13 @@ std::optional<Type> Attribute::getValueType() const {
   return std::nullopt;
 }
 
-Dialect Attribute::getDialect() const {
+ods::Dialect Attribute::getDialect() const {
   const llvm::RecordVal *record = def->getValue("dialect");
   if (record && record->getValue()) {
     if (const DefInit *init = dyn_cast<DefInit>(record->getValue()))
-      return Dialect(init->getDef());
+      return tblgen::dialectFromRecord(init->getDef());
   }
-  return Dialect(nullptr);
+  return ods::Dialect{};
 }
 
 const Record &Attribute::getDef() const { return *def; }

@@ -23,6 +23,7 @@
 
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::Dialect;
 using llvm::formatv;
 using llvm::Record;
 using llvm::RecordKeeper;

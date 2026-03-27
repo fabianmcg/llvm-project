@@ -55,6 +55,7 @@
 using namespace llvm;
 using namespace mlir;
 using namespace mlir::tblgen;
+using mlir::ods::Dialect;
 
 static const char *const tblgenNamePrefix = "tblgen_";
 static const char *const generatedArgName = "odsArg";

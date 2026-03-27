@@ -25,6 +25,12 @@
 namespace mlir {
 namespace ods {
 
+/// Describes one discardable attribute declared in a dialect's ODS definition.
+struct DiscardableAttrInfo {
+  std::string name; ///< Snake-case attribute name.
+  std::string type; ///< C++ type string for the attribute.
+};
+
 /// Contains a MLIR dialect's information and provides helper methods for
 /// accessing it. This class is independent of LLVM TableGen; all data is
 /// stored as explicit C++ fields.
@@ -79,11 +85,20 @@ public:
   bool useDefaultTypePrinterParser() const { return defaultTypePrinterParser; }
   bool isExtensible() const { return extensible; }
 
+  /// Returns the discardable attributes declared in this dialect's ODS
+  /// definition. Each entry holds the snake-case name and C++ type string.
+  ArrayRef<DiscardableAttrInfo> getDiscardableAttributes() const {
+    return discardableAttributes;
+  }
+
   bool operator==(const Dialect &other) const { return name == other.name; }
   bool operator!=(const Dialect &other) const { return !(*this == other); }
   bool operator<(const Dialect &other) const { return name < other.name; }
 
-protected:
+// All fields are public so that free factory functions (e.g.,
+// tblgen::dialectFromRecord) can populate them without requiring friendship.
+// Callers should use the accessor methods above for read access.
+public:
   bool defined{false};
 
   std::string name;
@@ -93,6 +108,8 @@ protected:
   std::string description;
   std::vector<std::string> dependentDialects;
   std::optional<std::string> extraClassDeclaration;
+
+  std::vector<DiscardableAttrInfo> discardableAttributes;
 
   bool canonicalizer{false};
   bool constantMaterializer{false};
