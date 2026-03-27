@@ -13,6 +13,7 @@
 #ifndef MLIR_TABLEGEN_OPERATOR_H_
 #define MLIR_TABLEGEN_OPERATOR_H_
 
+#include "mlir/ODS/Operator.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Argument.h"
 #include "mlir/TableGen/Attribute.h"
@@ -73,33 +74,50 @@ private:
 
 /// Wrapper class that contains a MLIR op's information (e.g., operands,
 /// attributes) defined in TableGen and provides helper methods for
-/// accessing them.
-class Operator {
+/// accessing them. Derives from mlir::ods::Operator which stores all scalar
+/// metadata fields eagerly. TableGen-specific data structures (arguments,
+/// results, traits, regions, successors, builders, type-inference mappings)
+/// are stored here.
+class Operator : public mlir::ods::Operator {
 public:
   explicit Operator(const llvm::Record &def);
   explicit Operator(const llvm::Record *def) : Operator(*def) {}
 
   /// Returns this op's dialect name.
-  StringRef getDialectName() const;
+  StringRef getDialectName() const {
+    return mlir::ods::Operator::getDialectName();
+  }
 
   /// Returns the operation name. The name will follow the "<dialect>.<op-name>"
   /// format if its dialect name is not empty.
-  std::string getOperationName() const;
+  std::string getOperationName() const {
+    return std::string(mlir::ods::Operator::getOperationName());
+  }
 
   /// Returns this op's C++ class name.
-  StringRef getCppClassName() const;
+  StringRef getCppClassName() const {
+    return mlir::ods::Operator::getCppClassName();
+  }
 
   /// Returns this op's C++ class name prefixed with namespaces.
-  std::string getQualCppClassName() const;
+  std::string getQualCppClassName() const {
+    return mlir::ods::Operator::getQualCppClassName();
+  }
 
   /// Returns this op's C++ namespace.
-  StringRef getCppNamespace() const;
+  StringRef getCppNamespace() const {
+    return mlir::ods::Operator::getCppNamespace();
+  }
 
   /// Returns the name of op's adaptor C++ class.
-  std::string getAdaptorName() const;
+  std::string getAdaptorName() const {
+    return mlir::ods::Operator::getAdaptorName();
+  }
 
   /// Returns the name of op's generic adaptor C++ class.
-  std::string getGenericAdaptorName() const;
+  std::string getGenericAdaptorName() const {
+    return mlir::ods::Operator::getGenericAdaptorName();
+  }
 
   /// Check invariants (like no duplicated or conflicted names) and abort the
   /// process if any invariant is broken.
@@ -136,12 +154,6 @@ public:
   using const_value_iterator = const NamedTypeConstraint *;
   using value_range = llvm::iterator_range<value_iterator>;
   using const_value_range = llvm::iterator_range<const_value_iterator>;
-
-  /// Returns true if this op has variable length operands or results.
-  bool isVariadic() const;
-
-  /// Returns true if default builders should not be generated.
-  bool skipDefaultBuilders() const;
 
   /// Op result iterators.
   const_value_iterator result_begin() const;
@@ -288,20 +300,32 @@ public:
   ArrayRef<SMLoc> getLoc() const;
 
   /// Query functions for the documentation of the operator.
-  bool hasDescription() const;
-  StringRef getDescription() const;
-  bool hasSummary() const;
-  StringRef getSummary() const;
+  bool hasDescription() const {
+    return mlir::ods::Operator::hasDescription();
+  }
+  StringRef getDescription() const {
+    return mlir::ods::Operator::getDescription();
+  }
+  bool hasSummary() const { return mlir::ods::Operator::hasSummary(); }
+  StringRef getSummary() const { return mlir::ods::Operator::getSummary(); }
 
   /// Query functions for the assembly format of the operator.
-  bool hasAssemblyFormat() const;
-  StringRef getAssemblyFormat() const;
+  bool hasAssemblyFormat() const {
+    return mlir::ods::Operator::hasAssemblyFormat();
+  }
+  StringRef getAssemblyFormat() const {
+    return mlir::ods::Operator::getAssemblyFormat();
+  }
 
   /// Returns this op's extra class declaration code.
-  StringRef getExtraClassDeclaration() const;
+  StringRef getExtraClassDeclaration() const {
+    return mlir::ods::Operator::getExtraClassDeclaration();
+  }
 
   /// Returns this op's extra class definition code.
-  StringRef getExtraClassDefinition() const;
+  StringRef getExtraClassDefinition() const {
+    return mlir::ods::Operator::getExtraClassDefinition();
+  }
 
   /// Returns the Tablegen definition this operator was constructed from.
   /// TODO: do not expose the TableGen record, this is a temporary solution to
@@ -317,7 +341,9 @@ public:
   void print(llvm::raw_ostream &os) const;
 
   /// Return whether all the result types are known.
-  bool allResultTypesKnown() const { return allResultsHaveKnownTypes; };
+  bool allResultTypesKnown() const {
+    return mlir::ods::Operator::allResultTypesKnown();
+  }
 
   ///  Return all arguments or type constraints with same type as result[index].
   /// Requires: all result types are known.
@@ -344,19 +370,33 @@ public:
   ArrayRef<Builder> getBuilders() const { return builders; }
 
   /// Returns the getter name for the accessor of `name`.
-  std::string getGetterName(StringRef name) const;
+  std::string getGetterName(StringRef name) const {
+    return mlir::ods::Operator::getGetterName(name);
+  }
 
   /// Returns the setter name for the accessor of `name`.
-  std::string getSetterName(StringRef name) const;
+  std::string getSetterName(StringRef name) const {
+    return mlir::ods::Operator::getSetterName(name);
+  }
 
   /// Returns the remove name for the accessor of `name`.
-  std::string getRemoverName(StringRef name) const;
+  std::string getRemoverName(StringRef name) const {
+    return mlir::ods::Operator::getRemoverName(name);
+  }
 
-  bool hasFolder() const;
+  bool hasFolder() const { return mlir::ods::Operator::hasFolder(); }
 
   /// Whether to generate the `readProperty`/`writeProperty` methods for
   /// bytecode emission.
-  bool useCustomPropertiesEncoding() const;
+  bool useCustomPropertiesEncoding() const {
+    return mlir::ods::Operator::useCustomPropertiesEncoding();
+  }
+
+  bool skipDefaultBuilders() const {
+    return mlir::ods::Operator::skipDefaultBuilders();
+  }
+
+  bool isVariadic() const { return mlir::ods::Operator::isVariadic(); }
 
 private:
   /// Populates the vectors containing operands, attributes, results and traits.
@@ -369,12 +409,6 @@ private:
 
   /// The dialect of this op.
   Dialect dialect;
-
-  /// The unqualified C++ class name of the op.
-  StringRef cppClassName;
-
-  /// The C++ namespace for this op.
-  StringRef cppNamespace;
 
   /// The operands of the op.
   SmallVector<NamedTypeConstraint, 4> operands;
@@ -418,9 +452,6 @@ private:
 
   /// The TableGen definition of this op.
   const llvm::Record &def;
-
-  /// Whether the type of all results are known.
-  bool allResultsHaveKnownTypes;
 };
 
 } // namespace tblgen

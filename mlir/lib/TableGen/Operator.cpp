@@ -44,36 +44,57 @@ Operator::Operator(const Record &def)
   // dialect prefix and the op class name. The dialect prefix will be ignored if
   // not empty. Otherwise, if def name starts with a `_`, the `_` is considered
   // as part of the class name.
-  StringRef prefix;
-  std::tie(prefix, cppClassName) = def.getName().split('_');
+  StringRef prefix, tmpClassName;
+  std::tie(prefix, tmpClassName) = def.getName().split('_');
   if (prefix.empty()) {
-    // Class name with a leading underscore and without dialect prefix
-    cppClassName = def.getName();
-  } else if (cppClassName.empty()) {
-    // Class name without dialect prefix
-    cppClassName = prefix;
+    // Class name with a leading underscore and without dialect prefix.
+    cppClassName = def.getName().str();
+  } else if (tmpClassName.empty()) {
+    // Class name without dialect prefix.
+    cppClassName = prefix.str();
+  } else {
+    cppClassName = tmpClassName.str();
   }
 
-  cppNamespace = def.getValueAsString("cppNamespace");
+  cppNamespace = def.getValueAsString("cppNamespace").str();
 
   populateOpStructure();
+
+  // Populate ods::Operator scalar fields eagerly.
+  dialectName = dialect.getName().str();
+  {
+    StringRef dialectPrefix = dialect.getName();
+    StringRef opName = def.getValueAsString("opName");
+    operationName = dialectPrefix.empty()
+                        ? opName.str()
+                        : (dialectPrefix.str() + "." + opName.str());
+  }
+  description = def.getValueAsString("description").str();
+  summary = def.getValueAsString("summary").str();
+  {
+    const auto *valueInit = def.getValueInit("assemblyFormat");
+    if (const auto *strInit = dyn_cast<StringInit>(valueInit))
+      assemblyFormat = strInit->getValue().str();
+  }
+  {
+    constexpr auto declAttr = "extraClassDeclaration";
+    if (!def.isValueUnset(declAttr))
+      extraClassDeclaration = def.getValueAsString(declAttr).str();
+    constexpr auto defAttr = "extraClassDefinition";
+    if (!def.isValueUnset(defAttr))
+      extraClassDefinition = def.getValueAsString(defAttr).str();
+  }
+  hasFolderFlag = def.getValueAsBit("hasFolder");
+  useCustomPropertiesEncodingFlag =
+      def.getValueAsBit("useCustomPropertiesEncoding");
+  skipDefaultBuildersFlag = def.getValueAsBit("skipDefaultBuilders");
+  isVariadicFlag =
+      any_of(llvm::concat<const NamedTypeConstraint>(operands, results),
+             [](const NamedTypeConstraint &op) { return op.isVariadic(); });
+  // allResultsHaveKnownTypes is set by populateTypeInferenceInfo() (called
+  // from populateOpStructure()) directly into the ods base field.
+
   assertInvariants();
-}
-
-std::string Operator::getOperationName() const {
-  auto prefix = dialect.getName();
-  auto opName = def.getValueAsString("opName");
-  if (prefix.empty())
-    return std::string(opName);
-  return std::string(llvm::formatv("{0}.{1}", prefix, opName));
-}
-
-std::string Operator::getAdaptorName() const {
-  return std::string(llvm::formatv("{0}Adaptor", getCppClassName()));
-}
-
-std::string Operator::getGenericAdaptorName() const {
-  return std::string(llvm::formatv("{0}GenericAdaptor", getCppClassName()));
 }
 
 /// Assert the invariants of accessors generated for the given name.
@@ -149,42 +170,12 @@ void Operator::assertInvariants() const {
     checkName(getSuccessor(i).name, "successors");
 }
 
-StringRef Operator::getDialectName() const { return dialect.getName(); }
-
-StringRef Operator::getCppClassName() const { return cppClassName; }
-
-std::string Operator::getQualCppClassName() const {
-  if (cppNamespace.empty())
-    return std::string(cppClassName);
-  return std::string(llvm::formatv("{0}::{1}", cppNamespace, cppClassName));
-}
-
-StringRef Operator::getCppNamespace() const { return cppNamespace; }
-
 int Operator::getNumResults() const {
   const DagInit *results = def.getValueAsDag("results");
   return results->getNumArgs();
 }
 
-StringRef Operator::getExtraClassDeclaration() const {
-  constexpr auto attr = "extraClassDeclaration";
-  if (def.isValueUnset(attr))
-    return {};
-  return def.getValueAsString(attr);
-}
-
-StringRef Operator::getExtraClassDefinition() const {
-  constexpr auto attr = "extraClassDefinition";
-  if (def.isValueUnset(attr))
-    return {};
-  return def.getValueAsString(attr);
-}
-
 const Record &Operator::getDef() const { return def; }
-
-bool Operator::skipDefaultBuilders() const {
-  return def.getValueAsBit("skipDefaultBuilders");
-}
 
 auto Operator::result_begin() const -> const_value_iterator {
   return results.begin();
@@ -355,11 +346,6 @@ auto Operator::getOperands() const -> const_value_range {
 }
 
 auto Operator::getArg(int index) const -> Argument { return arguments[index]; }
-
-bool Operator::isVariadic() const {
-  return any_of(llvm::concat<const NamedTypeConstraint>(operands, results),
-                [](const NamedTypeConstraint &op) { return op.isVariadic(); });
-}
 
 void Operator::populateTypeInferenceInfo(
     const llvm::StringMap<int> &argumentsAndResultsIndex) {
@@ -831,30 +817,6 @@ const InferredResultType &Operator::getInferredResultType(int index) const {
 
 ArrayRef<SMLoc> Operator::getLoc() const { return def.getLoc(); }
 
-bool Operator::hasDescription() const {
-  return !getDescription().trim().empty();
-}
-
-StringRef Operator::getDescription() const {
-  return def.getValueAsString("description");
-}
-
-bool Operator::hasSummary() const { return !getSummary().trim().empty(); }
-
-StringRef Operator::getSummary() const {
-  return def.getValueAsString("summary");
-}
-
-bool Operator::hasAssemblyFormat() const {
-  auto *valueInit = def.getValueInit("assemblyFormat");
-  return isa<StringInit>(valueInit);
-}
-
-StringRef Operator::getAssemblyFormat() const {
-  return TypeSwitch<const Init *, StringRef>(def.getValueInit("assemblyFormat"))
-      .Case([&](const StringInit *init) { return init->getValue(); });
-}
-
 void Operator::print(llvm::raw_ostream &os) const {
   os << "op '" << getOperationName() << "'\n";
   for (Argument arg : arguments) {
@@ -874,20 +836,3 @@ auto Operator::getArgToOperandAttrOrProp(int index) const -> OperandAttrOrProp {
   return attrPropOrOperandMapping[index];
 }
 
-std::string Operator::getGetterName(StringRef name) const {
-  return "get" + convertToCamelFromSnakeCase(name, /*capitalizeFirst=*/true);
-}
-
-std::string Operator::getSetterName(StringRef name) const {
-  return "set" + convertToCamelFromSnakeCase(name, /*capitalizeFirst=*/true);
-}
-
-std::string Operator::getRemoverName(StringRef name) const {
-  return "remove" + convertToCamelFromSnakeCase(name, /*capitalizeFirst=*/true);
-}
-
-bool Operator::hasFolder() const { return def.getValueAsBit("hasFolder"); }
-
-bool Operator::useCustomPropertiesEncoding() const {
-  return def.getValueAsBit("useCustomPropertiesEncoding");
-}
