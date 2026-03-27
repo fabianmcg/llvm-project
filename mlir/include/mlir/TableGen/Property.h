@@ -17,6 +17,7 @@
 #include "mlir/ODS/Property.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Constraint.h"
+#include "mlir/TableGen/Predicate.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace llvm {
@@ -27,7 +28,6 @@ class Record;
 namespace mlir {
 namespace tblgen {
 class Type;
-class Pred;
 
 // Wrapper class providing helper methods for accessing property constraint
 // values.

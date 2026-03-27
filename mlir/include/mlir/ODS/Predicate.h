@@ -1,4 +1,4 @@
-//===- Predicate.h - ODS predicate classes ----------------------*- C++ -*-===//
+//===- Predicate.h - ODS predicate value type ------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,18 +6,17 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines ODS predicate classes independent of LLVM TableGen.
-// These classes model the predicates defined in mlir/include/mlir/IR/Constraints.td
-// without any dependency on llvm::Record or related TableGen types.
+// This file defines the ods::Pred value type which models a logical predicate
+// independently of LLVM TableGen. Pred stores an eagerly-computed C++
+// condition string; condition building from TableGen records happens in the
+// tblgen::predFromRecord() free function.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_ODS_PREDICATE_H_
 #define MLIR_ODS_PREDICATE_H_
 
-#include "mlir/Support/LLVM.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
@@ -25,134 +24,42 @@
 namespace mlir {
 namespace ods {
 
-// A logical predicate. Models the TableGen 'Pred' class hierarchy from
-// mlir/include/mlir/IR/Constraints.td without depending on llvm::Record.
-//
-// getCondition() is virtual so that TableGen wrappers (mlir::tblgen::Pred)
-// can override it to read from llvm::Record instead of explicit ODS fields.
+/// A logical predicate. Stores a precomputed C++ condition string with no
+/// dependency on LLVM TableGen types. The default-constructed Pred is null
+/// (represents the always-true / undefined predicate).
 class Pred {
 public:
-  // The kind of predicate, matching the TableGen 'PredCombinerKind' enum
-  // plus CPred and Null.
-  enum class Kind {
-    Null,
-    CPred,
-    And,
-    Or,
-    Not,
-    SubstLeaves,
-    Concat,
-  };
+  /// Constructs a null (undefined) predicate.
+  Pred() = default;
 
-  // Constructs the null predicate (always true / undefined).
-  Pred() : kind(Kind::Null) {}
+  /// Constructs a non-null predicate from a precomputed condition string.
+  explicit Pred(llvm::StringRef condition)
+      : null(false), conditionStr(condition.str()) {}
 
-  virtual ~Pred() = default;
+  /// Returns true if this predicate is undefined (null / always-true).
+  bool isNull() const { return null; }
 
-  // Check if the predicate is defined.
-  bool isNull() const { return kind == Kind::Null; }
+  /// Returns the C++ condition string. Must not be called on a null predicate.
+  std::string getCondition() const { return conditionStr; }
 
-  // Whether the predicate is a combination of other predicates.
-  bool isCombined() const {
-    return kind == Kind::And || kind == Kind::Or || kind == Kind::Not ||
-           kind == Kind::SubstLeaves || kind == Kind::Concat;
+  /// Returns true if the predicate is not null.
+  explicit operator bool() const { return !null; }
+
+  bool operator==(const Pred &other) const {
+    return null == other.null && conditionStr == other.conditionStr;
   }
-
-  // Get the predicate condition string. Virtual to allow TableGen wrappers to
-  // override with record-based access.
-  virtual std::string getCondition() const = 0;
-
-  // Structural equality: compares kind and all stored fields.
-  virtual bool operator==(const Pred &other) const { return kind == other.kind; }
   bool operator!=(const Pred &other) const { return !(*this == other); }
 
-  // Return true if the predicate is not null.
-  explicit operator bool() const { return kind != Kind::Null; }
-
-  Kind getKind() const { return kind; }
-
-protected:
-  explicit Pred(Kind kind) : kind(kind) {}
-
-  Kind kind;
-};
-
-// A predicate wrapping a C++ expression string. Models the TableGen 'CPred'
-// class.
-class CPred : public Pred {
-public:
-  explicit CPred(StringRef expression)
-      : Pred(Kind::CPred), expr(expression) {}
-
-  std::string getCondition() const override { return expr; }
-
-  bool operator==(const Pred &other) const override {
-    if (other.getKind() != Kind::CPred)
-      return false;
-    return expr == static_cast<const CPred &>(other).expr;
+  friend llvm::hash_code hash_value(const Pred &pred) {
+    return llvm::hash_combine(pred.null, pred.conditionStr);
   }
 
-  StringRef getExpression() const { return expr; }
-
-private:
-  std::string expr;
-};
-
-// A predicate that combines child predicates. Models the TableGen
-// 'CombinedPred' class. Children are non-owning pointers; their lifetime
-// must be managed by an ODSContext.
-class CombinedPred : public Pred {
+// All fields are public so that free factory functions (e.g.,
+// tblgen::predFromRecord) can populate them without requiring friendship.
+// Callers should use the accessor methods above for read access.
 public:
-  CombinedPred(Kind kind, ArrayRef<const Pred *> children)
-      : Pred(kind), children(children.begin(), children.end()) {}
-
-  // Get the predicate condition string by recursively combining children.
-  std::string getCondition() const override;
-
-  bool operator==(const Pred &other) const override {
-    if (other.getKind() != kind)
-      return false;
-    return children == static_cast<const CombinedPred &>(other).children;
-  }
-
-  // Get the child predicates.
-  ArrayRef<const Pred *> getChildPreds() const { return children; }
-
-protected:
-  SmallVector<const Pred *, 4> children;
-};
-
-// A combined predicate that rewrites the C expression in all 'CPred' leaves
-// using a string substitution. Models the TableGen 'SubstLeavesPred' class.
-class SubstLeavesPred : public CombinedPred {
-public:
-  SubstLeavesPred(StringRef pattern, StringRef replacement,
-                  ArrayRef<const Pred *> children)
-      : CombinedPred(Kind::SubstLeaves, children), pattern(pattern),
-        replacement(replacement) {}
-
-  StringRef getPattern() const { return pattern; }
-  StringRef getReplacement() const { return replacement; }
-
-private:
-  std::string pattern;
-  std::string replacement;
-};
-
-// A combined predicate that prepends a prefix and appends a suffix to the
-// condition of its single child predicate. Models the TableGen 'ConcatPred'.
-class ConcatPred : public CombinedPred {
-public:
-  ConcatPred(StringRef prefix, StringRef suffix,
-             ArrayRef<const Pred *> children)
-      : CombinedPred(Kind::Concat, children), prefix(prefix), suffix(suffix) {}
-
-  StringRef getPrefix() const { return prefix; }
-  StringRef getSuffix() const { return suffix; }
-
-private:
-  std::string prefix;
-  std::string suffix;
+  bool null{true};
+  std::string conditionStr;
 };
 
 } // namespace ods

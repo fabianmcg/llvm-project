@@ -110,7 +110,7 @@ Pred Property::getPredicate() const {
   const llvm::RecordVal *maybePred = def->getValue("predicate");
   if (!maybePred || !maybePred->getValue())
     return Pred();
-  return Pred(maybePred->getValue());
+  return tblgen::predFromInit(maybePred->getValue());
 }
 
 Property Property::getBaseProperty() const {

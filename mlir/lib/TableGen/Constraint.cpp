@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Constraint.h"
+#include "mlir/TableGen/Predicate.h"
 #include "llvm/TableGen/Record.h"
 
 using namespace mlir;
@@ -66,7 +67,7 @@ void Constraint::populate() {
   auto *predVal = def->getValue("predicate");
   if (predVal) {
     if (const auto *pred = dyn_cast<llvm::DefInit>(predVal->getValue()))
-      conditionTemplate = Pred(pred).getCondition();
+      conditionTemplate = tblgen::predFromInit(pred).getCondition();
   }
 
   // defName: may use the base def's name for anonymous constraints
@@ -119,7 +120,7 @@ Pred Constraint::getPredicate() const {
     return Pred();
 
   const auto *pred = dyn_cast<llvm::DefInit>(val->getValue());
-  return Pred(pred);
+  return tblgen::predFromInit(pred);
 }
 
 std::optional<std::string> Constraint::getBaseDefName() const {

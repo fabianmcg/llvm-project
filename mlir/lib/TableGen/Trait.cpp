@@ -73,7 +73,7 @@ llvm::StringRef InternalTrait::getFullyQualifiedTraitName() const {
 //===----------------------------------------------------------------------===//
 
 std::string PredTrait::getPredTemplate() const {
-  auto pred = Pred(def->getValueInit("predicate"));
+  ods::Pred pred = tblgen::predFromInit(def->getValueInit("predicate"));
   return pred.getCondition();
 }
 

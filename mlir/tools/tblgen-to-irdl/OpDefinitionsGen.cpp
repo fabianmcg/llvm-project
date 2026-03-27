@@ -23,6 +23,7 @@
 #include "mlir/TableGen/GenNameParser.h"
 #include "mlir/TableGen/Interfaces.h"
 #include "mlir/TableGen/Operator.h"
+#include "mlir/TableGen/Predicate.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
@@ -40,16 +41,15 @@ static llvm::cl::opt<std::string>
     selectedDialect("dialect", llvm::cl::desc("The dialect to gen for"),
                     llvm::cl::cat(dialectGenCat), llvm::cl::Required);
 
-static Value createPredicate(OpBuilder &builder, tblgen::Pred pred) {
+static Value createPredicate(OpBuilder &builder, const Record *predRec) {
   MLIRContext *ctx = builder.getContext();
 
-  if (pred.isCombined()) {
-    auto combiner = pred.getDef().getValueAsDef("kind")->getName();
+  if (predRec && predRec->isSubClassOf("CombinedPred")) {
+    auto combiner = predRec->getValueAsDef("kind")->getName();
     if (combiner == "PredCombinerAnd" || combiner == "PredCombinerOr") {
       std::vector<Value> constraints;
-      for (auto *child : pred.getDef().getValueAsListOfDefs("children")) {
-        constraints.push_back(createPredicate(builder, tblgen::Pred(child)));
-      }
+      for (auto *child : predRec->getValueAsListOfDefs("children"))
+        constraints.push_back(createPredicate(builder, child));
       if (combiner == "PredCombinerAnd") {
         auto op =
             irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
@@ -61,7 +61,8 @@ static Value createPredicate(OpBuilder &builder, tblgen::Pred pred) {
     }
   }
 
-  std::string condition = pred.getCondition();
+  std::string condition =
+      predRec ? tblgen::predFromRecord(predRec).getCondition() : "";
   // Build a CPredOp to match the C constraint built.
   irdl::CPredOp op = irdl::CPredOp::create(builder, UnknownLoc::get(ctx),
                                            StringAttr::get(ctx, condition));
@@ -252,14 +253,13 @@ static Value createTypeConstraint(OpBuilder &builder,
     std::vector<Value> constraints;
     constraints.push_back(createTypeConstraint(
         builder, tblgen::Constraint(predRec.getValueAsDef("baseType"))));
-    for (const Record *child : predRec.getValueAsListOfDefs("predicateList")) {
-      constraints.push_back(createPredicate(builder, tblgen::Pred(child)));
-    }
+    for (const Record *child : predRec.getValueAsListOfDefs("predicateList"))
+      constraints.push_back(createPredicate(builder, child));
     auto op = irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
     return op.getOutput();
   }
 
-  return createPredicate(builder, constraint.getPredicate());
+  return createPredicate(builder, constraint.getDef().getValueAsOptionalDef("predicate"));
 }
 
 static Value createAttrConstraint(OpBuilder &builder,
@@ -280,7 +280,7 @@ static Value createAttrConstraint(OpBuilder &builder,
     for (const Record *child :
          predRec.getValueAsListOfDefs("attrConstraints")) {
       constraints.push_back(createPredicate(
-          builder, tblgen::Pred(child->getValueAsDef("predicate"))));
+          builder, child->getValueAsOptionalDef("predicate")));
     }
     auto op = irdl::AllOfOp::create(builder, UnknownLoc::get(ctx), constraints);
     return op.getOutput();
@@ -341,7 +341,7 @@ static Value createAttrConstraint(OpBuilder &builder,
     return op.getOutput();
   }
 
-  return createPredicate(builder, constraint.getPredicate());
+  return createPredicate(builder, constraint.getDef().getValueAsOptionalDef("predicate"));
 }
 
 static Value createRegionConstraint(OpBuilder &builder,
@@ -365,7 +365,7 @@ static Value createRegionConstraint(OpBuilder &builder,
     return op.getResult();
   }
 
-  return createPredicate(builder, constraint.getPredicate());
+  return createPredicate(builder, constraint.getDef().getValueAsOptionalDef("predicate"));
 }
 
 /// Returns the name of the operation without the dialect prefix.
