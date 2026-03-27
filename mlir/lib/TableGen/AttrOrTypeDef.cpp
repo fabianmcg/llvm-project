@@ -89,79 +89,100 @@ AttrOrTypeDef::AttrOrTypeDef(const Record *def) : def(def) {
   }
 
   // Verify the use of the mnemonic field.
-  bool hasCppFormat = hasCustomAssemblyFormat();
-  bool hasDeclarativeFormat = getAssemblyFormat().has_value();
-  if (getMnemonic()) {
+  bool hasCppFormat = def->getValueAsBit("hasCustomAssemblyFormat");
+  bool hasDeclarativeFormat =
+      def->getValueAsOptionalString("assemblyFormat").has_value();
+  std::optional<StringRef> mnemonicVal =
+      def->getValueAsOptionalString("mnemonic");
+  if (mnemonicVal) {
     if (hasCppFormat && hasDeclarativeFormat) {
-      PrintFatalError(getLoc(), "cannot specify both 'assemblyFormat' "
-                                "and 'hasCustomAssemblyFormat'");
+      PrintFatalError(def->getLoc(), "cannot specify both 'assemblyFormat' "
+                                     "and 'hasCustomAssemblyFormat'");
     }
     if (!parameters.empty() && !hasCppFormat && !hasDeclarativeFormat) {
-      PrintFatalError(getLoc(),
+      PrintFatalError(def->getLoc(),
                       "must specify either 'assemblyFormat' or "
                       "'hasCustomAssemblyFormat' when 'mnemonic' is set");
     }
   } else if (hasCppFormat || hasDeclarativeFormat) {
-    PrintFatalError(getLoc(),
+    PrintFatalError(def->getLoc(),
                     "'assemblyFormat' or 'hasCustomAssemblyFormat' can only be "
                     "used when 'mnemonic' is set");
   }
   // Assembly format printer requires accessors to be generated.
-  if (hasDeclarativeFormat && !genAccessors()) {
-    PrintFatalError(getLoc(),
+  bool genAccessorsVal = def->getValueAsBit("genAccessors");
+  if (hasDeclarativeFormat && !genAccessorsVal) {
+    PrintFatalError(def->getLoc(),
                     "'assemblyFormat' requires 'genAccessors' to be true");
+  }
+
+  // Populate ods::AttrOrTypeDef scalar fields eagerly.
+  {
+    const auto *dialectInit =
+        dyn_cast<DefInit>(def->getValue("dialect")->getValue());
+    if (dialectInit)
+      dialect = Dialect(dialectInit->getDef());
+
+    name = def->getName().str();
+    cppClassName = def->getValueAsString("cppClassName").str();
+    cppBaseClassName = def->getValueAsString("cppBaseClassName").str();
+
+    const RecordVal *descVal = def->getValue("description");
+    hasDescriptionFlag = descVal && isa<StringInit>(descVal->getValue());
+    if (hasDescriptionFlag)
+      description = def->getValueAsString("description").str();
+
+    const RecordVal *summaryVal = def->getValue("summary");
+    hasSummaryFlag = summaryVal && isa<StringInit>(summaryVal->getValue());
+    if (hasSummaryFlag)
+      summary = def->getValueAsString("summary").str();
+
+    storageClassName = def->getValueAsString("storageClass").str();
+    storageNamespace = def->getValueAsString("storageNamespace").str();
+    genStorageClassFlag = def->getValueAsBit("genStorageClass");
+    hasStorageCustomConstructorFlag =
+        def->getValueAsBit("hasStorageCustomConstructor");
+
+    if (mnemonicVal && !mnemonicVal->empty())
+      mnemonic = mnemonicVal->str();
+
+    hasCustomAssemblyFormatFlag = hasCppFormat;
+
+    if (hasDeclarativeFormat)
+      assemblyFormat =
+          def->getValueAsOptionalString("assemblyFormat")->str();
+
+    genAccessorsFlag = genAccessorsVal;
+    genVerifyDeclFlag = def->getValueAsBit("genVerifyDecl");
+
+    // Precompute genVerifyInvariantsImpl: true if any parameter has a
+    // constraint or any trait is a PredTrait.
+    verifyInvariantsImplFlag =
+        any_of(parameters,
+               [](const AttrOrTypeParameter &p) {
+                 return p.getConstraint() != std::nullopt;
+               }) ||
+        any_of(traits, [](const Trait &t) { return isa<PredTrait>(&t); });
+
+    StringRef extraDeclsStr = def->getValueAsString("extraClassDeclaration");
+    if (!extraDeclsStr.empty())
+      extraDecls = extraDeclsStr.str();
+
+    StringRef extraDefsStr = def->getValueAsString("extraClassDefinition");
+    if (!extraDefsStr.empty())
+      extraDefs = extraDefsStr.str();
+
+    genMnemonicAliasFlag = def->getValueAsBit("genMnemonicAlias");
+    skipDefaultBuildersFlag = def->getValueAsBit("skipDefaultBuilders");
   }
   // TODO: Ensure that a suitable builder prototype can be generated:
   // https://llvm.org/PR56415
 }
 
 Dialect AttrOrTypeDef::getDialect() const {
-  const auto *dialect = dyn_cast<DefInit>(def->getValue("dialect")->getValue());
-  return Dialect(dialect ? dialect->getDef() : nullptr);
-}
-
-StringRef AttrOrTypeDef::getName() const { return def->getName(); }
-
-StringRef AttrOrTypeDef::getCppClassName() const {
-  return def->getValueAsString("cppClassName");
-}
-
-StringRef AttrOrTypeDef::getCppBaseClassName() const {
-  return def->getValueAsString("cppBaseClassName");
-}
-
-bool AttrOrTypeDef::hasDescription() const {
-  const RecordVal *desc = def->getValue("description");
-  return desc && isa<StringInit>(desc->getValue());
-}
-
-StringRef AttrOrTypeDef::getDescription() const {
-  return def->getValueAsString("description");
-}
-
-bool AttrOrTypeDef::hasSummary() const {
-  const RecordVal *summary = def->getValue("summary");
-  return summary && isa<StringInit>(summary->getValue());
-}
-
-StringRef AttrOrTypeDef::getSummary() const {
-  return def->getValueAsString("summary");
-}
-
-StringRef AttrOrTypeDef::getStorageClassName() const {
-  return def->getValueAsString("storageClass");
-}
-
-StringRef AttrOrTypeDef::getStorageNamespace() const {
-  return def->getValueAsString("storageNamespace");
-}
-
-bool AttrOrTypeDef::genStorageClass() const {
-  return def->getValueAsBit("genStorageClass");
-}
-
-bool AttrOrTypeDef::hasStorageCustomConstructor() const {
-  return def->getValueAsBit("hasStorageCustomConstructor");
+  const auto *dialectInit =
+      dyn_cast<DefInit>(def->getValue("dialect")->getValue());
+  return Dialect(dialectInit ? dialectInit->getDef() : nullptr);
 }
 
 unsigned AttrOrTypeDef::getNumParameters() const {
@@ -169,53 +190,7 @@ unsigned AttrOrTypeDef::getNumParameters() const {
   return parametersDag ? parametersDag->getNumArgs() : 0;
 }
 
-std::optional<StringRef> AttrOrTypeDef::getMnemonic() const {
-  return def->getValueAsOptionalString("mnemonic");
-}
-
-bool AttrOrTypeDef::hasCustomAssemblyFormat() const {
-  return def->getValueAsBit("hasCustomAssemblyFormat");
-}
-
-std::optional<StringRef> AttrOrTypeDef::getAssemblyFormat() const {
-  return def->getValueAsOptionalString("assemblyFormat");
-}
-
-bool AttrOrTypeDef::genAccessors() const {
-  return def->getValueAsBit("genAccessors");
-}
-
-bool AttrOrTypeDef::genVerifyDecl() const {
-  return def->getValueAsBit("genVerifyDecl");
-}
-
-bool AttrOrTypeDef::genVerifyInvariantsImpl() const {
-  return any_of(parameters,
-                [](const AttrOrTypeParameter &p) {
-                  return p.getConstraint() != std::nullopt;
-                }) ||
-         any_of(traits, [](const Trait &t) { return isa<PredTrait>(&t); });
-}
-
-std::optional<StringRef> AttrOrTypeDef::getExtraDecls() const {
-  auto value = def->getValueAsString("extraClassDeclaration");
-  return value.empty() ? std::optional<StringRef>() : value;
-}
-
-std::optional<StringRef> AttrOrTypeDef::getExtraDefs() const {
-  auto value = def->getValueAsString("extraClassDefinition");
-  return value.empty() ? std::optional<StringRef>() : value;
-}
-
-bool AttrOrTypeDef::genMnemonicAlias() const {
-  return def->getValueAsBit("genMnemonicAlias");
-}
-
 ArrayRef<SMLoc> AttrOrTypeDef::getLoc() const { return def->getLoc(); }
-
-bool AttrOrTypeDef::skipDefaultBuilders() const {
-  return def->getValueAsBit("skipDefaultBuilders");
-}
 
 bool AttrOrTypeDef::operator==(const AttrOrTypeDef &other) const {
   return def == other.def;

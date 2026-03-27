@@ -14,6 +14,7 @@
 #ifndef MLIR_TABLEGEN_ATTRORTYPEDEF_H
 #define MLIR_TABLEGEN_ATTRORTYPEDEF_H
 
+#include "mlir/ODS/AttrOrTypeDef.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Builder.h"
 #include "mlir/TableGen/Constraint.h"
@@ -147,85 +148,124 @@ public:
 //===----------------------------------------------------------------------===//
 
 /// Wrapper class that contains a TableGen AttrOrTypeDef's record and provides
-/// helper methods for accessing them.
-class AttrOrTypeDef {
+/// helper methods for accessing them. Derives from mlir::ods::AttrOrTypeDef
+/// which stores all scalar fields eagerly. The TableGen-specific record,
+/// builders, traits, and parameters are stored here.
+class AttrOrTypeDef : public mlir::ods::AttrOrTypeDef {
 public:
   explicit AttrOrTypeDef(const llvm::Record *def);
 
-  /// Get the dialect for which this def belongs.
+  /// Get the dialect for which this def belongs. Returns a tblgen::Dialect
+  /// object (not an ods::Dialect reference). Shadows ods::AttrOrTypeDef::getDialect().
   Dialect getDialect() const;
 
   /// Returns the name of this AttrOrTypeDef record.
-  StringRef getName() const;
+  StringRef getName() const { return mlir::ods::AttrOrTypeDef::getName(); }
 
   /// Query functions for the documentation of the def.
-  bool hasDescription() const;
-  StringRef getDescription() const;
-  bool hasSummary() const;
-  StringRef getSummary() const;
+  bool hasDescription() const {
+    return mlir::ods::AttrOrTypeDef::hasDescription();
+  }
+  StringRef getDescription() const {
+    return mlir::ods::AttrOrTypeDef::getDescription();
+  }
+  bool hasSummary() const { return mlir::ods::AttrOrTypeDef::hasSummary(); }
+  StringRef getSummary() const {
+    return mlir::ods::AttrOrTypeDef::getSummary();
+  }
 
   /// Returns the name of the C++ class to generate.
-  StringRef getCppClassName() const;
+  StringRef getCppClassName() const {
+    return mlir::ods::AttrOrTypeDef::getCppClassName();
+  }
 
   /// Returns the name of the C++ base class to use when generating this def.
-  StringRef getCppBaseClassName() const;
+  StringRef getCppBaseClassName() const {
+    return mlir::ods::AttrOrTypeDef::getCppBaseClassName();
+  }
 
   /// Returns the name of the storage class for this def.
-  StringRef getStorageClassName() const;
+  StringRef getStorageClassName() const {
+    return mlir::ods::AttrOrTypeDef::getStorageClassName();
+  }
 
   /// Returns the C++ namespace for this def's storage class.
-  StringRef getStorageNamespace() const;
+  StringRef getStorageNamespace() const {
+    return mlir::ods::AttrOrTypeDef::getStorageNamespace();
+  }
 
   /// Returns true if we should generate the storage class.
-  bool genStorageClass() const;
+  bool genStorageClass() const {
+    return mlir::ods::AttrOrTypeDef::genStorageClass();
+  }
 
   /// Indicates whether or not to generate the storage class constructor.
-  bool hasStorageCustomConstructor() const;
+  bool hasStorageCustomConstructor() const {
+    return mlir::ods::AttrOrTypeDef::hasStorageCustomConstructor();
+  }
 
   /// Get the parameters of this attribute or type.
   ArrayRef<AttrOrTypeParameter> getParameters() const { return parameters; }
 
-  /// Return the number of parameters
+  /// Return the number of parameters.
   unsigned getNumParameters() const;
 
   /// Return the keyword/mnemonic to use in the printer/parser methods if we are
   /// supposed to auto-generate them.
-  std::optional<StringRef> getMnemonic() const;
+  std::optional<StringRef> getMnemonic() const {
+    return mlir::ods::AttrOrTypeDef::getMnemonic();
+  }
 
   /// Returns if the attribute or type has a custom assembly format implemented
   /// in C++. Corresponds to the `hasCustomAssemblyFormat` field.
-  bool hasCustomAssemblyFormat() const;
+  bool hasCustomAssemblyFormat() const {
+    return mlir::ods::AttrOrTypeDef::hasCustomAssemblyFormat();
+  }
 
   /// Returns the custom assembly format, if one was specified.
-  std::optional<StringRef> getAssemblyFormat() const;
+  std::optional<StringRef> getAssemblyFormat() const {
+    return mlir::ods::AttrOrTypeDef::getAssemblyFormat();
+  }
 
   /// Returns true if the accessors based on the parameters should be generated.
-  bool genAccessors() const;
+  bool genAccessors() const { return mlir::ods::AttrOrTypeDef::genAccessors(); }
 
   /// Return true if we need to generate the verify declaration and getChecked
   /// method.
-  bool genVerifyDecl() const;
+  bool genVerifyDecl() const {
+    return mlir::ods::AttrOrTypeDef::genVerifyDecl();
+  }
 
   /// Return true if we need to generate any type constraint verification and
   /// the getChecked method.
-  bool genVerifyInvariantsImpl() const;
+  bool genVerifyInvariantsImpl() const {
+    return mlir::ods::AttrOrTypeDef::genVerifyInvariantsImpl();
+  }
 
   /// Returns the def's extra class declaration code.
-  std::optional<StringRef> getExtraDecls() const;
+  std::optional<StringRef> getExtraDecls() const {
+    return mlir::ods::AttrOrTypeDef::getExtraDecls();
+  }
 
   /// Returns the def's extra class definition code.
-  std::optional<StringRef> getExtraDefs() const;
+  std::optional<StringRef> getExtraDefs() const {
+    return mlir::ods::AttrOrTypeDef::getExtraDefs();
+  }
 
   /// Returns true if we need to generate a default 'getAlias' implementation
   /// using the mnemonic.
-  bool genMnemonicAlias() const;
+  bool genMnemonicAlias() const {
+    return mlir::ods::AttrOrTypeDef::genMnemonicAlias();
+  }
 
   /// Get the code location (for error printing).
   ArrayRef<SMLoc> getLoc() const;
 
   /// Returns true if the default get/getChecked methods should be skipped
   /// during generation.
-  bool skipDefaultBuilders() const;
+  bool skipDefaultBuilders() const {
+    return mlir::ods::AttrOrTypeDef::skipDefaultBuilders();
+  }
 
   /// Returns the builders of this def.
   ArrayRef<AttrOrTypeBuilder> getBuilders() const { return builders; }
