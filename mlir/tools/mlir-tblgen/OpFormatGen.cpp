@@ -64,9 +64,13 @@ struct AttributeVariable
 
   /// Return the constant builder call for the type of this attribute, or
   /// std::nullopt if it doesn't have one.
-  std::optional<StringRef> getTypeBuilder() const {
+  std::optional<std::string> getTypeBuilder() const {
     std::optional<Type> attrType = var->attr.getValueType();
-    return attrType ? attrType->getBuilderCall() : std::nullopt;
+    if (!attrType)
+      return std::nullopt;
+    if (std::optional<StringRef> call = attrType->getBuilderCall())
+      return call->str();
+    return std::nullopt;
   }
 
   /// Indicate if this attribute is printed "qualified" (that is it is
@@ -1254,7 +1258,7 @@ static void genAttrParser(AttributeVariable *attr, MethodBody &body,
     // If this attribute has a buildable type, use that when parsing the
     // attribute.
     std::string attrTypeStr;
-    if (std::optional<StringRef> typeBuilder = attr->getTypeBuilder()) {
+    if (std::optional<std::string> typeBuilder = attr->getTypeBuilder()) {
       llvm::raw_string_ostream os(attrTypeStr);
       os << tgfmt(*typeBuilder, &attrTypeCtx);
     } else {

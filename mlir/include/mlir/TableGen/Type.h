@@ -55,7 +55,8 @@ public:
   bool isVariableLength() const { return isOptional() || isVariadic(); }
 
   // Returns the builder call for this constraint if this is a buildable type,
-  // returns std::nullopt otherwise.
+  // returns std::nullopt otherwise. The returned StringRef is valid only as
+  // long as this TypeConstraint is alive.
   std::optional<StringRef> getBuilderCall() const {
     if (!builderCall)
       return std::nullopt;
