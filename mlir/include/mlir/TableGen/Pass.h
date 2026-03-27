@@ -6,8 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// TableGen wrapper around ODS Pass classes. Derives from mlir::ods::Pass and
-// populates all ODS fields from an llvm::Record in its constructor.
+// Free function for constructing an mlir::ods::Pass from an llvm::Record.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,7 +14,6 @@
 #define MLIR_TABLEGEN_PASS_H_
 
 #include "mlir/ODS/Pass.h"
-#include "mlir/Support/LLVM.h"
 
 namespace llvm {
 class Record;
@@ -28,22 +26,10 @@ namespace tblgen {
 // continue to work unchanged.
 using PassOption = mlir::ods::PassOption;
 using PassStatistic = mlir::ods::PassStatistic;
+using Pass = mlir::ods::Pass;
 
-//===----------------------------------------------------------------------===//
-// Pass
-//===----------------------------------------------------------------------===//
-
-/// TableGen wrapper for a pass definition. Derives from mlir::ods::Pass and
-/// additionally stores the underlying llvm::Record.
-class Pass : public mlir::ods::Pass {
-public:
-  explicit Pass(const llvm::Record *def);
-
-  const llvm::Record *getDef() const { return def; }
-
-private:
-  const llvm::Record *def;
-};
+/// Constructs an ods::Pass by reading all fields from the TableGen record.
+ods::Pass passFromRecord(const llvm::Record *def);
 
 } // namespace tblgen
 } // namespace mlir

@@ -34,7 +34,7 @@ static std::vector<Pass> getPasses(const RecordKeeper &records) {
   std::vector<Pass> passes;
 
   for (const auto *def : records.getAllDerivedDefinitions("PassBase"))
-    passes.emplace_back(def);
+    passes.push_back(tblgen::passFromRecord(def));
 
   return passes;
 }
@@ -90,7 +90,7 @@ inline void register{0}Passes() {{
 
 /// Emits the definition of the struct to be used to control the pass options.
 static void emitPassOptionsStruct(const Pass &pass, raw_ostream &os) {
-  StringRef passName = pass.getDef()->getName();
+  StringRef passName = pass.getName();
   ArrayRef<PassOption> options = pass.getOptions();
 
   // Emit the struct only if the pass has at least one option.
@@ -117,16 +117,16 @@ static void emitPassOptionsStruct(const Pass &pass, raw_ostream &os) {
 }
 
 static std::string getPassDeclVarName(const Pass &pass) {
-  return "GEN_PASS_DECL_" + pass.getDef()->getName().upper();
+  return "GEN_PASS_DECL_" + pass.getName().upper();
 }
 
 static std::string getPassRegistrationVarName(const Pass &pass) {
-  return "GEN_PASS_REGISTRATION_" + pass.getDef()->getName().upper();
+  return "GEN_PASS_REGISTRATION_" + pass.getName().upper();
 }
 
 /// Emit the code to be included in the public header of the pass.
 static void emitPassDecls(const Pass &pass, raw_ostream &os) {
-  StringRef passName = pass.getDef()->getName();
+  StringRef passName = pass.getName();
   std::string enableVarName = getPassDeclVarName(pass);
 
   os << "#ifdef " << enableVarName << "\n";
@@ -157,7 +157,7 @@ static void emitRegistrations(llvm::ArrayRef<Pass> passes, raw_ostream &os) {
   os << "#endif // GEN_PASS_REGISTRATION\n";
 
   for (const Pass &pass : passes) {
-    std::string passName = pass.getDef()->getName().str();
+    std::string passName = pass.getName().str();
     std::string passEnableVarName = getPassRegistrationVarName(pass);
 
     std::string constructorCall;
@@ -173,7 +173,7 @@ static void emitRegistrations(llvm::ArrayRef<Pass> passes, raw_ostream &os) {
   os << formatv(passGroupRegistrationCode, groupName);
 
   for (const Pass &pass : passes)
-    os << "  register" << pass.getDef()->getName() << "();\n";
+    os << "  register" << pass.getName() << "();\n";
 
   os << "}\n";
   os << "#undef GEN_PASS_REGISTRATION\n";
@@ -309,7 +309,7 @@ static void emitPassStatisticDecls(const Pass &pass, raw_ostream &os) {
 
 /// Emit the code to be used in the implementation of the pass.
 static void emitPassDefs(const Pass &pass, raw_ostream &os) {
-  StringRef passName = pass.getDef()->getName();
+  StringRef passName = pass.getName();
   std::string enableVarName = "GEN_PASS_DEF_" + passName.upper();
   bool emitDefaultConstructors = pass.getConstructor().empty();
   bool emitDefaultConstructorWithOptions = !pass.getOptions().empty();
@@ -380,7 +380,7 @@ static void emitPassDefs(const Pass &pass, raw_ostream &os) {
 }
 
 static void emitPass(const Pass &pass, raw_ostream &os) {
-  StringRef passName = pass.getDef()->getName();
+  StringRef passName = pass.getName();
   os << formatv(passHeader, passName);
 
   emitPassDecls(pass, os);

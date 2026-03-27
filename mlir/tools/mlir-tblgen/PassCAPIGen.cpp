@@ -64,8 +64,8 @@ static bool emitCAPIHeader(const RecordKeeper &records, raw_ostream &os) {
   os << "MLIR_CAPI_EXPORTED void mlirRegister" << groupName
      << "Passes(void);\n\n";
   for (const auto *def : records.getAllDerivedDefinitions("PassBase")) {
-    Pass pass(def);
-    StringRef defName = pass.getDef()->getName();
+    ods::Pass pass = tblgen::passFromRecord(def);
+    StringRef defName = pass.getName();
     os << formatv(passDecl, groupName, defName);
   }
   os << fileFooter;
@@ -98,14 +98,14 @@ static bool emitCAPIImpl(const RecordKeeper &records, raw_ostream &os) {
   os << formatv(passGroupRegistrationCode, groupName);
 
   for (const auto *def : records.getAllDerivedDefinitions("PassBase")) {
-    Pass pass(def);
-    StringRef defName = pass.getDef()->getName();
+    ods::Pass pass = tblgen::passFromRecord(def);
+    StringRef defName = pass.getName();
 
     std::string constructorCall;
     if (StringRef constructor = pass.getConstructor(); !constructor.empty())
       constructorCall = constructor.str();
     else
-      constructorCall = formatv("create{0}()", pass.getDef()->getName()).str();
+      constructorCall = formatv("create{0}()", pass.getName()).str();
 
     os << formatv(passCreateDef, groupName, defName, constructorCall);
   }

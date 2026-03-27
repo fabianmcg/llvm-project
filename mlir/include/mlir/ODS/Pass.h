@@ -120,6 +120,9 @@ private:
 /// collections with no dependency on LLVM TableGen types.
 class Pass {
 public:
+  /// Returns the pass class name (the TableGen record name).
+  StringRef getName() const { return name; }
+
   /// Returns the command line argument of the pass.
   StringRef getArgument() const { return argument; }
 
@@ -146,7 +149,11 @@ public:
   /// Returns the statistics provided by this pass.
   ArrayRef<PassStatistic> getStatistics() const { return statistics; }
 
-protected:
+// All fields are public so that free factory functions (e.g.,
+// tblgen::passFromRecord) can populate them without requiring friendship.
+// Callers should use the accessor methods above for read access.
+public:
+  std::string name;
   std::string argument;
   std::string baseClass;
   std::string summary;

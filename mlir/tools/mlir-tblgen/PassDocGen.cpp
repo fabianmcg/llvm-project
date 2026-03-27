@@ -13,6 +13,7 @@
 #include "DocGenUtilities.h"
 #include "mlir/TableGen/GenInfo.h"
 #include "mlir/TableGen/Pass.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/TableGen/Record.h"
 
@@ -62,7 +63,10 @@ static void emitDocs(const RecordKeeper &records, raw_ostream &os) {
   auto passDefs = records.getAllDerivedDefinitions("PassBase");
 
   // Collect the registered passes, sorted by argument name.
-  SmallVector<Pass, 16> passes(passDefs.begin(), passDefs.end());
+  std::vector<Pass> passes;
+  passes.reserve(passDefs.size());
+  for (const auto *def : passDefs)
+    passes.push_back(tblgen::passFromRecord(def));
   SmallVector<Pass *, 16> sortedPasses(llvm::make_pointer_range(passes));
   llvm::array_pod_sort(sortedPasses.begin(), sortedPasses.end(),
                        [](Pass *const *lhs, Pass *const *rhs) {

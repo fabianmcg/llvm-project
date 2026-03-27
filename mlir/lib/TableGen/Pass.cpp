@@ -12,17 +12,19 @@
 using namespace mlir;
 using namespace mlir::tblgen;
 
-Pass::Pass(const llvm::Record *def) : def(def) {
-  argument = def->getValueAsString("argument").str();
-  baseClass = def->getValueAsString("baseClass").str();
-  summary = def->getValueAsString("summary").str();
-  description = def->getValueAsString("description").str();
-  constructor = def->getValueAsString("constructor").str();
+ods::Pass tblgen::passFromRecord(const llvm::Record *def) {
+  ods::Pass pass;
+  pass.name = def->getName().str();
+  pass.argument = def->getValueAsString("argument").str();
+  pass.baseClass = def->getValueAsString("baseClass").str();
+  pass.summary = def->getValueAsString("summary").str();
+  pass.description = def->getValueAsString("description").str();
+  pass.constructor = def->getValueAsString("constructor").str();
 
   for (const llvm::Record *opt : def->getValueAsListOfDefs("options")) {
     StringRef defaultVal = opt->getValueAsString("defaultValue");
     StringRef flags = opt->getValueAsString("additionalOptFlags");
-    options.emplace_back(
+    pass.options.emplace_back(
         opt->getValueAsString("cppName"), opt->getValueAsString("argument"),
         opt->getValueAsString("type"),
         defaultVal.empty() ? std::optional<StringRef>() : defaultVal,
@@ -32,10 +34,12 @@ Pass::Pass(const llvm::Record *def) : def(def) {
   }
 
   for (const llvm::Record *stat : def->getValueAsListOfDefs("statistics"))
-    statistics.emplace_back(stat->getValueAsString("cppName"),
-                            stat->getValueAsString("name"),
-                            stat->getValueAsString("description"));
+    pass.statistics.emplace_back(stat->getValueAsString("cppName"),
+                                 stat->getValueAsString("name"),
+                                 stat->getValueAsString("description"));
 
   for (StringRef dialect : def->getValueAsListOfStrings("dependentDialects"))
-    dependentDialects.push_back(dialect.str());
+    pass.dependentDialects.push_back(dialect.str());
+
+  return pass;
 }
