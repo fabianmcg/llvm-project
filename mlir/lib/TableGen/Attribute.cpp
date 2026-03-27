@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/TableGen/Dialect.h"
 #include "mlir/TableGen/Operator.h"
 #include "llvm/TableGen/Record.h"
 
@@ -37,88 +38,63 @@ bool AttrConstraint::isSubClassOf(StringRef className) const {
 Attribute::Attribute(const Record *record) : AttrConstraint(record) {
   assert(record->isSubClassOf("Attr") &&
          "must be subclass of TableGen 'Attr' class");
+
+  // Populate ods::Attribute fields eagerly.
+  StringRef st = getValueAsString(def->getValueInit("storageType"));
+  storageType = st.empty() ? "::mlir::Attribute" : st.str();
+  returnType = getValueAsString(def->getValueInit("returnType")).str();
+  convertFromStorage =
+      getValueAsString(def->getValueInit("convertFromStorage")).str();
+  constBuilderTemplate =
+      getValueAsString(def->getValueInit("constBuilderCall")).str();
+  defaultValue = getValueAsString(def->getValueInit("defaultValue")).str();
+  optional = def->getValueAsBit("isOptional");
+
+  derivedAttr = def->isSubClassOf("DerivedAttr");
+  typeAttr = def->isSubClassOf("TypeAttrBase");
+  enumAttr = def->isSubClassOf("EnumAttrInfo");
+
+  StringRef name = def->getName();
+  symbolRefAttr = name == "SymbolRefAttr" || name == "FlatSymbolRefAttr" ||
+                  def->isSubClassOf("SymbolRefAttr") ||
+                  def->isSubClassOf("FlatSymbolRefAttr");
+
+  // attrDefName: for anonymous attrs use the base attr's name.
+  if (def->isAnonymous()) {
+    if (const auto *defInit =
+            dyn_cast<DefInit>(def->getValueInit("baseAttr"))) {
+      // Recurse to get the ultimate base name.
+      attrDefName = Attribute(defInit->getDef()).getAttrDefName().str();
+    } else {
+      attrDefName = name.str();
+    }
+  } else {
+    attrDefName = name.str();
+  }
+
+  if (derivedAttr)
+    derivedCodeBody = def->getValueAsString("body").str();
+
+  // Populate the ods::Dialect field (slice from tblgen::Dialect to ods::Dialect).
+  const llvm::RecordVal *dialectRecord = def->getValue("dialect");
+  if (dialectRecord && dialectRecord->getValue()) {
+    if (const DefInit *init = dyn_cast<DefInit>(dialectRecord->getValue()))
+      dialect = Dialect(init->getDef());
+  }
 }
 
 Attribute::Attribute(const DefInit *init) : Attribute(init->getDef()) {}
 
-bool Attribute::isDerivedAttr() const { return isSubClassOf("DerivedAttr"); }
-
-bool Attribute::isTypeAttr() const { return isSubClassOf("TypeAttrBase"); }
-
-bool Attribute::isSymbolRefAttr() const {
-  StringRef defName = def->getName();
-  if (defName == "SymbolRefAttr" || defName == "FlatSymbolRefAttr")
-    return true;
-  return isSubClassOf("SymbolRefAttr") || isSubClassOf("FlatSymbolRefAttr");
+Attribute Attribute::getBaseAttr() const {
+  if (const auto *defInit = dyn_cast<DefInit>(def->getValueInit("baseAttr")))
+    return Attribute(defInit).getBaseAttr();
+  return *this;
 }
 
-bool Attribute::isEnumAttr() const { return isSubClassOf("EnumAttrInfo"); }
-
-StringRef Attribute::getStorageType() const {
-  const auto *init = def->getValueInit("storageType");
-  auto type = getValueAsString(init);
-  if (type.empty())
-    return "::mlir::Attribute";
-  return type;
-}
-
-StringRef Attribute::getReturnType() const {
-  const auto *init = def->getValueInit("returnType");
-  return getValueAsString(init);
-}
-
-// Return the type constraint corresponding to the type of this attribute, or
-// std::nullopt if this is not a TypedAttr.
 std::optional<Type> Attribute::getValueType() const {
   if (const auto *defInit = dyn_cast<DefInit>(def->getValueInit("valueType")))
     return Type(defInit->getDef());
   return std::nullopt;
-}
-
-StringRef Attribute::getConvertFromStorageCall() const {
-  const auto *init = def->getValueInit("convertFromStorage");
-  return getValueAsString(init);
-}
-
-bool Attribute::isConstBuildable() const {
-  const auto *init = def->getValueInit("constBuilderCall");
-  return !getValueAsString(init).empty();
-}
-
-StringRef Attribute::getConstBuilderTemplate() const {
-  const auto *init = def->getValueInit("constBuilderCall");
-  return getValueAsString(init);
-}
-
-Attribute Attribute::getBaseAttr() const {
-  if (const auto *defInit = dyn_cast<DefInit>(def->getValueInit("baseAttr"))) {
-    return Attribute(defInit).getBaseAttr();
-  }
-  return *this;
-}
-
-bool Attribute::hasDefaultValue() const {
-  const auto *init = def->getValueInit("defaultValue");
-  return !getValueAsString(init).empty();
-}
-
-StringRef Attribute::getDefaultValue() const {
-  const auto *init = def->getValueInit("defaultValue");
-  return getValueAsString(init);
-}
-
-bool Attribute::isOptional() const { return def->getValueAsBit("isOptional"); }
-
-StringRef Attribute::getAttrDefName() const {
-  if (def->isAnonymous()) {
-    return getBaseAttr().def->getName();
-  }
-  return def->getName();
-}
-
-StringRef Attribute::getDerivedCodeBody() const {
-  assert(isDerivedAttr() && "only derived attribute has 'body' field");
-  return def->getValueAsString("body");
 }
 
 Dialect Attribute::getDialect() const {
