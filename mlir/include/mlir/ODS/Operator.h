@@ -48,6 +48,9 @@ public:
   /// Returns the canonical operation name, e.g. "dialect.op_name".
   StringRef getOperationName() const { return operationName; }
 
+  /// Returns the TableGen "opName" field value (without dialect prefix).
+  StringRef getOpName() const { return opName; }
+
   /// Returns the name of the adaptor C++ class.
   std::string getAdaptorName() const {
     return std::string(getCppClassName()) + "Adaptor";
@@ -133,6 +136,7 @@ protected:
   std::string cppClassName;
   std::string cppNamespace;
   std::string operationName;
+  std::string opName;
   std::string description;
   std::string summary;
   std::optional<std::string> assemblyFormat;

@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Dialect.h"
+#include "mlir/TableGen/EnumInfo.h"
 #include "mlir/TableGen/Operator.h"
 #include "llvm/TableGen/Record.h"
 
@@ -53,6 +54,8 @@ Attribute::Attribute(const Record *record) : AttrConstraint(record) {
   derivedAttr = def->isSubClassOf("DerivedAttr");
   typeAttr = def->isSubClassOf("TypeAttrBase");
   enumAttr = def->isSubClassOf("EnumAttrInfo");
+  if (enumAttr)
+    enumInfo = EnumInfo(def);
 
   StringRef name = def->getName();
   symbolRefAttr = name == "SymbolRefAttr" || name == "FlatSymbolRefAttr" ||

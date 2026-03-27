@@ -16,6 +16,7 @@
 #define MLIR_ODS_ATTRIBUTE_H_
 
 #include "mlir/ODS/Dialect.h"
+#include "mlir/ODS/EnumInfo.h"
 #include "mlir/Support/LLVM.h"
 
 #include <optional>
@@ -74,6 +75,12 @@ public:
   // Returns true if this is an enum attribute (subclass of EnumAttrInfo).
   bool isEnumAttr() const { return enumAttr; }
 
+  // Returns the enum info for this attribute. Only valid if isEnumAttr().
+  const ods::EnumInfo &getEnumInfo() const {
+    assert(enumAttr && "not an enum attribute");
+    return *enumInfo;
+  }
+
   // Returns this attribute's TableGen def name. For anonymous optional or
   // default-valued attrs this returns the underlying base attr's name.
   StringRef getAttrDefName() const { return attrDefName; }
@@ -94,6 +101,8 @@ protected:
   std::string attrDefName;
   std::string derivedCodeBody;
   ods::Dialect dialect;
+  /// Populated when enumAttr is true (the attribute record is an EnumAttrInfo).
+  std::optional<ods::EnumInfo> enumInfo;
   bool optional{false};
   bool derivedAttr{false};
   bool typeAttr{false};

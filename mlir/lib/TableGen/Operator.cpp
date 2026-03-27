@@ -69,6 +69,7 @@ Operator::Operator(const Record &def)
     operationName = dialectPrefix.empty()
                         ? opName.str()
                         : (dialectPrefix.str() + "." + opName.str());
+    this->opName = opName.str();
   }
   description = def.getValueAsString("description").str();
   summary = def.getValueAsString("summary").str();

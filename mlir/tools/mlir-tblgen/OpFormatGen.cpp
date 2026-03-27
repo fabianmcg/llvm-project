@@ -438,7 +438,7 @@ static bool canFormatEnumAttr(const NamedAttribute *attr) {
   Attribute baseAttr = attr->attr.getBaseAttr();
   if (!baseAttr.isEnumAttr())
     return false;
-  EnumInfo enumInfo(&baseAttr.getDef());
+  const ods::EnumInfo &enumInfo = baseAttr.getEnumInfo();
 
   // The attribute must have a valid underlying type and a constant builder.
   return !enumInfo.getUnderlyingType().empty() &&
@@ -1166,8 +1166,8 @@ static void genEnumAttrParser(const NamedAttribute *var, MethodBody &body,
                               FmtContext &attrTypeCtx, bool parseAsOptional,
                               bool useProperties, StringRef opCppClassName) {
   Attribute baseAttr = var->attr.getBaseAttr();
-  EnumInfo enumInfo(&baseAttr.getDef());
-  std::vector<EnumCase> cases = enumInfo.getAllCases();
+  const ods::EnumInfo &enumInfo = baseAttr.getEnumInfo();
+  ArrayRef<ods::EnumCase> cases = enumInfo.getCases();
 
   // Generate the code for building an attribute for this enum.
   std::string attrBuilderStr;
@@ -1180,7 +1180,7 @@ static void genEnumAttrParser(const NamedAttribute *var, MethodBody &body,
   // Build a string containing the cases that can be formatted as a keyword.
   std::string validCaseKeywordsStr = "{";
   llvm::raw_string_ostream validCaseKeywordsOS(validCaseKeywordsStr);
-  for (const EnumCase &attrCase : cases)
+  for (const ods::EnumCase &attrCase : cases)
     if (canFormatStringAsKeyword(attrCase.getStr()))
       validCaseKeywordsOS << '"' << attrCase.getStr() << "\",";
   validCaseKeywordsOS.str().back() = '}';
@@ -2267,8 +2267,8 @@ static MethodBody &genTypeOperandPrinter(FormatElement *arg, const Operator &op,
 static void genEnumAttrPrinter(const NamedAttribute *var, const Operator &op,
                                MethodBody &body) {
   Attribute baseAttr = var->attr.getBaseAttr();
-  const EnumInfo enumInfo(&baseAttr.getDef());
-  std::vector<EnumCase> cases = enumInfo.getAllCases();
+  const ods::EnumInfo &enumInfo = baseAttr.getEnumInfo();
+  ArrayRef<ods::EnumCase> cases = enumInfo.getCases();
 
   body << formatv(enumAttrBeginPrinterCode,
                   (var->attr.isOptional() ? "*" : "") +

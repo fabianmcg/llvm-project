@@ -624,7 +624,7 @@ collectRecords(const RecordKeeper &records) {
     auto getDesc = [](const OpDocGroup &arg) -> StringRef {
       if (!arg.summary.empty())
         return arg.summary;
-      return arg.ops.front().getDef().getValueAsString("opName");
+      return arg.ops.front().getOpName();
     };
     return getDesc(lhs).compare_insensitive(getDesc(rhs)) < 0;
   });
