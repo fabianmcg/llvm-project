@@ -60,38 +60,47 @@ Property::Property(const Record *def)
 
 Property::Property(const DefInit *init) : Property(init->getDef()) {}
 
-Property::Property(const llvm::Record *maybeDef, StringRef summary,
-                   StringRef description, StringRef storageType,
-                   StringRef interfaceType, StringRef convertFromStorageCall,
-                   StringRef assignToStorageCall,
-                   StringRef convertToAttributeCall,
-                   StringRef convertFromAttributeCall, StringRef parserCall,
-                   StringRef optionalParserCall, StringRef printerCall,
-                   StringRef readFromMlirBytecodeCall,
-                   StringRef writeToMlirBytecodeCall,
-                   StringRef hashPropertyCall, StringRef defaultValue,
-                   StringRef storageTypeValueOverride)
-    : PropConstraint(maybeDef, Constraint::CK_Prop), summary(summary),
-      description(description), storageType(storageType),
-      interfaceType(interfaceType),
-      convertFromStorageCall(convertFromStorageCall),
-      assignToStorageCall(assignToStorageCall),
-      convertToAttributeCall(convertToAttributeCall),
-      convertFromAttributeCall(convertFromAttributeCall),
-      parserCall(parserCall), optionalParserCall(optionalParserCall),
-      printerCall(printerCall),
-      readFromMlirBytecodeCall(readFromMlirBytecodeCall),
-      writeToMlirBytecodeCall(writeToMlirBytecodeCall),
-      hashPropertyCall(hashPropertyCall), defaultValue(defaultValue),
-      storageTypeValueOverride(storageTypeValueOverride) {
-  if (storageType.empty())
-    storageType = "Property";
+Property::Property(const llvm::Record *maybeDef, StringRef summaryArg,
+                   StringRef descriptionArg, StringRef storageTypeArg,
+                   StringRef interfaceTypeArg,
+                   StringRef convertFromStorageCallArg,
+                   StringRef assignToStorageCallArg,
+                   StringRef convertToAttributeCallArg,
+                   StringRef convertFromAttributeCallArg, StringRef parserCallArg,
+                   StringRef optionalParserCallArg, StringRef printerCallArg,
+                   StringRef readFromMlirBytecodeCallArg,
+                   StringRef writeToMlirBytecodeCallArg,
+                   StringRef hashPropertyCallArg, StringRef defaultValueArg,
+                   StringRef storageTypeValueOverrideArg)
+    : PropConstraint(maybeDef, Constraint::CK_Prop) {
+  // Populate ods::Property fields.
+  storageType =
+      storageTypeArg.empty() ? "Property" : storageTypeArg.str();
+  interfaceType = interfaceTypeArg.str();
+  convertFromStorageCall = convertFromStorageCallArg.str();
+  assignToStorageCall = assignToStorageCallArg.str();
+  convertToAttributeCall = convertToAttributeCallArg.str();
+  convertFromAttributeCall = convertFromAttributeCallArg.str();
+  parserCall = parserCallArg.str();
+  optionalParserCall = optionalParserCallArg.str();
+  printerCall = printerCallArg.str();
+  readFromMlirBytecodeCall = readFromMlirBytecodeCallArg.str();
+  writeToMlirBytecodeCall = writeToMlirBytecodeCallArg.str();
+  hashPropertyCall = hashPropertyCallArg.str();
+  defaultValue = defaultValueArg.str();
+  storageTypeValueOverride = storageTypeValueOverrideArg.str();
+
+  // For null-def (hardcoded) properties, ods::Constraint::populate() is not
+  // called, so manually set summary and description in the ods::Constraint base.
+  if (!maybeDef) {
+    summary = summaryArg.str();
+    description = descriptionArg.str();
+  }
 }
 
 StringRef Property::getPropertyDefName() const {
-  if (def->isAnonymous()) {
+  if (def->isAnonymous())
     return getBaseProperty().def->getName();
-  }
   return def->getName();
 }
 
@@ -106,9 +115,8 @@ Pred Property::getPredicate() const {
 
 Property Property::getBaseProperty() const {
   if (const auto *defInit =
-          llvm::dyn_cast<llvm::DefInit>(def->getValueInit("baseProperty"))) {
+          llvm::dyn_cast<llvm::DefInit>(def->getValueInit("baseProperty")))
     return Property(defInit).getBaseProperty();
-  }
   return *this;
 }
 
