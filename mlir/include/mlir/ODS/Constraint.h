@@ -15,6 +15,7 @@
 #define MLIR_ODS_CONSTRAINT_H_
 
 #include "mlir/Support/LLVM.h"
+#include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <optional>
@@ -34,8 +35,16 @@ public:
     CK_Region,
     CK_Successor,
     CK_Type,
-    CK_Uncategorized
+    CK_Uncategorized,
+    /// Sentinel values used by DenseMapInfo. Not valid for real constraints.
+    CK_DenseMapEmpty,
+    CK_DenseMapTombstone,
   };
+
+  /// Constructs a constraint of the given kind with all other fields
+  /// default-initialised. Callers (including free factory functions) may then
+  /// populate the public fields directly.
+  explicit Constraint(Kind kind) : kind(kind) {}
 
   Kind getKind() const { return kind; }
 
@@ -77,9 +86,14 @@ public:
   }
   bool operator!=(const Constraint &other) const { return !(*this == other); }
 
-protected:
-  explicit Constraint(Kind kind) : kind(kind) {}
+  /// Returns the interface type for this constraint. Only meaningful for
+  /// CK_Prop constraints; returns an empty string for all other kinds.
+  StringRef getInterfaceType() const { return propInterfaceType; }
 
+// All fields are public so that free factory functions can populate them
+// without requiring friendship.  Callers should use the accessor methods above
+// for read access.
+public:
   Kind kind{CK_Uncategorized};
   std::string summary;
   std::string description;
@@ -88,9 +102,42 @@ protected:
   std::string uniqueDefName;
   std::optional<std::string> cppFunctionName;
   bool variadic{false};
+  /// Interface type string; only populated for CK_Prop constraints.
+  std::string propInterfaceType;
 };
 
 } // namespace ods
 } // namespace mlir
+
+namespace llvm {
+/// Allows mlir::ods::Constraint to be used as a DenseMap/DenseSet key.
+/// Constraints are uniqued by (kind, conditionTemplate, summary).
+/// CK_DenseMapEmpty and CK_DenseMapTombstone are reserved sentinel values.
+template <>
+struct DenseMapInfo<mlir::ods::Constraint> {
+  using Kind = mlir::ods::Constraint::Kind;
+
+  static mlir::ods::Constraint getEmptyKey() {
+    return mlir::ods::Constraint(Kind::CK_DenseMapEmpty);
+  }
+  static mlir::ods::Constraint getTombstoneKey() {
+    return mlir::ods::Constraint(Kind::CK_DenseMapTombstone);
+  }
+  static unsigned getHashValue(const mlir::ods::Constraint &c) {
+    return llvm::hash_combine(c.getConditionTemplate(), c.getSummary());
+  }
+  static bool isEqual(const mlir::ods::Constraint &lhs,
+                      const mlir::ods::Constraint &rhs) {
+    if (lhs.getKind() == Kind::CK_DenseMapEmpty ||
+        lhs.getKind() == Kind::CK_DenseMapTombstone)
+      return lhs.getKind() == rhs.getKind();
+    if (rhs.getKind() == Kind::CK_DenseMapEmpty ||
+        rhs.getKind() == Kind::CK_DenseMapTombstone)
+      return false;
+    return lhs.getConditionTemplate() == rhs.getConditionTemplate() &&
+           lhs.getSummary() == rhs.getSummary();
+  }
+};
+} // namespace llvm
 
 #endif // MLIR_ODS_CONSTRAINT_H_

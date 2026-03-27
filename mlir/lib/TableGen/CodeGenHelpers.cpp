@@ -313,11 +313,10 @@ void StaticVerifierFunctionEmitter::emitPropConstraints() {
   FmtContext ctx;
   ctx.addSubst("_op", "*op").withSelf("prop");
   for (auto &it : propConstraints) {
-    auto propConstraint = cast<PropConstraint>(it.first);
     os << formatv(propConstraintCode, it.second,
-                  tgfmt(propConstraint.getConditionTemplate(), &ctx),
+                  tgfmt(it.first.getConditionTemplate(), &ctx),
                   buildErrorStreamingString(it.first.getSummary(), ctx),
-                  propConstraint.getInterfaceType());
+                  it.first.getInterfaceType());
   }
 }
 
@@ -349,8 +348,7 @@ void StaticVerifierFunctionEmitter::emitPatternConstraints() {
   }
   ctx.withSelf("prop");
   for (auto &it : propConstraints) {
-    PropConstraint propConstraint = cast<PropConstraint>(it.first);
-    StringRef interfaceType = propConstraint.getInterfaceType();
+    StringRef interfaceType = it.first.getInterfaceType();
     // Constraints that are generic over multiple interface types are
     // templatized under the assumption that they'll be used correctly.
     if (interfaceType.empty()) {
@@ -358,8 +356,8 @@ void StaticVerifierFunctionEmitter::emitPatternConstraints() {
       os << "template <typename T>";
     }
     os << formatv(patternConstraintCode, it.second,
-                  tgfmt(propConstraint.getConditionTemplate(), &ctx),
-                  buildErrorStreamingString(propConstraint.getSummary(), ctx),
+                  tgfmt(it.first.getConditionTemplate(), &ctx),
+                  buildErrorStreamingString(it.first.getSummary(), ctx),
                   Twine(interfaceType) + " prop");
   }
 }
@@ -404,7 +402,7 @@ std::string StaticVerifierFunctionEmitter::getUniqueName(StringRef kind,
 
 void StaticVerifierFunctionEmitter::collectConstraint(ConstraintMap &map,
                                                       StringRef kind,
-                                                      Constraint constraint) {
+                                                      ods::Constraint constraint) {
   auto [it, inserted] = map.try_emplace(constraint);
   if (inserted)
     it->second = getUniqueName(kind, map.size());

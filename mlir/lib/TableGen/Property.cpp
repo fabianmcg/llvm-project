@@ -33,7 +33,7 @@ static StringRef getValueAsString(const Init *init) {
 }
 
 StringRef PropConstraint::getInterfaceType() const {
-  return getValueAsString(def->getValueInit("interfaceType"));
+  return mlir::ods::Constraint::propInterfaceType;
 }
 
 Property::Property(const Record *def)

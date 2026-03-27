@@ -196,19 +196,23 @@ private:
   std::string uniqueOutputLabel;
 
   /// Use a MapVector to ensure that functions are generated deterministically.
-  using ConstraintMap = llvm::MapVector<Constraint, std::string,
-                                        llvm::DenseMap<Constraint, unsigned>>;
+  /// The key is ods::Constraint (no record pointer) so that deduplication is
+  /// based on condition-template and summary rather than pointer identity.
+  using ConstraintMap =
+      llvm::MapVector<ods::Constraint, std::string,
+                      llvm::DenseMap<ods::Constraint, unsigned>>;
 
-  /// A generic function to emit constraints
+  /// A generic function to emit constraints.
   void emitConstraints(const ConstraintMap &constraints, StringRef selfName,
                        const char *codeTemplate,
                        ErrorStreamType errorStreamType);
 
   /// Assign a unique name to a unique constraint.
   std::string getUniqueName(StringRef kind, unsigned index);
-  /// Unique a constraint in the map.
+  /// Unique a constraint in the map. Accepts any constraint that is or derives
+  /// from ods::Constraint (derived objects are sliced to ods::Constraint).
   void collectConstraint(ConstraintMap &map, StringRef kind,
-                         Constraint constraint);
+                         ods::Constraint constraint);
 
   /// The set of type constraints used for operand and result verification in
   /// the current file.

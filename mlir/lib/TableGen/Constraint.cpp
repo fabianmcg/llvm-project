@@ -109,6 +109,14 @@ void Constraint::populate() {
     variadic = false;
     break;
   }
+
+  // propInterfaceType: only for property constraints.
+  if (kind == CK_Prop) {
+    if (const auto *iv = def->getValue("interfaceType")) {
+      if (const auto *str = dyn_cast<llvm::StringInit>(iv->getValue()))
+        propInterfaceType = str->getValue().trim().str();
+    }
+  }
 }
 
 Pred Constraint::getPredicate() const {
