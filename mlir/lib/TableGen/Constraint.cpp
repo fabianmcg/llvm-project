@@ -5,10 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// Constraint wrapper to simplify using TableGen Record for constraints.
-//
-//===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/Constraint.h"
 #include "llvm/TableGen/Record.h"
@@ -16,8 +12,23 @@
 using namespace mlir;
 using namespace mlir::tblgen;
 
+//===----------------------------------------------------------------------===//
+// Constraint
+//===----------------------------------------------------------------------===//
+
+// Private constructor for DenseMap sentinels: stores the pointer without
+// reading from the record.
+Constraint::Constraint(SentinelTag, const llvm::Record *ptr, Kind kind)
+    : mlir::ods::Constraint(kind), def(ptr) {}
+
+Constraint::Constraint(const llvm::Record *record, Kind kind)
+    : Constraint(SentinelTag{}, record, kind) {
+  if (def)
+    populate();
+}
+
 Constraint::Constraint(const llvm::Record *record)
-    : Constraint(record, CK_Uncategorized) {
+    : Constraint(SentinelTag{}, record, CK_Uncategorized) {
   // Look through OpVariable's to their constraint.
   if (def->isSubClassOf("OpVariable"))
     def = def->getValueAsDef("constraint");
@@ -36,6 +47,51 @@ Constraint::Constraint(const llvm::Record *record)
     llvm::errs() << "Expected a constraint but got: \n" << *def << "\n";
     llvm::report_fatal_error("Abort");
   }
+
+  populate();
+}
+
+void Constraint::populate() {
+  // summary
+  if (std::optional<StringRef> s = def->getValueAsOptionalString("summary"))
+    summary = s->str();
+  else
+    summary = def->getName().str();
+
+  // description
+  description =
+      def->getValueAsOptionalString("description").value_or("").str();
+
+  // conditionTemplate: computed from the predicate, same logic as getPredicate()
+  auto *predVal = def->getValue("predicate");
+  if (predVal) {
+    if (const auto *pred = dyn_cast<llvm::DefInit>(predVal->getValue()))
+      conditionTemplate = Pred(pred).getCondition();
+  }
+
+  // defName: may use the base def's name for anonymous constraints
+  std::optional<std::string> baseDefName = getBaseDefName();
+  if (baseDefName)
+    defName = *baseDefName;
+  else
+    defName = def->getName().str();
+
+  // uniqueDefName
+  std::string name = def->getName().str();
+  if (!def->isAnonymous()) {
+    uniqueDefName = name;
+  } else {
+    if (baseDefName)
+      uniqueDefName = (*baseDefName + "(" + name + ")");
+    else
+      uniqueDefName = name;
+  }
+
+  // cppFunctionName
+  std::optional<StringRef> cppName =
+      def->getValueAsOptionalString("cppFunctionName");
+  if (cppName && !cppName->empty())
+    cppFunctionName = cppName->str();
 }
 
 Pred Constraint::getPredicate() const {
@@ -50,49 +106,15 @@ Pred Constraint::getPredicate() const {
   return Pred(pred);
 }
 
-std::string Constraint::getConditionTemplate() const {
-  return getPredicate().getCondition();
-}
-
-StringRef Constraint::getSummary() const {
-  if (std::optional<StringRef> summary =
-          def->getValueAsOptionalString("summary"))
-    return *summary;
-  return def->getName();
-}
-
-StringRef Constraint::getDescription() const {
-  return def->getValueAsOptionalString("description").value_or("");
-}
-
-StringRef Constraint::getDefName() const {
-  if (std::optional<StringRef> baseDefName = getBaseDefName())
-    return *baseDefName;
-  return def->getName();
-}
-
-std::string Constraint::getUniqueDefName() const {
-  std::string defName = def->getName().str();
-
-  // Non-anonymous classes already have a unique name from the def.
-  if (!def->isAnonymous())
-    return defName;
-
-  // Otherwise, this is an anonymous class. In these cases we still use the def
-  // name, but we also try attach the name of the base def when present to make
-  // the name more obvious.
-  if (std::optional<StringRef> baseDefName = getBaseDefName())
-    return (*baseDefName + "(" + defName + ")").str();
-  return defName;
-}
-
-std::optional<StringRef> Constraint::getBaseDefName() const {
+std::optional<std::string> Constraint::getBaseDefName() const {
   // Functor used to check a base def in the case where the current def is
-  // anonymous.
-  auto checkBaseDefFn = [&](StringRef baseName) -> std::optional<StringRef> {
+  // anonymous. Returns the base def name as an owned string so that it
+  // remains valid after the temporary Constraint is destroyed.
+  auto checkBaseDefFn =
+      [&](StringRef baseName) -> std::optional<std::string> {
     if (const auto *defValue = def->getValue(baseName)) {
       if (const auto *defInit = dyn_cast<llvm::DefInit>(defValue->getValue()))
-        return Constraint(defInit->getDef(), kind).getDefName();
+        return Constraint(defInit->getDef(), kind).getDefName().str();
     }
     return std::nullopt;
   };
@@ -111,14 +133,6 @@ std::optional<StringRef> Constraint::getBaseDefName() const {
   }
 }
 
-std::optional<StringRef> Constraint::getCppFunctionName() const {
-  std::optional<StringRef> name =
-      def->getValueAsOptionalString("cppFunctionName");
-  if (!name || *name == "")
-    return std::nullopt;
-  return name;
-}
-
 AppliedConstraint::AppliedConstraint(Constraint &&constraint,
                                      llvm::StringRef self,
                                      std::vector<std::string> &&entities)
@@ -126,12 +140,14 @@ AppliedConstraint::AppliedConstraint(Constraint &&constraint,
       entities(std::move(entities)) {}
 
 Constraint DenseMapInfo<Constraint>::getEmptyKey() {
-  return Constraint(RecordDenseMapInfo::getEmptyKey(),
+  return Constraint(Constraint::SentinelTag{},
+                    RecordDenseMapInfo::getEmptyKey(),
                     Constraint::CK_Uncategorized);
 }
 
 Constraint DenseMapInfo<Constraint>::getTombstoneKey() {
-  return Constraint(RecordDenseMapInfo::getTombstoneKey(),
+  return Constraint(Constraint::SentinelTag{},
+                    RecordDenseMapInfo::getTombstoneKey(),
                     Constraint::CK_Uncategorized);
 }
 

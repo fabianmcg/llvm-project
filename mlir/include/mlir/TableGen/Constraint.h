@@ -6,13 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Constraint wrapper to simplify using TableGen Record for constraints.
+// TableGen wrapper around ODS Constraint. Derives from mlir::ods::Constraint
+// and populates all ODS fields from an llvm::Record in its constructor.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TABLEGEN_CONSTRAINT_H_
 #define MLIR_TABLEGEN_CONSTRAINT_H_
 
+#include "mlir/ODS/Constraint.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Predicate.h"
 #include "llvm/ADT/SmallVector.h"
@@ -25,77 +27,50 @@ class Record;
 namespace mlir {
 namespace tblgen {
 
-// Wrapper class with helper methods for accessing Constraint defined in
-// TableGen.
-class Constraint {
+/// TableGen wrapper for a constraint. Derives from mlir::ods::Constraint and
+/// additionally stores the underlying llvm::Record. Equality uses pointer
+/// identity on the record. ODS fields are populated eagerly in the
+/// constructor.
+class Constraint : public mlir::ods::Constraint {
 public:
-  // Constraint kind
-  enum Kind {
-    CK_Attr,
-    CK_Prop,
-    CK_Region,
-    CK_Successor,
-    CK_Type,
-    CK_Uncategorized
-  };
+  // Re-export Kind so callers using Constraint::CK_* continue to work.
+  using Kind = mlir::ods::Constraint::Kind;
 
-  // Create a constraint with a TableGen definition and a kind.
-  Constraint(const llvm::Record *record, Kind kind) : def(record), kind(kind) {}
-  // Create a constraint with a TableGen definition, and infer the kind.
+  /// Creates a constraint with an explicit kind (no kind inference).
+  Constraint(const llvm::Record *record, Kind kind);
+  /// Creates a constraint and infers the kind from the record's class
+  /// hierarchy.
   Constraint(const llvm::Record *record);
 
-  /// Constraints are pointer-comparable.
-  bool operator==(const Constraint &that) { return def == that.def; }
-  bool operator!=(const Constraint &that) { return def != that.def; }
+  /// Records are pointer-comparable; override the ODS structural equality.
+  bool operator==(const Constraint &that) const { return def == that.def; }
+  bool operator!=(const Constraint &that) const { return def != that.def; }
 
-  // Returns the predicate for this constraint.
+  /// Returns the predicate for this constraint. This is TableGen-specific and
+  /// requires access to the record.
   Pred getPredicate() const;
 
-  // Returns the condition template that can be used to check if a type or
-  // attribute satisfies this constraint.  The template may contain "{0}" that
-  // must be substituted with an expression returning an mlir::Type or
-  // mlir::Attribute.
-  std::string getConditionTemplate() const;
-
-  // Returns the user-readable summary of this constraint. If the summary is not
-  // provided, returns the TableGen def name.
-  StringRef getSummary() const;
-
-  // Returns the long-form description of this constraint. If the description is
-  // not provided, returns an empty string.
-  StringRef getDescription() const;
-
-  /// Returns the name of the TablGen def of this constraint. In some cases
-  /// where the current def is anonymous, the name of the base def is used (e.g.
-  /// `std::optional<>`/`Variadic<>` type constraints).
-  StringRef getDefName() const;
-
-  /// Returns a unique name for the TablGen def of this constraint. This is
-  /// generally just the name of the def, but in some cases where the current
-  /// def is anonymous, the name of the base def is attached (to provide more
-  /// context on the def).
-  std::string getUniqueDefName() const;
-
-  /// Returns the name of the C++ function that should be generated for this
-  /// constraint, or std::nullopt if no C++ function should be generated.
-  std::optional<StringRef> getCppFunctionName() const;
-
-  Kind getKind() const { return kind; }
-
-  /// Return the underlying def.
+  /// Returns the underlying def.
   const llvm::Record &getDef() const { return *def; }
 
 protected:
-  // The TableGen definition of this constraint.
   const llvm::Record *def;
 
 private:
-  /// Return the name of the base def if there is one, or std::nullopt
-  /// otherwise.
-  std::optional<StringRef> getBaseDefName() const;
+  /// Tag type used to construct sentinel (empty/tombstone) Constraint objects
+  /// for DenseMap without reading from a valid record.
+  struct SentinelTag {};
+  Constraint(SentinelTag, const llvm::Record *ptr, Kind kind);
 
-  // What kind of constraint this is.
-  Kind kind;
+  /// Populates all ODS base fields by reading from this->def and this->kind.
+  /// Must be called only when def points to a valid llvm::Record.
+  void populate();
+
+  /// Returns the name of the base def for anonymous constraints, or
+  /// std::nullopt if there is no base def.
+  std::optional<std::string> getBaseDefName() const;
+
+  friend struct llvm::DenseMapInfo<Constraint>;
 };
 
 // An constraint and the concrete entities to place the constraint on.
