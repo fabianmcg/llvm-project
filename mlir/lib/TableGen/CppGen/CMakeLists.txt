@@ -6,6 +6,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   AttrOrTypeFormatGen.cpp
   CppGenUtilities.cpp
   DialectGen.cpp
+  DialectInterfacesGen.cpp
   DocGenUtilities.cpp
   EnumsGen.cpp
   FormatGen.cpp
