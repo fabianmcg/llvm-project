@@ -5,6 +5,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   CppGenUtilities.cpp
   DialectGen.cpp
   DocGenUtilities.cpp
+  EnumsGen.cpp
   FormatGen.cpp
   PassCAPIGen.cpp
   PassDocGen.cpp
