@@ -6,21 +6,5 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRTBLGEN_ATTRORTYPEFORMATGEN_H_
-#define MLIR_TOOLS_MLIRTBLGEN_ATTRORTYPEFORMATGEN_H_
-
-#include "mlir/TableGen/Class.h"
-
-namespace mlir {
-namespace tblgen {
-class AttrOrTypeDef;
-
-/// Generate a parser and printer based on a custom assembly format for an
-/// attribute or type.
-void generateAttrOrTypeFormat(const AttrOrTypeDef &def, MethodBody &parser,
-                              MethodBody &printer);
-
-} // namespace tblgen
-} // namespace mlir
-
-#endif // MLIR_TOOLS_MLIRTBLGEN_ATTRORTYPEFORMATGEN_H_
+// Forwarding header — implementations have moved to the CppGen library.
+#include "mlir/TableGen/CppGen/AttrOrTypeFormatGen.h"

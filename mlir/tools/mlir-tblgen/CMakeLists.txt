@@ -9,7 +9,6 @@ add_tablegen(mlir-tblgen MLIR
   DESTINATION "${MLIR_TOOLS_INSTALL_DIR}"
   EXPORT MLIR
   AttrOrTypeDefGen.cpp
-  AttrOrTypeFormatGen.cpp
   BytecodeDialectGen.cpp
   DialectGen.cpp
   DialectInterfacesGen.cpp

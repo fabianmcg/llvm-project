@@ -6,12 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "AttrOrTypeFormatGen.h"
-#include "FormatGen.h"
+#include "mlir/TableGen/CppGen/AttrOrTypeFormatGen.h"
+#include "mlir/TableGen/CppGen/FormatGen.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/AttrOrTypeDef.h"
 #include "mlir/TableGen/Format.h"
-#include "mlir/TableGen/GenInfo.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/ADT/StringExtras.h"
@@ -32,49 +31,12 @@ using llvm::formatv;
 // Element
 //===----------------------------------------------------------------------===//
 
-namespace {
-/// This class represents an instance of a variable element. A variable refers
-/// to an attribute or type parameter.
-class ParameterElement
-    : public VariableElementBase<VariableElement::Parameter> {
-public:
-  ParameterElement(AttrOrTypeParameter param) : param(param) {}
-
-  /// Get the parameter in the element.
-  const AttrOrTypeParameter &getParam() const { return param; }
-
-  /// Indicate if this variable is printed "qualified" (that is it is
-  /// prefixed with the `#dialect.mnemonic`).
-  bool shouldBeQualified() { return shouldBeQualifiedFlag; }
-  void setShouldBeQualified(bool qualified = true) {
-    shouldBeQualifiedFlag = qualified;
-  }
-
-  /// Returns true if the element contains an optional parameter.
-  bool isOptional() const { return param.isOptional(); }
-
-  /// Returns the name of the parameter.
-  StringRef getName() const { return param.getName(); }
-
-  /// Return the code to check whether the parameter is present.
-  auto genIsPresent(FmtContext &ctx, const Twine &self) const {
-    assert(isOptional() && "cannot guard on a mandatory parameter");
-    std::string valueStr = tgfmt(*param.getDefaultValue(), &ctx).str();
-    ctx.addSubst("_lhs", self).addSubst("_rhs", valueStr);
-    return tgfmt(getParam().getComparator(), &ctx);
-  }
-
-  /// Generate the code to check whether the parameter should be printed.
-  MethodBody &genPrintGuard(FmtContext &ctx, MethodBody &os) const {
-    assert(isOptional() && "cannot guard on a mandatory parameter");
-    std::string self = param.getAccessorName() + "()";
-    return os << "!(" << genIsPresent(ctx, self) << ")";
-  }
-
-private:
-  bool shouldBeQualifiedFlag = false;
-  AttrOrTypeParameter param;
-};
+MethodBody &ParameterElement::genPrintGuard(FmtContext &ctx,
+                                            MethodBody &os) const {
+  assert(isOptional() && "cannot guard on a mandatory parameter");
+  std::string self = param.getAccessorName() + "()";
+  return os << "!(" << genIsPresent(ctx, self) << ")";
+}
 
 /// Utility to return the encapsulated parameter element for the provided format
 /// element. This parameter can originate from either a `ParameterElement`,
@@ -120,43 +82,13 @@ static bool formatNotOptional(FormatElement *el) {
   return !formatIsOptional(el);
 }
 
-/// This class represents a `params` directive that refers to all parameters
-/// of an attribute or type. When used as a top-level directive, it generates
-/// a format of the form:
-///
-///   (param-value (`,` param-value)*)?
-///
-/// When used as an argument to another directive that accepts variables,
-/// `params` can be used in place of manually listing all parameters of an
-/// attribute or type.
-class ParamsDirective
-    : public VectorDirectiveBase<DirectiveElement::Params, ParameterElement *> {
-public:
-  using Base::Base;
+bool ParamsDirective::hasOptionalElements() const {
+  return llvm::any_of(getElements(), paramIsOptional);
+}
 
-  /// Returns true if there are optional parameters present.
-  bool hasOptionalElements() const {
-    return llvm::any_of(getElements(), paramIsOptional);
-  }
-};
-
-/// This class represents a `struct` directive that generates a struct format
-/// of the form:
-///
-///   `{` param-name `=` param-value (`,` param-name `=` param-value)* `}`
-///
-class StructDirective
-    : public VectorDirectiveBase<DirectiveElement::Struct, FormatElement *> {
-public:
-  using Base::Base;
-
-  /// Returns true if there are optional format elements present.
-  bool hasOptionalElements() const {
-    return llvm::any_of(getElements(), formatIsOptional);
-  }
-};
-
-} // namespace
+bool StructDirective::hasOptionalElements() const {
+  return llvm::any_of(getElements(), formatIsOptional);
+}
 
 //===----------------------------------------------------------------------===//
 // Format Strings
@@ -202,73 +134,6 @@ if (::mlir::failed(_result_{0})) {{
 // DefFormat
 //===----------------------------------------------------------------------===//
 
-namespace {
-class DefFormat {
-public:
-  DefFormat(const AttrOrTypeDef &def, std::vector<FormatElement *> &&elements)
-      : def(def), elements(std::move(elements)) {}
-
-  /// Generate the attribute or type parser.
-  void genParser(MethodBody &os);
-  /// Generate the attribute or type printer.
-  void genPrinter(MethodBody &os);
-
-private:
-  /// Generate the parser code for a specific format element.
-  void genElementParser(FormatElement *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the parser code for a literal.
-  void genLiteralParser(StringRef value, FmtContext &ctx, MethodBody &os,
-                        bool isOptional = false);
-  /// Generate the parser code for a variable.
-  void genVariableParser(ParameterElement *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the parser code for a `params` directive.
-  void genParamsParser(ParamsDirective *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the parser code for a `struct` directive.
-  void genStructParser(StructDirective *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the parser code for a `custom` directive.
-  void genCustomParser(CustomDirective *el, FmtContext &ctx, MethodBody &os,
-                       bool isOptional = false);
-  /// Generate the parser code for an optional group.
-  void genOptionalGroupParser(OptionalElement *el, FmtContext &ctx,
-                              MethodBody &os);
-
-  /// Generate the printer code for a specific format element.
-  void genElementPrinter(FormatElement *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the printer code for a literal.
-  void genLiteralPrinter(StringRef value, FmtContext &ctx, MethodBody &os);
-  /// Generate the printer code for a variable.
-  void genVariablePrinter(ParameterElement *el, FmtContext &ctx, MethodBody &os,
-                          bool skipGuard = false);
-  /// Generate a printer for comma-separated format elements.
-  void genCommaSeparatedPrinter(
-      ArrayRef<FormatElement *> params, FmtContext &ctx, MethodBody &os,
-      function_ref<void(FormatElement *)> extra,
-      function_ref<void(FormatElement *)> extraPost = nullptr);
-  /// Generate the printer code for a `params` directive.
-  void genParamsPrinter(ParamsDirective *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the printer code for a `struct` directive.
-  void genStructPrinter(StructDirective *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the printer code for a `custom` directive.
-  void genCustomPrinter(CustomDirective *el, FmtContext &ctx, MethodBody &os);
-  /// Generate the printer code for an optional group.
-  void genOptionalGroupPrinter(OptionalElement *el, FmtContext &ctx,
-                               MethodBody &os);
-  /// Generate a printer (or space eraser) for a whitespace element.
-  void genWhitespacePrinter(WhitespaceElement *el, FmtContext &ctx,
-                            MethodBody &os);
-
-  /// The ODS definition of the attribute or type whose format is being used to
-  /// generate a parser and printer.
-  const AttrOrTypeDef &def;
-  /// The list of top-level format elements returned by the assembly format
-  /// parser.
-  std::vector<FormatElement *> elements;
-
-  /// Flags for printing spaces.
-  bool shouldEmitSpace = false;
-  bool lastWasPunctuation = false;
-};
-} // namespace
 
 //===----------------------------------------------------------------------===//
 // ParserGen
@@ -1025,53 +890,6 @@ void DefFormat::genWhitespacePrinter(WhitespaceElement *el, FmtContext &ctx,
 // DefFormatParser
 //===----------------------------------------------------------------------===//
 
-namespace {
-class DefFormatParser : public FormatParser {
-public:
-  DefFormatParser(llvm::SourceMgr &mgr, const AttrOrTypeDef &def)
-      : FormatParser(mgr, def.getLoc()[0]), def(def),
-        seenParams(def.getNumParameters()) {}
-
-  /// Parse the attribute or type format and create the format elements.
-  FailureOr<DefFormat> parse();
-
-protected:
-  /// Verify the parsed elements.
-  LogicalResult verify(SMLoc loc, ArrayRef<FormatElement *> elements) override;
-  /// Verify the elements of a custom directive.
-  LogicalResult
-  verifyCustomDirectiveArguments(SMLoc loc,
-                                 ArrayRef<FormatElement *> arguments) override;
-  /// Verify the elements of an optional group.
-  LogicalResult verifyOptionalGroupElements(SMLoc loc,
-                                            ArrayRef<FormatElement *> elements,
-                                            FormatElement *anchor) override;
-  /// Verify the arguments to a struct directive.
-  LogicalResult verifyStructArguments(SMLoc loc,
-                                      ArrayRef<FormatElement *> arguments);
-
-  LogicalResult markQualified(SMLoc loc, FormatElement *element) override;
-
-  /// Parse an attribute or type variable.
-  FailureOr<FormatElement *> parseVariableImpl(SMLoc loc, StringRef name,
-                                               Context ctx) override;
-  /// Parse an attribute or type format directive.
-  FailureOr<FormatElement *>
-  parseDirectiveImpl(SMLoc loc, FormatToken::Kind kind, Context ctx) override;
-
-private:
-  /// Parse a `params` directive.
-  FailureOr<FormatElement *> parseParamsDirective(SMLoc loc, Context ctx);
-  /// Parse a `struct` directive.
-  FailureOr<FormatElement *> parseStructDirective(SMLoc loc, Context ctx);
-
-  /// Attribute or type tablegen def.
-  const AttrOrTypeDef &def;
-
-  /// Seen attribute or type parameters.
-  BitVector seenParams;
-};
-} // namespace
 
 LogicalResult DefFormatParser::verify(SMLoc loc,
                                       ArrayRef<FormatElement *> elements) {
@@ -1331,7 +1149,8 @@ FailureOr<FormatElement *> DefFormatParser::parseStructDirective(SMLoc loc,
 
 void mlir::tblgen::generateAttrOrTypeFormat(const AttrOrTypeDef &def,
                                             MethodBody &parser,
-                                            MethodBody &printer) {
+                                            MethodBody &printer,
+                                            bool fatalOnError) {
   llvm::SourceMgr mgr;
   mgr.AddNewSourceBuffer(
       llvm::MemoryBuffer::getMemBuffer(*def.getAssemblyFormat()), SMLoc());
@@ -1340,7 +1159,7 @@ void mlir::tblgen::generateAttrOrTypeFormat(const AttrOrTypeDef &def,
   DefFormatParser fmtParser(mgr, def);
   FailureOr<DefFormat> format = fmtParser.parse();
   if (failed(format)) {
-    if (formatErrorIsFatal)
+    if (fatalOnError)
       PrintFatalError(def.getLoc(), "failed to parse assembly format");
     return;
   }
