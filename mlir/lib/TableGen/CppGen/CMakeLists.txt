@@ -12,6 +12,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   FormatGen.cpp
   OpClass.cpp
   OpDocGen.cpp
+  OpFormatGen.cpp
   OpGenHelpers.cpp
   OpInterfacesGen.cpp
   PassCAPIGen.cpp

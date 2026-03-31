@@ -6,9 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "OpFormatGen.h"
-#include "FormatGen.h"
-#include "OpClass.h"
+#include "mlir/TableGen/CppGen/OpFormatGen.h"
+#include "mlir/TableGen/CppGen/FormatGen.h"
+#include "mlir/TableGen/CppGen/OpClass.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/TableGen/Class.h"
 #include "mlir/TableGen/EnumInfo.h"
@@ -19,6 +19,7 @@
 #include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallBitVector.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Signals.h"
@@ -3827,7 +3828,7 @@ LogicalResult OpFormatParser::verifyOptionalGroupElement(SMLoc loc,
 //===----------------------------------------------------------------------===//
 
 void mlir::tblgen::generateOpFormat(const Operator &constOp, OpClass &opClass,
-                                    bool hasProperties) {
+                                    bool hasProperties, bool fatalOnError) {
   // TODO: Operator doesn't expose all necessary functionality via
   // the const interface.
   Operator &op = const_cast<Operator &>(constOp);
@@ -3849,7 +3850,7 @@ void mlir::tblgen::generateOpFormat(const Operator &constOp, OpClass &opClass,
   FailureOr<std::vector<FormatElement *>> elements = parser.parse();
   if (failed(elements)) {
     // Exit the process if format errors are treated as fatal.
-    if (formatErrorIsFatal) {
+    if (fatalOnError) {
       // Invoke the interrupt handlers to run the file cleanup handlers.
       llvm::sys::RunInterruptHandlers();
       std::exit(1);

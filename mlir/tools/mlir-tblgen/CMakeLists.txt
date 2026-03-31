@@ -22,7 +22,6 @@ add_tablegen(mlir-tblgen MLIR
   OmpOpGen.cpp
   OpDefinitionsGen.cpp
   OpDocGen.cpp
-  OpFormatGen.cpp
   OpGenHelpers.cpp
   OpInterfacesGen.cpp
   OpPythonBindingGen.cpp

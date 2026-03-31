@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/TableGen/CppGen/CppGenUtilities.h"
+#include "FormatGen.h"
 #include "OpClass.h"
 #include "OpFormatGen.h"
 #include "OpGenHelpers.h"
@@ -1168,7 +1169,7 @@ OpEmitter::OpEmitter(const Operator &op,
   genFolderDecls();
   genTypeInterfaceMethods();
   genOpInterfaceMethods();
-  generateOpFormat(op, opClass, emitHelper.hasProperties());
+  generateOpFormat(op, opClass, emitHelper.hasProperties(), formatErrorIsFatal);
   genSideEffectInterfaceMethods();
 }
 void OpEmitter::emitDecl(
