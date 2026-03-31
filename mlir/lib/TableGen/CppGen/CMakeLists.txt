@@ -19,6 +19,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   PassCAPIGen.cpp
   PassDocGen.cpp
   PassGen.cpp
+  RewriterGen.cpp
 
   DISABLE_LLVM_LINK_LLVM_DYLIB
 
