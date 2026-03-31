@@ -4,11 +4,13 @@
 llvm_add_library(MLIRTableGenCppGen STATIC
   AttrOrTypeDefGen.cpp
   AttrOrTypeFormatGen.cpp
+  BytecodeDialectGen.cpp
   CppGenUtilities.cpp
   DialectGen.cpp
   DialectInterfacesGen.cpp
   DocGenUtilities.cpp
   EnumsGen.cpp
+  EnumPythonBindingGen.cpp
   FormatGen.cpp
   OpClass.cpp
   OpDefinitionsGen.cpp
@@ -16,6 +18,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   OpFormatGen.cpp
   OpGenHelpers.cpp
   OpInterfacesGen.cpp
+  OpPythonBindingGen.cpp
   PassCAPIGen.cpp
   PassDocGen.cpp
   PassGen.cpp
