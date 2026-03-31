@@ -39,6 +39,7 @@ add_tablegen(mlir-tblgen MLIR
 
 target_link_libraries(mlir-tblgen
   PRIVATE
+  MLIRTableGenCppGen
   MLIRTblgenLib)
 
 mlir_check_all_link_libraries(mlir-tblgen)
