@@ -11,6 +11,7 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   EnumsGen.cpp
   FormatGen.cpp
   OpClass.cpp
+  OpDefinitionsGen.cpp
   OpDocGen.cpp
   OpFormatGen.cpp
   OpGenHelpers.cpp
