@@ -10,6 +10,7 @@
 #define MLIR_TOOLS_MLIRTBLGEN_DIALECTGENUTILITIES_H_
 
 #include "mlir/Support/LLVM.h"
+#include "mlir/TableGen/CppGen/DialectGen.h"
 
 namespace mlir {
 namespace tblgen {

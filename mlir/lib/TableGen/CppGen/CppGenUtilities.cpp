@@ -1,4 +1,4 @@
-//===- CppGenUtilities.cpp - MLIR cpp gen utilities --------------===//
+//===- CppGenUtilities.cpp - MLIR C++ gen utilities -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,17 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Defines common utilities for generating cpp files from tablegen
-// structures.
+// Defines common utilities for generating C++ files from TableGen structures.
 //
 //===----------------------------------------------------------------------===//
 
-#include "CppGenUtilities.h"
+#include "mlir/TableGen/CppGen/CppGenUtilities.h"
 #include "mlir/Support/IndentedOstream.h"
 
+using llvm::StringRef;
+
 void mlir::tblgen::emitSummaryAndDescComments(llvm::raw_ostream &os,
-                                              llvm::StringRef summary,
-                                              llvm::StringRef description,
+                                              StringRef summary,
+                                              StringRef description,
                                               bool terminateComment) {
   StringRef trimmedSummary = summary.trim();
   StringRef trimmedDesc = description.trim();

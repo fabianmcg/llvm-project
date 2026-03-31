@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AttrOrTypeFormatGen.h"
-#include "CppGenUtilities.h"
+#include "mlir/TableGen/CppGen/CppGenUtilities.h"
 #include "mlir/TableGen/AttrOrTypeDef.h"
 #include "mlir/TableGen/Class.h"
 #include "mlir/TableGen/Format.h"

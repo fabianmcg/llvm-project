@@ -34,7 +34,6 @@ add_tablegen(mlir-tblgen MLIR
   RewriterGen.cpp
   SPIRVUtilsGen.cpp
   TosaUtilsGen.cpp
-  CppGenUtilities.cpp
   )
 
 target_link_libraries(mlir-tblgen

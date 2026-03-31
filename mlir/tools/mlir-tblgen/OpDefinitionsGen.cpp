@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "CppGenUtilities.h"
+#include "mlir/TableGen/CppGen/CppGenUtilities.h"
 #include "OpClass.h"
 #include "OpFormatGen.h"
 #include "OpGenHelpers.h"

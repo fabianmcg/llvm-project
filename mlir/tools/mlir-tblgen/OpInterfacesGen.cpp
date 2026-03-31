@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "CppGenUtilities.h"
+#include "mlir/TableGen/CppGen/CppGenUtilities.h"
 #include "DocGenUtilities.h"
 #include "mlir/TableGen/Format.h"
 #include "mlir/TableGen/GenInfo.h"
