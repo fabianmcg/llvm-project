@@ -10,7 +10,9 @@ llvm_add_library(MLIRTableGenCppGen STATIC
   DocGenUtilities.cpp
   EnumsGen.cpp
   FormatGen.cpp
+  OpClass.cpp
   OpDocGen.cpp
+  OpGenHelpers.cpp
   OpInterfacesGen.cpp
   PassCAPIGen.cpp
   PassDocGen.cpp

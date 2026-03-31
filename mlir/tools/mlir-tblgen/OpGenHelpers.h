@@ -5,31 +5,21 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file defines helpers used in the op generators.
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TOOLS_MLIRTBLGEN_OPGENHELPERS_H_
 #define MLIR_TOOLS_MLIRTBLGEN_OPGENHELPERS_H_
 
-#include "mlir/Support/LLVM.h"
-#include "llvm/TableGen/Record.h"
-#include <vector>
+#include "mlir/TableGen/CppGen/OpGenHelpers.h"
 
 namespace mlir {
 namespace tblgen {
 
-/// Returns all the op definitions filtered by the user. The filtering is via
-/// command-line option "op-include-regex" and "op-exclude-regex".
+/// Returns all op definitions filtered by the "op-include-regex" and
+/// "op-exclude-regex" command-line options.
 std::vector<const llvm::Record *>
 getRequestedOpDefinitions(const llvm::RecordKeeper &records);
 
-/// Checks whether `str` is a Python keyword or would shadow builtin function.
-/// Regenerate using python -c"print(set(sorted(__import__('keyword').kwlist)))"
-bool isPythonReserved(llvm::StringRef str);
-
-/// Shard the op definitions into the number of shards set by "op-shard-count".
+/// Shard op definitions using the "op-shard-count" command-line option.
 void shardOpDefinitions(
     ArrayRef<const llvm::Record *> defs,
     SmallVectorImpl<ArrayRef<const llvm::Record *>> &shardedDefs);
@@ -37,4 +27,4 @@ void shardOpDefinitions(
 } // namespace tblgen
 } // namespace mlir
 
-#endif //  MLIR_TOOLS_MLIRTBLGEN_OPGENHELPERS_H_
+#endif // MLIR_TOOLS_MLIRTBLGEN_OPGENHELPERS_H_
