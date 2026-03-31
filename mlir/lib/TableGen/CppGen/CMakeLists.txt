@@ -3,6 +3,7 @@
 # be built with that flag.
 llvm_add_library(MLIRTableGenCppGen STATIC
   DocGenUtilities.cpp
+  PassCAPIGen.cpp
   PassDocGen.cpp
   PassGen.cpp
 
