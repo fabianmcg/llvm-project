@@ -2,6 +2,8 @@
 # mlir-tblgen (built with DISABLE_LLVM_LINK_LLVM_DYLIB) and must therefore also
 # be built with that flag.
 llvm_add_library(MLIRTableGenCppGen STATIC
+  DocGenUtilities.cpp
+  PassDocGen.cpp
   PassGen.cpp
 
   DISABLE_LLVM_LINK_LLVM_DYLIB

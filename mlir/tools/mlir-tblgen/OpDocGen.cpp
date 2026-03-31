@@ -14,7 +14,6 @@
 #include "DialectGenUtilities.h"
 #include "DocGenUtilities.h"
 #include "OpGenHelpers.h"
-#include "mlir/Support/IndentedOstream.h"
 #include "mlir/TableGen/AttrOrTypeDef.h"
 #include "mlir/TableGen/Attribute.h"
 #include "mlir/TableGen/EnumInfo.h"
@@ -58,43 +57,6 @@ static cl::opt<bool>
                       cl::desc("Do not sort ops alphabetically"),
                       cl::init(false), cl::cat(docCat));
 
-void mlir::tblgen::emitSummary(StringRef summary, raw_ostream &os) {
-  if (summary.empty())
-    return;
-  StringRef trimmed = summary.trim();
-  char first = std::toupper(trimmed.front());
-  StringRef rest = trimmed.drop_front();
-  os << "\n_" << first << rest << "_\n";
-}
-
-// Emit the description by aligning the text to the left per line (e.g.,
-// removing the minimum indentation across the block).
-//
-// This expects that the description in the tablegen file is already formatted
-// in a way the user wanted but has some additional indenting due to being
-// nested in the op definition.
-void mlir::tblgen::emitDescription(StringRef description, raw_ostream &os) {
-  if (description.empty())
-    return;
-  os << "\n";
-  raw_indented_ostream ros(os);
-  StringRef trimmed = description.rtrim(" \t");
-  ros.printReindented(trimmed);
-  if (!trimmed.ends_with("\n"))
-    ros << "\n";
-}
-
-void mlir::tblgen::emitDescriptionComment(StringRef description,
-                                          raw_ostream &os, StringRef prefix) {
-  if (description.empty())
-    return;
-  os << "\n";
-  raw_indented_ostream ros(os);
-  StringRef trimmed = description.rtrim(" \t");
-  ros.printReindented(trimmed, (Twine(prefix) + "/// ").str());
-  if (!trimmed.ends_with("\n"))
-    ros << "\n";
-}
 
 /// Emit the given named constraint.
 template <typename T>
