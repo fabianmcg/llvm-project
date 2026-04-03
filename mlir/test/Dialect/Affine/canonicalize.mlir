@@ -2643,3 +2643,61 @@ func.func @rewrite_by_strides_standalone(%a: index, %b: index) -> index {
   %0 = affine.linearize_index_by_strides [%a, %b] by (6, 1) : index
   return %0 : index
 }
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_by_strides_to_affine_apply(
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     affine.apply
+//  CHECK-NOT:      delinearize
+//  CHECK-NOT:      linearize_index_by_strides
+func.func @fold_delinearize_linearize_by_strides_to_affine_apply(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (16, 4) : index, index
+  %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (64, 16) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_colmajor
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     affine.apply
+//  CHECK-NOT:      delinearize
+func.func @fold_delinearize_linearize_colmajor(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (4, 8) : index, index
+  %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (1, 4) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_rank3
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     return %[[X]]
+func.func @fold_delinearize_linearize_rank3(%x: index) -> index {
+  %0:3 = affine.delinearize_index %x into (2, 4, 5) : index, index, index
+  %1 = affine.linearize_index_by_strides [%0#0, %0#1, %0#2] by (20, 5, 1) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @no_fold_partial_delinearize
+//       CHECK:   delinearize
+//       CHECK:   linearize_index_by_strides
+func.func @no_fold_partial_delinearize(%x: index) -> index {
+  %0:3 = affine.delinearize_index %x into (2, 4, 5) : index, index, index
+  %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (20, 5) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @no_fold_different_delinearize
+//       CHECK:   linearize_index disjoint
+func.func @no_fold_different_delinearize(%x: index, %y: index) -> index {
+  %0:2 = affine.delinearize_index %x into (4, 8) : index, index
+  %1:2 = affine.delinearize_index %y into (4, 8) : index, index
+  %2 = affine.linearize_index_by_strides [%0#0, %1#1] by (8, 1) : index
+  return %2 : index
+}

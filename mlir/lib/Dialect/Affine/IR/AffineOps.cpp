@@ -5854,13 +5854,88 @@ struct RewriteLinearizeByStridesToLinearize final
     return success();
   }
 };
+/// Fold linearize_index_by_strides(delinearize_index(%x, shape), strides)
+/// into a single affine.apply when all shape elements and strides are static.
+///
+/// The chain computes: sum_i ((x / prefix_i) mod shape_i) * stride_i
+/// which is an affine expression in x (using floordiv and mod).
+///
+/// Example:
+///   %0:2 = affine.delinearize_index %x into (16, 4)
+///   %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (64, 16)
+/// becomes:
+///   %1 = affine.apply (d0 floordiv 4) * 64 + (d0 mod 4) * 16 (%x)
+struct FoldDelinearizeLinearizeByStridesToAffineApply final
+    : OpRewritePattern<affine::AffineLinearizeIndexByStridesOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(affine::AffineLinearizeIndexByStridesOp op,
+                                PatternRewriter &rewriter) const override {
+    // All strides must be static.
+    ArrayRef<int64_t> strides = op.getStaticStrides();
+    if (llvm::any_of(strides, ShapedType::isDynamic))
+      return failure();
+
+    // All operands must come from a single delinearize_index with static basis.
+    if (op.getMultiIndex().empty())
+      return failure();
+    auto delinOp = op.getMultiIndex().front()
+                       .getDefiningOp<affine::AffineDelinearizeIndexOp>();
+    if (!delinOp)
+      return failure();
+
+    // All linearize operands must be consecutive results of the same delinearize.
+    if (delinOp.getNumResults() != op.getMultiIndex().size())
+      return failure();
+    for (auto [i, val] : llvm::enumerate(op.getMultiIndex()))
+      if (val != delinOp.getResult(i))
+        return failure();
+
+    // Basis must be all static.
+    SmallVector<int64_t> basis;
+    for (auto ofr : delinOp.getMixedBasis()) {
+      auto val = getConstantIntValue(ofr);
+      if (!val)
+        return failure();
+      basis.push_back(*val);
+    }
+
+    // Build the affine expression:
+    //   sum_i ((dim0 / prefixProduct_i) mod basis_i) * stride_i
+    // Delinearize uses first-mode-slowest: dim 0 is outermost.
+    MLIRContext *ctx = op.getContext();
+    AffineExpr dim0 = getAffineDimExpr(0, ctx);
+    AffineExpr result = getAffineConstantExpr(0, ctx);
+    unsigned n = basis.size();
+
+    // Compute prefix products (suffix products of reversed basis).
+    // prefixProduct[i] = product of basis[i+1] ... basis[n-1].
+    SmallVector<int64_t> prefixProduct(n, 1);
+    for (int i = static_cast<int>(n) - 2; i >= 0; --i)
+      prefixProduct[i] = prefixProduct[i + 1] * basis[i + 1];
+
+    for (unsigned i = 0; i < n; ++i) {
+      if (strides[i] == 0)
+        continue;
+      AffineExpr component = dim0.floorDiv(prefixProduct[i]) % basis[i];
+      result = result + component * strides[i];
+    }
+
+    AffineMap map =
+        AffineMap::get(/*dimCount=*/1, /*symbolCount=*/0, result, ctx);
+    rewriter.replaceOpWithNewOp<affine::AffineApplyOp>(
+        op, map, ValueRange{delinOp.getLinearIndex()});
+    return success();
+  }
+};
 } // namespace
 
 void affine::AffineLinearizeIndexByStridesOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns, MLIRContext *context) {
   patterns.add<DropLinearizeByStridesZeroIndex,
                DropLinearizeByStridesZeroStride,
-               RewriteLinearizeByStridesToLinearize>(context);
+               RewriteLinearizeByStridesToLinearize,
+               FoldDelinearizeLinearizeByStridesToAffineApply>(context);
 }
 
 //===----------------------------------------------------------------------===//
