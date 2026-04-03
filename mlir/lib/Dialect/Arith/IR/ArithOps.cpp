@@ -2069,9 +2069,89 @@ OpFoldResult arith::IndexCastOp::fold(FoldAdaptor adaptor) {
   return {};
 }
 
+/// Fold index_cast(iN->index) -> binary_op(index) -> index_cast(index->iN)
+/// into binary_op(iN) by sinking the cast through the binary op.
+///
+/// This is correct for ops where truncation distributes:
+///   trunc(a OP b) == trunc(a) OP trunc(b)  (mod 2^N)
+/// which holds for wrapping add/sub/mul and bitwise and/or/xor.
+///
+/// Shifts are excluded: shrui/shrsi on a sign-extended 64-bit value produce
+/// different upper bits than shifting the original 32-bit value.
+///
+/// Overflow flags (nsw/nuw) are dropped: the wider-type operation may not
+/// overflow while the narrower-type one does.
+///
+/// Example:
+///   %a = index_cast %x : i32 to index
+///   %b = addi %a, %y : index
+///   %c = index_cast %b : index to i32
+/// becomes:
+///   %y32 = index_cast %y : index to i32
+///   %c = addi %x, %y32 : i32
+struct IndexCastSinkThroughBinaryOp
+    : public OpRewritePattern<arith::IndexCastOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(arith::IndexCastOp outerCast,
+                                PatternRewriter &rewriter) const override {
+    // Outer cast must be index -> integer.
+    if (!outerCast.getIn().getType().isIndex())
+      return failure();
+    Type intTy = outerCast.getType();
+
+    // Input must be a binary arith op on index.
+    Operation *binOp = outerCast.getIn().getDefiningOp();
+    if (!binOp || binOp->getNumOperands() != 2 || binOp->getNumResults() != 1)
+      return failure();
+    if (!binOp->getResult(0).getType().isIndex())
+      return failure();
+
+    // Only ops where trunc(a OP b) == trunc(a) OP trunc(b) (mod 2^N).
+    // Shifts are excluded: right-shifting a sign-extended value produces
+    // different upper bits than shifting the original narrow value.
+    if (!isa<arith::AddIOp, arith::SubIOp, arith::MulIOp, arith::AndIOp,
+            arith::OrIOp, arith::XOrIOp>(binOp))
+      return failure();
+
+    // Check if an operand comes from index_cast(iN->index) with matching iN.
+    // Returns the pre-cast iN value if so, or nullptr.
+    auto matchInnerCast = [&](Value v) -> Value {
+      if (auto innerCast = v.getDefiningOp<arith::IndexCastOp>())
+        if (innerCast.getIn().getType() == intTy)
+          return innerCast.getIn();
+      return nullptr;
+    };
+
+    // At least one operand must have a matching inner cast. Otherwise we'd
+    // introduce new casts without eliminating any (no net progress).
+    Value lhsDirect = matchInnerCast(binOp->getOperand(0));
+    Value rhsDirect = matchInnerCast(binOp->getOperand(1));
+    if (!lhsDirect && !rhsDirect)
+      return failure();
+
+    Value lhs = lhsDirect ? lhsDirect
+                          : arith::IndexCastOp::create(
+                                rewriter, binOp->getLoc(), intTy,
+                                binOp->getOperand(0));
+    Value rhs = rhsDirect ? rhsDirect
+                          : arith::IndexCastOp::create(
+                                rewriter, binOp->getLoc(), intTy,
+                                binOp->getOperand(1));
+
+    // Create the binary op with integer-typed operands, no overflow flags.
+    OperationState state(binOp->getLoc(), binOp->getName());
+    state.addOperands({lhs, rhs});
+    state.addTypes({intTy});
+    Operation *newOp = rewriter.create(state);
+    rewriter.replaceOp(outerCast, newOp->getResult(0));
+    return success();
+  }
+};
+
 void arith::IndexCastOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns, MLIRContext *context) {
-  patterns.add<IndexCastOfExtSI>(context);
+  patterns.add<IndexCastOfExtSI, IndexCastSinkThroughBinaryOp>(context);
 }
 
 //===----------------------------------------------------------------------===//

@@ -3925,3 +3925,92 @@ func.func @convertf_fold_f8() -> f8E5M2 {
   return %result : f8E5M2
 }
 
+// -----
+
+// CHECK-LABEL: @index_cast_sink_addi
+//  CHECK-SAME:   %[[X:.*]]: i32, %[[Y:.*]]: index
+//       CHECK:   %[[YI32:.*]] = arith.index_cast %[[Y]] : index to i32
+//       CHECK:   %[[R:.*]] = arith.addi %[[X]], %[[YI32]] : i32
+//       CHECK:   return %[[R]]
+func.func @index_cast_sink_addi(%x: i32, %y: index) -> i32 {
+  %xi = arith.index_cast %x : i32 to index
+  %sum = arith.addi %xi, %y : index
+  %r = arith.index_cast %sum : index to i32
+  return %r : i32
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_sink_xori
+//  CHECK-SAME:   %[[X:.*]]: i32, %[[MASK:.*]]: index
+//       CHECK:   %[[MI32:.*]] = arith.index_cast %[[MASK]] : index to i32
+//       CHECK:   %[[R:.*]] = arith.xori %[[X]], %[[MI32]] : i32
+//       CHECK:   return %[[R]]
+func.func @index_cast_sink_xori(%x: i32, %mask: index) -> i32 {
+  %xi = arith.index_cast %x : i32 to index
+  %xored = arith.xori %xi, %mask : index
+  %r = arith.index_cast %xored : index to i32
+  return %r : i32
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_sink_both_casted
+//  CHECK-SAME:   %[[X:.*]]: i32, %[[Y:.*]]: i32
+//       CHECK:   %[[R:.*]] = arith.addi %[[X]], %[[Y]] : i32
+//       CHECK:   return %[[R]]
+func.func @index_cast_sink_both_casted(%x: i32, %y: i32) -> i32 {
+  %xi = arith.index_cast %x : i32 to index
+  %yi = arith.index_cast %y : i32 to index
+  %sum = arith.addi %xi, %yi : index
+  %r = arith.index_cast %sum : index to i32
+  return %r : i32
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_sink_drops_overflow
+//  CHECK-SAME:   %[[X:.*]]: i32, %[[Y:.*]]: i32
+//       CHECK:   %[[R:.*]] = arith.addi %[[X]], %[[Y]] : i32
+//  CHECK-NOT:    overflow
+//       CHECK:   return %[[R]]
+func.func @index_cast_sink_drops_overflow(%x: i32, %y: i32) -> i32 {
+  %xi = arith.index_cast %x : i32 to index
+  %yi = arith.index_cast %y : i32 to index
+  %sum = arith.addi %xi, %yi overflow<nsw> : index
+  %r = arith.index_cast %sum : index to i32
+  return %r : i32
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_no_sink_width_mismatch
+// CHECK: arith.addi {{.*}} : index
+func.func @index_cast_no_sink_width_mismatch(%x: i32, %y: index) -> i64 {
+  %xi = arith.index_cast %x : i32 to index
+  %sum = arith.addi %xi, %y : index
+  %r = arith.index_cast %sum : index to i64
+  return %r : i64
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_no_sink_shift
+// CHECK: arith.shrui {{.*}} : index
+func.func @index_cast_no_sink_shift(%x: i32, %y: index) -> i32 {
+  %xi = arith.index_cast %x : i32 to index
+  %shifted = arith.shrui %xi, %y : index
+  %r = arith.index_cast %shifted : index to i32
+  return %r : i32
+}
+
+// -----
+
+// CHECK-LABEL: @index_cast_no_sink_no_inner_cast
+// CHECK: arith.addi {{.*}} : index
+func.func @index_cast_no_sink_no_inner_cast(%a: index, %b: index) -> i32 {
+  %sum = arith.addi %a, %b : index
+  %r = arith.index_cast %sum : index to i32
+  return %r : i32
+}
+
