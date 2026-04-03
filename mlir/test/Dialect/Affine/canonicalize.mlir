@@ -2441,6 +2441,16 @@ func.func @cancel_linearize_delinearize_vector(%v0: vector<16xindex>, %v1: vecto
   return %1#0, %1#1 : vector<16xindex>, vector<16xindex>
 }
 
+// CHECK-LABEL: func @cancel_delinearize_of_linearize_by_strides_exact(
+//  CHECK-SAME:     %[[A:[a-zA-Z0-9]+]]: index,
+//  CHECK-SAME:     %[[B:[a-zA-Z0-9]+]]: index)
+//       CHECK:     return %[[A]], %[[B]]
+func.func @cancel_delinearize_of_linearize_by_strides_exact(%a: index, %b: index) -> (index, index) {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (6, 1) : index
+  %1:2 = affine.delinearize_index %0 into (3, 6) : index, index
+  return %1#0, %1#1 : index, index
+}
+
 // -----
 
 // CHECK-LABEL: @drop_unit_extent_vector
@@ -2453,6 +2463,17 @@ func.func @drop_unit_extent_vector(%vec: vector<16xindex>) -> (vector<16xindex>,
   return %0#0, %0#1, %0#2 : vector<16xindex>, vector<16xindex>, vector<16xindex>
 }
 
+// CHECK-LABEL: func @cancel_delinearize_of_linearize_by_strides_3d(
+//  CHECK-SAME:     %[[A:[a-zA-Z0-9]+]]: index,
+//  CHECK-SAME:     %[[B:[a-zA-Z0-9]+]]: index,
+//  CHECK-SAME:     %[[C:[a-zA-Z0-9]+]]: index)
+//       CHECK:     return %[[A]], %[[B]], %[[C]]
+func.func @cancel_delinearize_of_linearize_by_strides_3d(%a: index, %b: index, %c: index) -> (index, index, index) {
+  %0 = affine.linearize_index_by_strides [%a, %b, %c] by (20, 5, 1) : index
+  %1:3 = affine.delinearize_index %0 into (2, 4, 5) : index, index, index
+  return %1#0, %1#1, %1#2 : index, index, index
+}
+
 // -----
 
 // CHECK-LABEL: @drop_unit_linearize_vector
@@ -2463,6 +2484,15 @@ func.func @drop_unit_linearize_vector(%v0: vector<8xindex>, %v1: vector<8xindex>
   return %0 : vector<8xindex>
 }
 
+// CHECK-LABEL: func @rewrite_by_strides_no_cancel_basis_mismatch
+//       CHECK:   affine.linearize_index disjoint
+//       CHECK:   affine.delinearize_index
+func.func @rewrite_by_strides_no_cancel_basis_mismatch(%a: index, %b: index) -> (index, index) {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (8, 1) : index
+  %1:2 = affine.delinearize_index %0 into (3, 6) : index, index
+  return %1#0, %1#1 : index, index
+}
+
 // -----
 
 // CHECK-LABEL: @fold_single_result_vector
@@ -2471,6 +2501,13 @@ func.func @drop_unit_linearize_vector(%v0: vector<8xindex>, %v1: vector<8xindex>
 func.func @fold_single_result_vector(%vec: vector<4xindex>) -> vector<4xindex> {
   %0:1 = affine.delinearize_index %vec into () : vector<4xindex>
   return %0#0 : vector<4xindex>
+}
+
+// CHECK-LABEL: func @no_rewrite_by_strides_last_not_one
+//       CHECK:   affine.linearize_index_by_strides
+func.func @no_rewrite_by_strides_last_not_one(%a: index, %b: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (8, 3) : index
+  return %0 : index
 }
 
 // -----
@@ -2595,4 +2632,14 @@ func.func @split_delinearize_spanning_final_part_vector(
   %0 = affine.linearize_index disjoint [%v0, %v1, %v2] by (3, 2, 32) : vector<4xindex>
   %1:4 = affine.delinearize_index %0 into (2, 3, 8, 4) : vector<4xindex>, vector<4xindex>, vector<4xindex>, vector<4xindex>
   return %1#0, %1#1, %1#2, %1#3 : vector<4xindex>, vector<4xindex>, vector<4xindex>, vector<4xindex>
+}
+
+// CHECK-LABEL: func @rewrite_by_strides_standalone(
+//  CHECK-SAME:     %[[A:[a-zA-Z0-9]+]]: index,
+//  CHECK-SAME:     %[[B:[a-zA-Z0-9]+]]: index)
+//       CHECK:     affine.linearize_index disjoint [%[[A]], %[[B]]] by (6)
+//  CHECK-NOT:      affine.linearize_index_by_strides
+func.func @rewrite_by_strides_standalone(%a: index, %b: index) -> index {
+  %0 = affine.linearize_index_by_strides [%a, %b] by (6, 1) : index
+  return %0 : index
 }

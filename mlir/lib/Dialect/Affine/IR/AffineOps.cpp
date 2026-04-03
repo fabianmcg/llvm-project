@@ -10,6 +10,7 @@
 #include "mlir/Dialect/Affine/IR/AffineValueMap.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/UB/IR/UBOps.h"
+#include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/Dialect/Utils/StaticValueUtils.h"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineExprVisitor.h"
@@ -5827,12 +5828,39 @@ struct DropLinearizeByStridesZeroStride final
     return success();
   }
 };
+
+/// Rewrite linearize_index_by_strides to linearize_index (disjoint) when the
+/// strides are suffix products of a recoverable basis.
+///
+/// Example:
+///   affine.linearize_index_by_strides [%a, %b, %c] by (20, 5, 1)
+/// becomes:
+///   affine.linearize_index disjoint [%a, %b, %c] by (4, 5)
+struct RewriteLinearizeByStridesToLinearize final
+    : OpRewritePattern<affine::AffineLinearizeIndexByStridesOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(affine::AffineLinearizeIndexByStridesOp op,
+                                PatternRewriter &rewriter) const override {
+    ArrayRef<int64_t> strides = op.getStaticStrides();
+    if (llvm::any_of(strides, ShapedType::isDynamic))
+      return failure();
+    auto basis = computeContiguousSizesFromStrides(strides);
+    if (!basis)
+      return failure();
+    rewriter.replaceOpWithNewOp<affine::AffineLinearizeIndexOp>(
+        op, op.getMultiIndex(), getAsIndexOpFoldResult(op.getContext(), *basis),
+        /*disjoint=*/true);
+    return success();
+  }
+};
 } // namespace
 
 void affine::AffineLinearizeIndexByStridesOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns, MLIRContext *context) {
   patterns.add<DropLinearizeByStridesZeroIndex,
-               DropLinearizeByStridesZeroStride>(context);
+               DropLinearizeByStridesZeroStride,
+               RewriteLinearizeByStridesToLinearize>(context);
 }
 
 //===----------------------------------------------------------------------===//

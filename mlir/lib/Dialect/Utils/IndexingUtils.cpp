@@ -76,6 +76,19 @@ SmallVector<int64_t> mlir::computeSuffixProduct(ArrayRef<int64_t> sizes) {
   return ::computeSuffixProductImpl(sizes, unit);
 }
 
+std::optional<SmallVector<int64_t>>
+mlir::computeContiguousSizesFromStrides(ArrayRef<int64_t> strides) {
+  if (strides.empty() || strides.back() != 1)
+    return std::nullopt;
+  SmallVector<int64_t> sizes;
+  for (int64_t i = 0; i + 1 < strides.size(); ++i) {
+    if (strides[i + 1] <= 0 || strides[i] % strides[i + 1] != 0)
+      return std::nullopt;
+    sizes.push_back(strides[i] / strides[i + 1]);
+  }
+  return sizes;
+}
+
 SmallVector<int64_t> mlir::computeElementwiseMul(ArrayRef<int64_t> v1,
                                                  ArrayRef<int64_t> v2) {
   return computeElementwiseMulImpl(v1, v2);
