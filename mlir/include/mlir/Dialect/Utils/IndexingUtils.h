@@ -48,6 +48,13 @@ inline SmallVector<int64_t> computeStrides(ArrayRef<int64_t> sizes) {
   return computeSuffixProduct(sizes);
 }
 
+/// Inverse of `computeSuffixProduct`: given strides `[s0, s1, ..., sn, 1]`,
+/// return sizes `[s0/s1, s1/s2, ..., sn/1]`. Returns std::nullopt if the
+/// strides are not valid suffix products (last element != 1, non-exact
+/// division, or non-positive elements).
+std::optional<SmallVector<int64_t>>
+computeContiguousSizesFromStrides(ArrayRef<int64_t> strides);
+
 /// Return a vector containing llvm::zip_equal(v1, v2) multiplied elementwise.
 ///
 /// Return an empty vector if `v1` and `v2` are empty.
