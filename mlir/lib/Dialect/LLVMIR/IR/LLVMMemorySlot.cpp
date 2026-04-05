@@ -80,7 +80,7 @@ SmallVector<DestructurableMemorySlot> LLVM::AllocaOp::getDestructurableSlots() {
 
 DenseMap<Attribute, MemorySlot> LLVM::AllocaOp::destructure(
     const DestructurableMemorySlot &slot,
-    const SmallPtrSetImpl<Attribute> &usedIndices, OpBuilder &builder,
+    const SetVector<Attribute> &usedIndices, OpBuilder &builder,
     SmallVectorImpl<DestructurableAllocationOpInterface> &newAllocators) {
   assert(slot.ptr == getResult());
   builder.setInsertionPointAfter(*this);
@@ -452,7 +452,7 @@ static Type getTypeAtIndex(const DestructurableMemorySlot &slot,
 }
 
 bool LLVM::LoadOp::canRewire(const DestructurableMemorySlot &slot,
-                             SmallPtrSetImpl<Attribute> &usedIndices,
+                             SetVector<Attribute> &usedIndices,
                              SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                              const DataLayout &dataLayout) {
   if (getVolatile_())
@@ -485,7 +485,7 @@ DeletionKind LLVM::LoadOp::rewire(const DestructurableMemorySlot &slot,
 }
 
 bool LLVM::StoreOp::canRewire(const DestructurableMemorySlot &slot,
-                              SmallPtrSetImpl<Attribute> &usedIndices,
+                              SetVector<Attribute> &usedIndices,
                               SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                               const DataLayout &dataLayout) {
   if (getVolatile_())
@@ -867,7 +867,7 @@ LogicalResult LLVM::GEPOp::ensureOnlySafeAccesses(
 }
 
 bool LLVM::GEPOp::canRewire(const DestructurableMemorySlot &slot,
-                            SmallPtrSetImpl<Attribute> &usedIndices,
+                            SetVector<Attribute> &usedIndices,
                             SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                             const DataLayout &dataLayout) {
   if (!isa<LLVM::LLVMPointerType>(getBase().getType()))
@@ -1045,7 +1045,7 @@ static bool areAllIndicesI32(const DestructurableMemorySlot &slot) {
 
 template <class MemsetIntr>
 static bool memsetCanRewire(MemsetIntr op, const DestructurableMemorySlot &slot,
-                            SmallPtrSetImpl<Attribute> &usedIndices,
+                            SetVector<Attribute> &usedIndices,
                             SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                             const DataLayout &dataLayout) {
   if (&slot.elemType.getDialect() != op.getOperation()->getDialect())
@@ -1217,7 +1217,7 @@ LogicalResult LLVM::MemsetOp::ensureOnlySafeAccesses(
 }
 
 bool LLVM::MemsetOp::canRewire(const DestructurableMemorySlot &slot,
-                               SmallPtrSetImpl<Attribute> &usedIndices,
+                               SetVector<Attribute> &usedIndices,
                                SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                                const DataLayout &dataLayout) {
   return memsetCanRewire(*this, slot, usedIndices, mustBeSafelyUsed,
@@ -1266,7 +1266,7 @@ LogicalResult LLVM::MemsetInlineOp::ensureOnlySafeAccesses(
 
 bool LLVM::MemsetInlineOp::canRewire(
     const DestructurableMemorySlot &slot,
-    SmallPtrSetImpl<Attribute> &usedIndices,
+    SetVector<Attribute> &usedIndices,
     SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
     const DataLayout &dataLayout) {
   return memsetCanRewire(*this, slot, usedIndices, mustBeSafelyUsed,
@@ -1342,7 +1342,7 @@ memcpyEnsureOnlySafeAccesses(MemcpyLike op, const MemorySlot &slot,
 
 template <class MemcpyLike>
 static bool memcpyCanRewire(MemcpyLike op, const DestructurableMemorySlot &slot,
-                            SmallPtrSetImpl<Attribute> &usedIndices,
+                            SetVector<Attribute> &usedIndices,
                             SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                             const DataLayout &dataLayout) {
   if (op.getIsVolatile())
@@ -1479,7 +1479,7 @@ LogicalResult LLVM::MemcpyOp::ensureOnlySafeAccesses(
 }
 
 bool LLVM::MemcpyOp::canRewire(const DestructurableMemorySlot &slot,
-                               SmallPtrSetImpl<Attribute> &usedIndices,
+                               SetVector<Attribute> &usedIndices,
                                SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                                const DataLayout &dataLayout) {
   return memcpyCanRewire(*this, slot, usedIndices, mustBeSafelyUsed,
@@ -1531,7 +1531,7 @@ LogicalResult LLVM::MemcpyInlineOp::ensureOnlySafeAccesses(
 
 bool LLVM::MemcpyInlineOp::canRewire(
     const DestructurableMemorySlot &slot,
-    SmallPtrSetImpl<Attribute> &usedIndices,
+    SetVector<Attribute> &usedIndices,
     SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
     const DataLayout &dataLayout) {
   return memcpyCanRewire(*this, slot, usedIndices, mustBeSafelyUsed,
@@ -1582,7 +1582,7 @@ LogicalResult LLVM::MemmoveOp::ensureOnlySafeAccesses(
 }
 
 bool LLVM::MemmoveOp::canRewire(const DestructurableMemorySlot &slot,
-                                SmallPtrSetImpl<Attribute> &usedIndices,
+                                SetVector<Attribute> &usedIndices,
                                 SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                                 const DataLayout &dataLayout) {
   return memcpyCanRewire(*this, slot, usedIndices, mustBeSafelyUsed,

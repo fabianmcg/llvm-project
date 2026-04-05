@@ -479,7 +479,7 @@ def DestructurableAllocationOpInterface
       "::llvm::DenseMap<::mlir::Attribute, ::mlir::MemorySlot>",
       "destructure",
       (ins "const ::mlir::DestructurableMemorySlot &":$slot,
-           "const ::llvm::SmallPtrSetImpl<::mlir::Attribute> &":$usedIndices,
+           "const ::llvm::SetVector<::mlir::Attribute> &":$usedIndices,
            "::mlir::OpBuilder &":$builder,
            "::mlir::SmallVectorImpl<::mlir::DestructurableAllocationOpInterface> &":
              $newAllocators)
@@ -552,7 +552,7 @@ def DestructurableAccessorOpInterface
       "bool",
       "canRewire",
       (ins "const ::mlir::DestructurableMemorySlot &":$slot,
-           "::llvm::SmallPtrSetImpl<::mlir::Attribute> &":$usedIndices,
+           "::llvm::SetVector<::mlir::Attribute> &":$usedIndices,
            "::mlir::SmallVectorImpl<::mlir::MemorySlot> &":$mustBeSafelyUsed,
            "const ::mlir::DataLayout &":$dataLayout)
     >,
