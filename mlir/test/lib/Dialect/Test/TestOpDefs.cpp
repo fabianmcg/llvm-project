@@ -1744,7 +1744,7 @@ TestMultiSlotAlloca::getDestructurableSlots() {
 
 DenseMap<Attribute, MemorySlot> TestMultiSlotAlloca::destructure(
     const DestructurableMemorySlot &slot,
-    const SmallPtrSetImpl<Attribute> &usedIndices, OpBuilder &builder,
+    const SetVector<Attribute> &usedIndices, OpBuilder &builder,
     SmallVectorImpl<DestructurableAllocationOpInterface> &newAllocators) {
   OpBuilder::InsertionGuard guard(builder);
   builder.setInsertionPointAfter(*this);

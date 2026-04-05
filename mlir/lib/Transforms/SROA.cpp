@@ -30,7 +30,8 @@ namespace {
 /// destructuring is possible, and contains the necessary data to perform it.
 struct MemorySlotDestructuringInfo {
   /// Set of the indices that are actually used when accessing the subelements.
-  SmallPtrSet<Attribute, 8> usedIndices;
+  /// SetVector for determinism across invocations.
+  SetVector<Attribute> usedIndices;
   /// Blocking uses of a given user of the memory slot that must be eliminated.
   DenseMap<Operation *, SmallPtrSet<OpOperand *, 4>> userToBlockingUses;
   /// List of potentially indirect accessors of the memory slot that need

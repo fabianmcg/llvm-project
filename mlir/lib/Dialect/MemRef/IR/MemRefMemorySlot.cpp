@@ -110,7 +110,7 @@ memref::AllocaOp::getDestructurableSlots() {
 
 DenseMap<Attribute, MemorySlot> memref::AllocaOp::destructure(
     const DestructurableMemorySlot &slot,
-    const SmallPtrSetImpl<Attribute> &usedIndices, OpBuilder &builder,
+    const SetVector<Attribute> &usedIndices, OpBuilder &builder,
     SmallVectorImpl<DestructurableAllocationOpInterface> &newAllocators) {
   builder.setInsertionPointAfter(*this);
 
@@ -196,7 +196,7 @@ static Attribute getAttributeIndexFromIndexOperands(MLIRContext *ctx,
 }
 
 bool memref::LoadOp::canRewire(const DestructurableMemorySlot &slot,
-                               SmallPtrSetImpl<Attribute> &usedIndices,
+                               SetVector<Attribute> &usedIndices,
                                SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                                const DataLayout &dataLayout) {
   if (slot.ptr != getMemRef())
@@ -252,7 +252,7 @@ DeletionKind memref::StoreOp::removeBlockingUses(
 }
 
 bool memref::StoreOp::canRewire(const DestructurableMemorySlot &slot,
-                                SmallPtrSetImpl<Attribute> &usedIndices,
+                                SetVector<Attribute> &usedIndices,
                                 SmallVectorImpl<MemorySlot> &mustBeSafelyUsed,
                                 const DataLayout &dataLayout) {
   if (slot.ptr != getMemRef() || getValue() == slot.ptr)
