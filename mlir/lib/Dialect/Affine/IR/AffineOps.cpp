@@ -5884,6 +5884,10 @@ struct FoldDelinearizeLinearizeByStridesToAffineApply final
     if (!delinOp)
       return failure();
 
+    // Bail if the delinearize has no outer bound.
+    if (!delinOp.hasOuterBound())
+      return failure();
+
     // All linearize operands must be consecutive results of the same delinearize.
     if (delinOp.getNumResults() != op.getMultiIndex().size())
       return failure();

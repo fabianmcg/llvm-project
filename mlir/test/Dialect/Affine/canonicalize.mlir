@@ -2701,3 +2701,15 @@ func.func @no_fold_different_delinearize(%x: index, %y: index) -> index {
   %2 = affine.linearize_index_by_strides [%0#0, %1#1] by (8, 1) : index
   return %2 : index
 }
+
+// -----
+
+// The pattern must not fire when the delinearize has no outer bound.
+// CHECK-LABEL: func @no_fold_delinearize_no_outer_bound
+//       CHECK:   affine.delinearize_index
+//       CHECK:   affine.linearize_index_by_strides
+func.func @no_fold_delinearize_no_outer_bound(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (4) : index, index
+  %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (8, 2) : index
+  return %1 : index
+}
