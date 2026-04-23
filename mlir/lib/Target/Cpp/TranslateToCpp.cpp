@@ -117,12 +117,17 @@ static FailureOr<int> getOperatorPrecedence(Operation *operation) {
       .Case([&](emitc::SubscriptOp op) { return 17; })
       .Case([&](emitc::UnaryMinusOp op) { return 15; })
       .Case([&](emitc::UnaryPlusOp op) { return 15; })
-      .Default([](auto op) { return op->emitError("unsupported operation"); });
+      .Default([](Operation *op) -> FailureOr<int> {
+        if (auto exprOp = dyn_cast<emitc::ExprOpInterface>(op))
+          return exprOp.getPrecedence();
+        return op->emitError("unsupported operation");
+      });
 }
 
 static bool shouldBeInlined(Operation *op);
 
-namespace {
+namespace mlir {
+namespace emitc {
 /// Emitter that uses dialect specific emitters to emit C++ code.
 struct CppEmitter {
   explicit CppEmitter(raw_ostream &os, bool declareVariablesAtTop,
@@ -334,7 +339,37 @@ private:
     return emittedExpressionPrecedence.back();
   }
 };
-} // namespace
+} // namespace emitc
+} // namespace mlir
+
+// Forwarding implementations of the public EmitCContext facade.
+LogicalResult mlir::emitc::EmitCContext::emitType(Location loc, Type type) {
+  return emitter.emitType(loc, type);
+}
+LogicalResult mlir::emitc::EmitCContext::emitOperation(Operation &op,
+                                                       bool trailingSemicolon) {
+  return emitter.emitOperation(op, trailingSemicolon);
+}
+LogicalResult mlir::emitc::EmitCContext::emitOperand(Value value) {
+  return emitter.emitOperand(value);
+}
+LogicalResult mlir::emitc::EmitCContext::emitAssignPrefix(Operation &op) {
+  return emitter.emitAssignPrefix(op);
+}
+LogicalResult
+mlir::emitc::EmitCContext::emitVariableDeclaration(Location loc, Type type,
+                                                   StringRef name) {
+  return emitter.emitVariableDeclaration(loc, type, name);
+}
+StringRef mlir::emitc::EmitCContext::getOrCreateName(Value val) {
+  return emitter.getOrCreateName(val);
+}
+raw_indented_ostream &mlir::emitc::EmitCContext::ostream() {
+  return emitter.ostream();
+}
+bool mlir::emitc::EmitCContext::isEmittingExpression() {
+  return emitter.isEmittingExpression();
+}
 
 /// Determine whether operation \p op should be emitted inline, i.e.
 /// as part of its user. This function recommends inlining of any expressions
@@ -1879,7 +1914,23 @@ LogicalResult CppEmitter::emitOperation(Operation &op, bool trailingSemicolon) {
           // Func ops.
           .Case<func::CallOp, func::FuncOp, func::ReturnOp>(
               [&](auto op) { return printOperation(*this, op); })
-          .Default([&](Operation *) {
+          .Default([&](Operation *operation) -> LogicalResult {
+            EmitCContext ctx(*this);
+            // External declaration ops.
+            if (auto declOp = dyn_cast<emitc::DeclOpInterface>(operation))
+              return declOp.emitDecl(ctx);
+            // External statement ops.
+            if (auto stmtOp = dyn_cast<emitc::StmtOpInterface>(operation))
+              return stmtOp.emitStmt(ctx);
+            // External expression ops: emit as `<type> <name> = <expr>`
+            // unless already inlined as part of an emitc.expression.
+            if (auto exprOp = dyn_cast<emitc::ExprOpInterface>(operation)) {
+              if (!isEmittingExpression()) {
+                if (failed(emitAssignPrefix(*operation)))
+                  return failure();
+              }
+              return exprOp.emitExpr(ctx);
+            }
             return op.emitOpError("unable to find printer for op");
           });
 
@@ -1897,11 +1948,12 @@ LogicalResult CppEmitter::emitOperation(Operation &op, bool trailingSemicolon) {
     return success();
 
   // Never emit a semicolon for some operations, especially if endening with
-  // `}`.
+  // `}`. DeclOpInterface implementations include their own trailing `;`.
   trailingSemicolon &=
       !isa<cf::CondBranchOp, emitc::DeclareFuncOp, emitc::DoOp, emitc::FileOp,
            emitc::ForOp, emitc::IfOp, emitc::IncludeOp, emitc::SwitchOp,
-           emitc::VerbatimOp>(op);
+           emitc::VerbatimOp>(op) &&
+      !isa<emitc::DeclOpInterface>(op);
 
   os << (trailingSemicolon ? ";\n" : "\n");
 
@@ -2007,6 +2059,10 @@ LogicalResult CppEmitter::emitType(Location loc, Type type) {
     if (failed(emitType(loc, pType.getPointee())))
       return failure();
     os << "*";
+    return success();
+  }
+  if (auto cxxIface = dyn_cast<emitc::CxxTypeInterface>(type)) {
+    os << cxxIface.getCxxType();
     return success();
   }
   return emitError(loc, "cannot emit type ") << type;
