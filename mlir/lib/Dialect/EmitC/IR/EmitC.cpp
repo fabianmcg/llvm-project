@@ -60,6 +60,8 @@ void mlir::emitc::buildTerminatedBody(OpBuilder &builder, Location loc) {
 }
 
 bool mlir::emitc::isSupportedEmitCType(Type type) {
+  if (llvm::isa<emitc::CxxTypeInterface>(type))
+    return true;
   if (llvm::isa<emitc::OpaqueType>(type))
     return true;
   if (auto ptrType = llvm::dyn_cast<emitc::PointerType>(type))
@@ -1795,6 +1797,7 @@ ParseResult DoOp::parse(OpAsmParser &parser, OperationState &result) {
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/EmitC/IR/EmitCInterfaces.cpp.inc"
+#include "mlir/Dialect/EmitC/IR/EmitCTypeInterfaces.cpp.inc"
 
 #define GET_OP_CLASSES
 #include "mlir/Dialect/EmitC/IR/EmitC.cpp.inc"

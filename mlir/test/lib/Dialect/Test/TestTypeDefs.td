@@ -21,6 +21,7 @@ include "mlir/IR/BuiltinTypes.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/Interfaces/DataLayoutInterfaces.td"
 include "mlir/Dialect/Bufferization/IR/BufferizationTypeInterfaces.td"
+include "mlir/Dialect/EmitC/IR/EmitCTypeInterfaces.td"
 
 // All of the types will extend this class.
 class Test_Type<string name, list<Trait> traits = []>
@@ -171,6 +172,19 @@ def TestTypeWithLayoutType : Test_Type<"TestTypeWithLayout", [
 def TestMemRefElementType : Test_Type<"TestMemRefElementType",
                                       [MemRefElementTypeInterface]> {
   let mnemonic = "memref_element";
+}
+
+// Test type implementing the EmitC CxxTypeInterface: lowers to a C++
+// template instantiation like `Foo<int32_t, float>`.
+def TestEmitCTemplateInstType : Test_Type<"TestEmitCTemplateInst", [
+    DeclareTypeInterfaceMethods<CxxTypeInterface>
+  ]> {
+  let mnemonic = "emitc_template_inst";
+  let parameters = (ins
+    StringRefParameter<"Template name">:$templateName,
+    ArrayRefParameter<"::mlir::Type">:$templateArgs
+  );
+  let assemblyFormat = "`<` $templateName `<` $templateArgs `>` `>`";
 }
 
 def TestTypeTrait : NativeTypeTrait<"TestTypeTrait">;

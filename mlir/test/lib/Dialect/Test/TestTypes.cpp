@@ -13,16 +13,20 @@
 
 #include "TestTypes.h"
 #include "TestDialect.h"
+#include "mlir/Dialect/EmitC/IR/EmitC.h"
+#include "mlir/Dialect/EmitC/IR/EmitCInterfaces.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/Types.h"
+#include "mlir/Target/Cpp/CppEmitter.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/TypeSize.h"
+#include "llvm/Support/raw_ostream.h"
 #include <cstring>
 #include <optional>
 
@@ -249,6 +253,34 @@ void TestType::printTypeC(Location loc) const {
 
 void TestType::printTypeC(Location loc, int value) const {
   emitRemark(loc) << *this << " - " << value << " - Int TestC";
+}
+
+//===----------------------------------------------------------------------===//
+// TestEmitCTemplateInstType
+//===----------------------------------------------------------------------===//
+
+std::string TestEmitCTemplateInstType::getCxxType() const {
+  std::string result;
+  llvm::raw_string_ostream os(result);
+  os << getTemplateName() << "<";
+  llvm::interleaveComma(getTemplateArgs(), os, [&](Type t) {
+    if (auto iface = llvm::dyn_cast<::mlir::emitc::CxxTypeInterface>(t))
+      os << iface.getCxxType();
+    else if (auto intTy = llvm::dyn_cast<IntegerType>(t))
+      os << "int" << intTy.getWidth() << "_t";
+    else if (auto fTy = llvm::dyn_cast<FloatType>(t)) {
+      if (fTy.getWidth() == 32)
+        os << "float";
+      else if (fTy.getWidth() == 64)
+        os << "double";
+      else
+        os << "<?float>";
+    } else {
+      os << "<?>";
+    }
+  });
+  os << ">";
+  return result;
 }
 
 //===----------------------------------------------------------------------===//

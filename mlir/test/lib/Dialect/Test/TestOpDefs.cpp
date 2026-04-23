@@ -9,10 +9,13 @@
 #include "TestDialect.h"
 #include "TestOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/EmitC/IR/EmitCInterfaces.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/MemorySlotInterfaces.h"
+#include "mlir/Support/IndentedOstream.h"
+#include "mlir/Target/Cpp/CppEmitter.h"
 #include "llvm/ADT/SmallVectorExtras.h"
 
 using namespace mlir;
@@ -1851,4 +1854,36 @@ void test::ManyRegionsOp::build(
   for (auto &&regionPtr : std::move(regions))
     state.addRegion(std::move(regionPtr));
   ManyRegionsOp::build(builder, state, {}, regions.size());
+}
+
+//===----------------------------------------------------------------------===//
+// EmitC translation interface implementations for test ops.
+//===----------------------------------------------------------------------===//
+
+LogicalResult
+TestEmitCTemplateStructDeclOp::emitDecl(::mlir::emitc::EmitCContext &ctx) {
+  raw_indented_ostream &os = ctx.ostream();
+  os << "template <typename " << getTemplateParam() << "> struct " << getName()
+     << " { " << getTemplateParam() << " value; };";
+  return success();
+}
+
+LogicalResult TestEmitCDeclStmtOp::emitStmt(::mlir::emitc::EmitCContext &ctx) {
+  return ctx.emitVariableDeclaration(getLoc(), getType(), getName());
+}
+
+LogicalResult
+TestEmitCMemberCallExprOp::emitExpr(::mlir::emitc::EmitCContext &ctx) {
+  raw_indented_ostream &os = ctx.ostream();
+  if (failed(ctx.emitOperand(getReceiver())))
+    return failure();
+  os << "." << getMethodName() << "(";
+  for (auto [idx, arg] : llvm::enumerate(getArgs())) {
+    if (idx > 0)
+      os << ", ";
+    if (failed(ctx.emitOperand(arg)))
+      return failure();
+  }
+  os << ")";
+  return success();
 }

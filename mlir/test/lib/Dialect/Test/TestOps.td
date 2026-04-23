@@ -34,6 +34,7 @@ include "mlir/Interfaces/TilingInterface.td"
 include "mlir/Interfaces/ValueBoundsOpInterface.td"
 include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.td"
 include "mlir/Dialect/Bufferization/IR/BufferizationTypeInterfaces.td"
+include "mlir/Dialect/EmitC/IR/EmitCInterfaces.td"
 
 // Include the attribute definitions.
 include "TestAttrDefs.td"
@@ -945,7 +946,7 @@ def OpWithResultShapeInterfaceOp : TEST_Op<"op_with_result_shape_interface",
 
 def ReifyShapedTypeUsingReifyResultShapesOp :
     TEST_Op<"reify_shaped_type_using_reify_result_shapes",
-        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface, 
+        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface,
             ["reifyResultShapes"]>]> {
   let description = [{
     Test that when resolving a single dimension of a result for an operation
@@ -960,7 +961,7 @@ def ReifyShapedTypeUsingReifyResultShapesOp :
 
 def ReifyShapedTypeUsingReifyShapeOfResultOp :
     TEST_Op<"reify_shaped_type_using_reify_shape_of_result",
-        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface, 
+        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface,
             ["reifyResultShapes", "reifyShapeOfResult"]>]> {
   let description = [{
     Test that when resolving a single dimension of a result for an operation
@@ -976,7 +977,7 @@ def ReifyShapedTypeUsingReifyShapeOfResultOp :
 
 def ReifyShapedTypeUsingReifyDimOfResultOp :
     TEST_Op<"reify_shaped_type_using_reify_dim_of_result",
-        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface, 
+        [DeclareOpInterfaceMethods<ReifyRankedShapedTypeOpInterface,
             ["reifyResultShapes", "reifyShapeOfResult", "reifyDimOfResult"]>]> {
   let description = [{
     Test that when resolving a single dimension of a result for an operation
@@ -4095,5 +4096,38 @@ def CallWithSegmentsOp : TEST_Op<"call_with_segments",
   }];
 }
 
+
+//===----------------------------------------------------------------------===//
+// Test EmitC translation interfaces.
+//===----------------------------------------------------------------------===//
+
+def TestEmitCTemplateStructDeclOp
+    : TEST_Op<"emitc_template_struct_decl",
+              [DeclareOpInterfaceMethods<DeclOpInterface>]> {
+  let summary = "Test op emitting a C++ template struct declaration.";
+  let arguments = (ins StrAttr:$name, StrAttr:$template_param);
+  let assemblyFormat = "$name `(` $template_param `)` attr-dict";
+}
+
+def TestEmitCDeclStmtOp
+    : TEST_Op<"emitc_decl_stmt",
+              [DeclareOpInterfaceMethods<StmtOpInterface>]> {
+  let summary = "Test op emitting a C++ declaration statement `T name;`.";
+  let arguments = (ins TypeAttr:$type, StrAttr:$name);
+  let assemblyFormat = "$name `:` $type attr-dict";
+}
+
+def TestEmitCMemberCallExprOp
+    : TEST_Op<"emitc_member_call_expr",
+              [DeclareOpInterfaceMethods<ExprOpInterface>]> {
+  let summary = "Test op emitting `receiver.method(args...)` as an expression.";
+  let arguments = (ins AnyType:$receiver, StrAttr:$method_name,
+                       Variadic<AnyType>:$args);
+  let results = (outs AnyType:$result);
+  let assemblyFormat = [{
+    $receiver $method_name `(` $args `)` attr-dict
+      `:` functional-type(operands, results)
+  }];
+}
 
 #endif // TEST_OPS
