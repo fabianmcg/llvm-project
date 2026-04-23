@@ -3,6 +3,7 @@ set(LLVM_OPTIONAL_SOURCES
   TestPatterns.cpp
   TestTraits.cpp
   TestFromLLVMIRTranslation.cpp
+  TestToCpp.cpp
   TestToLLVMIRTranslation.cpp
 )
 
@@ -69,6 +70,8 @@ add_mlir_library(MLIRTestDialect
   MLIRTestOpsSyntaxIncGen
   MLIRTestOpsShardGen
   MLIRConvertToEmitCPatternInterfaceIncGen
+  MLIREmitCInterfacesIncGen
+  MLIREmitCTypeInterfacesIncGen
   )
 mlir_target_link_libraries(MLIRTestDialect PUBLIC
   MLIRControlFlowInterfaces
@@ -97,6 +100,8 @@ mlir_target_link_libraries(MLIRTestDialect PUBLIC
   MLIRTransforms
   MLIRValueBoundsOpInterface
   MLIRBufferizationDialect
+  MLIREmitCDialect
+  MLIRTargetCpp
 )
 
 add_mlir_translation_library(MLIRTestFromLLVMIRTranslation
@@ -131,4 +136,20 @@ add_mlir_translation_library(MLIRTestToLLVMIRTranslation
   MLIRSupport
   MLIRBuiltinToLLVMIRTranslation
   MLIRLLVMToLLVMIRTranslation
+)
+
+add_mlir_translation_library(MLIRTestToCpp
+  TestToCpp.cpp
+
+  EXCLUDE_FROM_LIBMLIR
+
+  LINK_LIBS PUBLIC
+  MLIRIR
+  MLIRControlFlowDialect
+  MLIREmitCDialect
+  MLIRFuncDialect
+  MLIRTestDialect
+  MLIRSupport
+  MLIRTargetCpp
+  MLIRTranslateLib
 )

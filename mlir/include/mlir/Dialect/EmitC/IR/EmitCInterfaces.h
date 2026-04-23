@@ -15,10 +15,11 @@
 #define MLIR_DIALECT_EMITC_IR_EMITCINTERFACES_H
 
 #include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Types.h"
 
 namespace mlir {
 namespace emitc {
-//
+class EmitCContext;
 } // namespace emitc
 } // namespace mlir
 
@@ -27,5 +28,6 @@ namespace emitc {
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/EmitC/IR/EmitCInterfaces.h.inc"
+#include "mlir/Dialect/EmitC/IR/EmitCTypeInterfaces.h.inc"
 
 #endif // MLIR_DIALECT_EMITC_IR_EMITCINTERFACES_H

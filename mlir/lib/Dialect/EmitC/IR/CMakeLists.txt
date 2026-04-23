@@ -7,6 +7,8 @@ add_mlir_dialect_library(MLIREmitCDialect
   DEPENDS
   MLIREmitCIncGen
   MLIREmitCAttributesIncGen
+  MLIREmitCInterfacesIncGen
+  MLIREmitCTypeInterfacesIncGen
 
   LINK_LIBS PUBLIC
   MLIRCallInterfaces

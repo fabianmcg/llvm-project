@@ -6,6 +6,11 @@ mlir_tablegen(EmitCInterfaces.h.inc -gen-op-interface-decls)
 mlir_tablegen(EmitCInterfaces.cpp.inc -gen-op-interface-defs)
 add_mlir_generic_tablegen_target(MLIREmitCInterfacesIncGen)
 
+set(LLVM_TARGET_DEFINITIONS EmitCTypeInterfaces.td)
+mlir_tablegen(EmitCTypeInterfaces.h.inc -gen-type-interface-decls)
+mlir_tablegen(EmitCTypeInterfaces.cpp.inc -gen-type-interface-defs)
+add_mlir_generic_tablegen_target(MLIREmitCTypeInterfacesIncGen)
+
 set(LLVM_TARGET_DEFINITIONS EmitCAttributes.td)
 mlir_tablegen(EmitCEnums.h.inc -gen-enum-decls)
 mlir_tablegen(EmitCEnums.cpp.inc -gen-enum-defs)
