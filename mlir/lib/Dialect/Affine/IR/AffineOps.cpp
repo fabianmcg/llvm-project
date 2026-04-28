@@ -5686,12 +5686,95 @@ struct DropLinearizeLeadingZero final
     return success();
   }
 };
+
+/// Fold linearize_index(delinearize_index(%x, delinBasis), linBasis) into a
+/// single affine.apply, when:
+///   - the linearize is fully bounded (basis size == operand count)
+///   - all basis values are static,
+///   - all linearize operands are the exact results of the same delinearize,
+///   - the delinearize has a fully static basis with an outer bound.
+///
+/// This mirrors `FoldDelinearizeLinearizeByStridesToAffineApply` for the
+/// strided form. The strides used are the suffix product of `linBasis`
+/// (the implicit strides of the bounded form).
+///
+/// Example:
+///   %0:2 = affine.delinearize_index %x into (16, 4)
+///   %1   = affine.linearize_index disjoint [%0#0, %0#1] by (4, 16)
+/// becomes:
+///   %1   = affine.apply (d0 floordiv 4) * 16 + (d0 mod 4) * 1 (%x)
+struct FoldDelinearizeLinearizeToAffineApply final
+    : OpRewritePattern<affine::AffineLinearizeIndexOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(affine::AffineLinearizeIndexOp op,
+                                PatternRewriter &rewriter) const override {
+    // Require fully bounded form (one basis entry per operand).
+    if (!op.hasOuterBound())
+      return failure();
+
+    // Linearize basis must be all static.
+    ArrayRef<int64_t> linBasis = op.getStaticBasis();
+    if (llvm::any_of(linBasis, ShapedType::isDynamic))
+      return failure();
+
+    // All operands must come from a single delinearize_index, in order.
+    if (op.getMultiIndex().empty())
+      return failure();
+    auto delinOp = op.getMultiIndex().front()
+                       .getDefiningOp<affine::AffineDelinearizeIndexOp>();
+    if (!delinOp)
+      return failure();
+    if (!delinOp.hasOuterBound())
+      return failure();
+    if (delinOp.getNumResults() != op.getMultiIndex().size())
+      return failure();
+    for (auto [i, val] : llvm::enumerate(op.getMultiIndex()))
+      if (val != delinOp.getResult(i))
+        return failure();
+
+    // Delinearize basis must be all static.
+    SmallVector<int64_t> delinBasis;
+    for (auto ofr : delinOp.getMixedBasis()) {
+      auto val = getConstantIntValue(ofr);
+      if (!val)
+        return failure();
+      delinBasis.push_back(*val);
+    }
+
+    // Strides for the bounded form are suffix products of linBasis.
+    SmallVector<int64_t> strides = computeSuffixProduct(linBasis);
+
+    // Build the affine expression:
+    //   sum_i ((d0 floordiv suffixProduct(delinBasis)_i) mod delinBasis_i)
+    //         * strides_i
+    // Delinearize uses first-mode-slowest: dim 0 is outermost.
+    MLIRContext *ctx = op.getContext();
+    AffineExpr dim0 = getAffineDimExpr(0, ctx);
+    AffineExpr result = getAffineConstantExpr(0, ctx);
+    SmallVector<int64_t> delinStrides = computeSuffixProduct(delinBasis);
+
+    for (unsigned i = 0, n = delinBasis.size(); i < n; ++i) {
+      if (strides[i] == 0)
+        continue;
+      AffineExpr component = dim0.floorDiv(delinStrides[i]) % delinBasis[i];
+      result = result + component * strides[i];
+    }
+
+    AffineMap map =
+        AffineMap::get(/*dimCount=*/1, /*symbolCount=*/0, result, ctx);
+    rewriter.replaceOpWithNewOp<affine::AffineApplyOp>(
+        op, map, ValueRange{delinOp.getLinearIndex()});
+    return success();
+  }
+};
 } // namespace
 
 void affine::AffineLinearizeIndexOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns, MLIRContext *context) {
   patterns.add<CancelLinearizeOfDelinearizePortion, DropLinearizeLeadingZero,
-               DropLinearizeUnitComponentsIfDisjointOrZero>(context);
+               DropLinearizeUnitComponentsIfDisjointOrZero,
+               FoldDelinearizeLinearizeToAffineApply>(context);
 }
 
 //===----------------------------------------------------------------------===//
@@ -5905,23 +5988,17 @@ struct FoldDelinearizeLinearizeByStridesToAffineApply final
     }
 
     // Build the affine expression:
-    //   sum_i ((dim0 / prefixProduct_i) mod basis_i) * stride_i
+    //   sum_i ((dim0 / suffixProduct(basis)_i) mod basis_i) * stride_i
     // Delinearize uses first-mode-slowest: dim 0 is outermost.
     MLIRContext *ctx = op.getContext();
     AffineExpr dim0 = getAffineDimExpr(0, ctx);
     AffineExpr result = getAffineConstantExpr(0, ctx);
-    unsigned n = basis.size();
+    SmallVector<int64_t> delinStrides = computeSuffixProduct(basis);
 
-    // Compute prefix products (suffix products of reversed basis).
-    // prefixProduct[i] = product of basis[i+1] ... basis[n-1].
-    SmallVector<int64_t> prefixProduct(n, 1);
-    for (int i = static_cast<int>(n) - 2; i >= 0; --i)
-      prefixProduct[i] = prefixProduct[i + 1] * basis[i + 1];
-
-    for (unsigned i = 0; i < n; ++i) {
+    for (unsigned i = 0, n = basis.size(); i < n; ++i) {
       if (strides[i] == 0)
         continue;
-      AffineExpr component = dim0.floorDiv(prefixProduct[i]) % basis[i];
+      AffineExpr component = dim0.floorDiv(delinStrides[i]) % basis[i];
       result = result + component * strides[i];
     }
 

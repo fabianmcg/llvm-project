@@ -2713,3 +2713,52 @@ func.func @no_fold_delinearize_no_outer_bound(%x: index) -> index {
   %1 = affine.linearize_index_by_strides [%0#0, %0#1] by (8, 2) : index
   return %1 : index
 }
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_disjoint_to_affine_apply(
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     affine.apply
+//  CHECK-NOT:      delinearize
+//  CHECK-NOT:      linearize_index disjoint
+func.func @fold_delinearize_linearize_disjoint_to_affine_apply(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (16, 4) : index, index
+  %1 = affine.linearize_index disjoint [%0#0, %0#1] by (4, 16) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_nondisjoint_to_affine_apply(
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     affine.apply
+//  CHECK-NOT:      delinearize
+//  CHECK-NOT:      linearize_index
+func.func @fold_delinearize_linearize_nondisjoint_to_affine_apply(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (16, 4) : index, index
+  %1 = affine.linearize_index [%0#0, %0#1] by (4, 16) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @fold_delinearize_linearize_roundtrip(
+//  CHECK-SAME:     %[[X:[a-zA-Z0-9]+]]: index)
+//       CHECK:     return %[[X]]
+func.func @fold_delinearize_linearize_roundtrip(%x: index) -> index {
+  %0:2 = affine.delinearize_index %x into (4, 8) : index, index
+  %1 = affine.linearize_index disjoint [%0#0, %0#1] by (4, 8) : index
+  return %1 : index
+}
+
+// -----
+
+// CHECK-LABEL: func @no_fold_disjoint_no_outer_bound
+//       CHECK:   delinearize
+//       CHECK:   linearize_index disjoint
+func.func @no_fold_disjoint_no_outer_bound(%x: index, %y: index) -> index {
+  %0:2 = affine.delinearize_index %x into (16, 4) : index, index
+  // 3 operands but only 2 basis values -> hasOuterBound() = false.
+  %1 = affine.linearize_index disjoint [%y, %0#0, %0#1] by (4, 16) : index
+  return %1 : index
+}
