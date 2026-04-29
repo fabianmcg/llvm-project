@@ -276,6 +276,8 @@ struct SimplifyAllocConst : public OpRewritePattern<AllocLikeOp> {
     auto newAlloc = AllocLikeOp::create(rewriter, alloc.getLoc(), newMemRefType,
                                         dynamicSizes, alloc.getSymbolOperands(),
                                         alloc.getAlignmentAttr());
+    // TODO: this is for sched.stage to propagate, avoid relying on that.
+    newAlloc->setDiscardableAttrs(alloc->getDiscardableAttrDictionary());
     // Insert a cast so we have the same type as the old alloc.
     rewriter.replaceOpWithNewOp<CastOp>(alloc, alloc.getType(), newAlloc);
     return success();
