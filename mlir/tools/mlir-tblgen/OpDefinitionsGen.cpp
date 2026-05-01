@@ -2598,6 +2598,7 @@ void OpEmitter::genSeparateArgParamBuilder() {
       // TODO: Subsume this with general checking if type can be
       // inferred automatically.
       body << formatv(R"(
+        (void){1}.getOrAddProperties<{0}::Properties>();
         ::llvm::SmallVector<::mlir::Type, 2> inferredReturnTypes;
         if (::mlir::succeeded({0}::inferReturnTypes(odsBuilder.getContext(),
                       {1}.location, {1}.operands,
