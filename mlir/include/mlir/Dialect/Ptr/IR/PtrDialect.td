@@ -128,6 +128,49 @@ def Ptr_PtrMetadata : Ptr_Type<"PtrMetadata", "ptr_metadata"> {
 }
 
 //===----------------------------------------------------------------------===//
+// Future type definition.
+//===----------------------------------------------------------------------===//
+
+def Ptr_FutureType : Ptr_Type<"Future", "future"> {
+  let summary = "future type";
+  let description = [{
+    The `future` type represents a handle to a potentially asynchronous memory
+    operation. The optional inner type indicates the kind of value the future
+    carries. An empty future (`!ptr.future`) carries no typed payload and is
+    used to track completion of store-like operations.
+
+    Syntax:
+
+    ```mlir
+    future-type ::= `future` (`<` type `>`)?
+    ```
+
+    Examples:
+
+    ```mlir
+    // A future carrying an f32 value.
+    !ptr.future<f32>
+
+    // An empty future with no inner type.
+    !ptr.future
+    ```
+  }];
+  let parameters = (ins OptionalParameter<"::mlir::Type", "element type">:$elementType);
+  let assemblyFormat = "(`<` $elementType^ `>`)?";
+  let skipDefaultBuilders = 1;
+  let builders = [
+    TypeBuilder<(ins CArg<"::mlir::Type", "::mlir::Type()">:$elementType), [{
+      return $_get($_ctxt, elementType);
+    }]>
+  ];
+}
+
+// A `!ptr.future` type (no inner element type).
+def Ptr_EmptyFutureType : ConfinedType<Ptr_FutureType,
+    [CPred<"!::llvm::cast<::mlir::ptr::FutureType>($_self).getElementType()">],
+    "an empty future type">;
+
+//===----------------------------------------------------------------------===//
 // Base address operation definition.
 //===----------------------------------------------------------------------===//
 

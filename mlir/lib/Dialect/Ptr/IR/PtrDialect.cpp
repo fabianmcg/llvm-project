@@ -259,8 +259,11 @@ LogicalResult MaskedStoreOp::verify() {
 
 void MaskedStoreOp::build(OpBuilder &builder, OperationState &state,
                           Value value, Value ptr, Value mask,
-                          unsigned alignment) {
-  build(builder, state, value, ptr, mask,
+                          unsigned alignment, bool hasFuture) {
+  Type futureType;
+  if (hasFuture)
+    futureType = FutureType::get(builder.getContext());
+  build(builder, state, futureType, value, ptr, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
 
@@ -291,8 +294,12 @@ LogicalResult ScatterOp::verify() {
 }
 
 void ScatterOp::build(OpBuilder &builder, OperationState &state, Value value,
-                      Value ptrs, Value mask, unsigned alignment) {
-  build(builder, state, value, ptrs, mask,
+                      Value ptrs, Value mask, unsigned alignment,
+                      bool hasFuture) {
+  Type futureType;
+  if (hasFuture)
+    futureType = FutureType::get(builder.getContext());
+  build(builder, state, futureType, value, ptrs, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
 
@@ -332,8 +339,12 @@ LogicalResult StoreOp::verify() {
 void StoreOp::build(OpBuilder &builder, OperationState &state, Value value,
                     Value addr, unsigned alignment, bool isVolatile,
                     bool isNonTemporal, bool isInvariantGroup,
-                    AtomicOrdering ordering, StringRef syncscope) {
-  build(builder, state, value, addr,
+                    AtomicOrdering ordering, StringRef syncscope,
+                    bool hasFuture) {
+  Type futureType;
+  if (hasFuture)
+    futureType = FutureType::get(builder.getContext());
+  build(builder, state, futureType, value, addr,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt,
         isVolatile, isNonTemporal, isInvariantGroup, ordering,
         syncscope.empty() ? nullptr : builder.getStringAttr(syncscope));
