@@ -22,3 +22,27 @@ func.func @ptr_test_1(%arg0: !ptr.ptr<#test.const_memory_space>,
                       %arg1: !ptr.ptr<#test.const_memory_space<3>>) {
   return
 }
+
+// -----
+
+// CHECK-LABEL: func @future_typed
+// CHECK-SAME: !ptr.future<f32>
+func.func @future_typed(%arg0: !ptr.future<f32>) {
+  return
+}
+
+// -----
+
+// CHECK-LABEL: func @future_empty
+// CHECK-SAME: !ptr.future
+func.func @future_empty(%arg0: !ptr.future) {
+  return
+}
+
+// -----
+
+// CHECK-LABEL: func @future_ptr_inner
+// CHECK-SAME: !ptr.future<!ptr.ptr<#ptr.generic_space>>
+func.func @future_ptr_inner(%arg0: !ptr.future<!ptr.ptr<#ptr.generic_space>>) {
+  return
+}

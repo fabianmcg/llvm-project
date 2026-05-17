@@ -348,13 +348,15 @@ def Ptr_MaskedStoreOp : Pointer_Op<"masked_store", [
                        Ptr_PtrType:$ptr,
                        Ptr_Mask1DType:$mask,
                        AlignmentProp:$alignment);
+  let results = (outs Optional<Ptr_EmptyFutureType>:$future);
   let assemblyFormat = [{
     $value `,` $ptr `,` $mask (`alignment` `=` $alignment^)? attr-dict `:`
-    type($value) `,` qualified(type($ptr))
+    type($value) `,` qualified(type($ptr)) (`->` qualified(type($future))^)?
   }];
   let builders = [
     OpBuilder<(ins "Value":$value, "Value":$ptr, "Value":$mask,
-      CArg<"unsigned", "0">:$alignment)>
+      CArg<"unsigned", "0">:$alignment,
+      CArg<"bool", "false">:$hasFuture)>
   ];
   let hasVerifier = 1;
 }
@@ -510,13 +512,15 @@ def Ptr_ScatterOp : Pointer_Op<"scatter", [
                        Ptr_Ptr1DType:$ptrs,
                        Ptr_Mask1DType:$mask,
                        AlignmentProp:$alignment);
+  let results = (outs Optional<Ptr_EmptyFutureType>:$future);
   let assemblyFormat = [{
-    $value `,` $ptrs `,` $mask  (`alignment` `=` $alignment^)?
-    attr-dict `:` type($value) `,` type($ptrs)
+    $value `,` $ptrs `,` $mask (`alignment` `=` $alignment^)?
+    attr-dict `:` type($value) `,` type($ptrs) (`->` qualified(type($future))^)?
   }];
   let builders = [
     OpBuilder<(ins "Value":$value, "Value":$ptrs, "Value":$mask,
-      CArg<"unsigned", "0">:$alignment)>
+      CArg<"unsigned", "0">:$alignment,
+      CArg<"bool", "false">:$hasFuture)>
   ];
   let hasVerifier = 1;
 }
@@ -561,6 +565,7 @@ def Ptr_StoreOp : Pointer_Op<"store", [
                          AtomicOrderingProp,
                          "AtomicOrdering::not_atomic">:$ordering,
                        OptionalAttr<StrAttr>:$syncscope);
+  let results = (outs Optional<Ptr_EmptyFutureType>:$future);
   let assemblyFormat = [{
     (`volatile` $volatile_^)? $value `,` $ptr
     (`atomic` (`syncscope` `(` $syncscope^ `)`)? $ordering^)?
@@ -569,7 +574,7 @@ def Ptr_StoreOp : Pointer_Op<"store", [
       `invariant_group` $invariantGroup |
       `alignment` `=` $alignment
     )
-    attr-dict `:` type($value) `,` qualified(type($ptr))
+    attr-dict `:` type($value) `,` qualified(type($ptr)) (`->` qualified(type($future))^)?
   }];
   let builders = [
     OpBuilder<(ins "Value":$value, "Value":$ptr,
@@ -577,7 +582,8 @@ def Ptr_StoreOp : Pointer_Op<"store", [
       CArg<"bool", "false">:$isNonTemporal,
       CArg<"bool", "false">:$isInvariantGroup,
       CArg<"AtomicOrdering", "AtomicOrdering::not_atomic">:$ordering,
-      CArg<"StringRef", "StringRef()">:$syncscope)>
+      CArg<"StringRef", "StringRef()">:$syncscope,
+      CArg<"bool", "false">:$hasFuture)>
   ];
   let hasVerifier = 1;
 }
