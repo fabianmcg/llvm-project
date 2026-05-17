@@ -264,3 +264,41 @@ func.func @scatter_ops_future(%value: vector<4xf32>, %ptrs: vector<4x!ptr.ptr<#p
   %fut1 = ptr.scatter %value, %ptrs, %mask alignment = 8 : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>> -> !ptr.future
   return
 }
+
+/// Test wait op with all-empty futures (no results).
+func.func @wait_empty_futures(%f0: !ptr.future, %f1: !ptr.future) {
+  ptr.wait %f0, %f1 : !ptr.future, !ptr.future
+  return
+}
+
+/// Test wait op with a single typed future.
+func.func @wait_single_typed(%fut: !ptr.future<f32>) -> f32 {
+  %val = ptr.wait %fut : !ptr.future<f32>
+  return %val : f32
+}
+
+/// Test wait op with mixed empty and typed futures.
+func.func @wait_mixed(%empty: !ptr.future, %typed: !ptr.future<i32>) -> i32 {
+  %val = ptr.wait %empty, %typed : !ptr.future, !ptr.future<i32>
+  return %val : i32
+}
+
+/// Test wait op with multiple typed futures.
+func.func @wait_multiple_typed(%fa: !ptr.future<f32>, %fb: !ptr.future<i64>) -> (f32, i64) {
+  %a, %b = ptr.wait %fa, %fb : !ptr.future<f32>, !ptr.future<i64>
+  return %a, %b : f32, i64
+}
+
+/// Test wait op chained with a store that returns a future.
+func.func @wait_store_future(%val: f32, %ptr: !ptr.ptr<#ptr.generic_space>) {
+  %fut = ptr.store %val, %ptr : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future
+  ptr.wait %fut : !ptr.future
+  return
+}
+
+/// Test wait unpacking a typed future produced by a load.
+func.func @wait_load_future(%ptr: !ptr.ptr<#ptr.generic_space>) -> f32 {
+  %fut = ptr.load %ptr : !ptr.ptr<#ptr.generic_space> -> !ptr.future<f32>
+  %val = ptr.wait %fut : !ptr.future<f32>
+  return %val : f32
+}

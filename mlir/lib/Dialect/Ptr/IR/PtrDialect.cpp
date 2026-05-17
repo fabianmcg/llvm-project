@@ -304,6 +304,23 @@ void ScatterOp::build(OpBuilder &builder, OperationState &state, Value value,
 }
 
 //===----------------------------------------------------------------------===//
+// WaitOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult
+WaitOp::inferReturnTypes(MLIRContext *context, std::optional<Location> location,
+                         ValueRange operands, DictionaryAttr attributes,
+                         PropertyRef properties, RegionRange regions,
+                         SmallVectorImpl<Type> &inferredReturnTypes) {
+  for (Value future : operands) {
+    Type elementType = cast<FutureType>(future.getType()).getElementType();
+    if (elementType)
+      inferredReturnTypes.push_back(elementType);
+  }
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // StoreOp
 //===----------------------------------------------------------------------===//
 
