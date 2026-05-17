@@ -526,6 +526,39 @@ def Ptr_ScatterOp : Pointer_Op<"scatter", [
 }
 
 //===----------------------------------------------------------------------===//
+// WaitOp
+//===----------------------------------------------------------------------===//
+
+def Ptr_WaitOp : Pointer_Op<"wait", [
+    DeclareOpInterfaceMethods<InferTypeOpInterface>
+  ]> {
+  let summary = "Wait operation";
+  let description = [{
+    The `wait` operation synchronizes on a variadic number of `ptr.future`
+    values. For each typed future (`!ptr.future<T>`), one result of type `T`
+    is returned in order. Empty futures (`!ptr.future`) produce no result.
+
+    Examples:
+
+    ```mlir
+    // Wait on a single empty future — no results.
+    ptr.wait %fut : !ptr.future
+
+    // Wait on two futures; the typed one unpacks to f32.
+    %val = ptr.wait %empty_fut, %typed_fut : !ptr.future, !ptr.future<f32>
+
+    // Wait on multiple typed futures.
+    %a, %b = ptr.wait %fa, %fb : !ptr.future<f32>, !ptr.future<i32>
+    ```
+  }];
+  let arguments = (ins Variadic<Ptr_FutureType>:$futures);
+  let results = (outs Variadic<AnyType>:$results);
+  let assemblyFormat = [{
+    $futures attr-dict `:` type($futures)
+  }];
+}
+
+//===----------------------------------------------------------------------===//
 // StoreOp
 //===----------------------------------------------------------------------===//
 
