@@ -13,6 +13,7 @@
 #include "mlir/Dialect/Ptr/IR/PtrOps.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/Matchers.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Interfaces/DataLayoutInterfaces.h"
 #include "mlir/Transforms/InliningUtils.h"
 #include "llvm/ADT/StringExtras.h"
@@ -55,6 +56,33 @@ verifyAlignment(std::optional<int64_t> alignment,
   if (!llvm::isPowerOf2_64(alignment.value()))
     return emitError() << "alignment must be a power of 2";
   return success();
+}
+
+enum class MaskFormat { AllTrue = 0, AllFalse = 1, Unknown = 2 };
+
+/// Inspects a constant dense i1 attribute to classify the mask as all-true,
+/// all-false, or unknown. Returns Unknown for dynamic or mixed masks.
+static MaskFormat getMaskFormat(Value mask) {
+  DenseIntElementsAttr denseElts;
+  if (!matchPattern(mask, m_Constant(&denseElts)))
+    return MaskFormat::Unknown;
+  int64_t val = 0;
+  for (bool b : denseElts.getValues<bool>()) {
+    if (b && val >= 0) {
+      val++;
+      continue;
+    }
+    if (!b && val <= 0) {
+      val--;
+      continue;
+    }
+    return MaskFormat::Unknown;
+  }
+  if (val > 0)
+    return MaskFormat::AllTrue;
+  if (val < 0)
+    return MaskFormat::AllFalse;
+  return MaskFormat::Unknown;
 }
 
 //===----------------------------------------------------------------------===//
@@ -233,6 +261,31 @@ void MaskedLoadOp::build(OpBuilder &builder, OperationState &state,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
 
+struct MaskedLoadFolder : public OpRewritePattern<MaskedLoadOp> {
+  using Base::Base;
+  LogicalResult matchAndRewrite(MaskedLoadOp load,
+                                PatternRewriter &rewriter) const override {
+    switch (getMaskFormat(load.getMask())) {
+    case MaskFormat::AllTrue:
+      rewriter.replaceOpWithNewOp<LoadOp>(
+          load, load.getType(), load.getPtr(),
+          static_cast<unsigned>(load.getAlignment().value_or(0)));
+      return success();
+    case MaskFormat::AllFalse:
+      rewriter.replaceOp(load, load.getPassthrough());
+      return success();
+    case MaskFormat::Unknown:
+      return failure();
+    }
+    llvm_unreachable("Unexpected MaskFormat on MaskedLoad.");
+  }
+};
+
+void MaskedLoadOp::getCanonicalizationPatterns(RewritePatternSet &results,
+                                               MLIRContext *context) {
+  results.add<MaskedLoadFolder>(context);
+}
+
 //===----------------------------------------------------------------------===//
 // MaskedStoreOp
 //===----------------------------------------------------------------------===//
@@ -265,6 +318,39 @@ void MaskedStoreOp::build(OpBuilder &builder, OperationState &state,
     futureType = FutureType::get(builder.getContext());
   build(builder, state, futureType, value, ptr, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
+}
+
+struct MaskedStoreFolder : public OpRewritePattern<MaskedStoreOp> {
+  using Base::Base;
+  LogicalResult matchAndRewrite(MaskedStoreOp store,
+                                PatternRewriter &rewriter) const override {
+    switch (getMaskFormat(store.getMask())) {
+    case MaskFormat::AllTrue:
+      rewriter.replaceOpWithNewOp<StoreOp>(
+          store, store.getValue(), store.getPtr(),
+          static_cast<unsigned>(store.getAlignment().value_or(0)),
+          /*isVolatile=*/false,
+          /*isNonTemporal=*/false,
+          /*isInvariantGroup=*/false,
+          /*ordering=*/AtomicOrdering::not_atomic,
+          /*syncscope=*/StringRef(),
+          /*hasFuture=*/static_cast<bool>(store.getFuture()));
+      return success();
+    case MaskFormat::AllFalse:
+      if (store.getFuture() && !store.getFuture().use_empty())
+        return failure();
+      rewriter.eraseOp(store);
+      return success();
+    case MaskFormat::Unknown:
+      return failure();
+    }
+    llvm_unreachable("Unexpected MaskFormat on MaskedStore.");
+  }
+};
+
+void MaskedStoreOp::getCanonicalizationPatterns(RewritePatternSet &results,
+                                                MLIRContext *context) {
+  results.add<MaskedStoreFolder>(context);
 }
 
 //===----------------------------------------------------------------------===//

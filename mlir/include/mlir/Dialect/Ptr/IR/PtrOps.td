@@ -310,6 +310,7 @@ def Ptr_MaskedLoadOp : Pointer_Op<"masked_load", [
       "Value":$passthrough, CArg<"unsigned", "0">:$alignment)>
   ];
   let hasVerifier = 1;
+  let hasCanonicalizer = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -359,6 +360,7 @@ def Ptr_MaskedStoreOp : Pointer_Op<"masked_store", [
       CArg<"bool", "false">:$hasFuture)>
   ];
   let hasVerifier = 1;
+  let hasCanonicalizer = 1;
 }
 
 //===----------------------------------------------------------------------===//
