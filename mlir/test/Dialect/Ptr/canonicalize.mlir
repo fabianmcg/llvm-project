@@ -119,3 +119,88 @@ func.func @test_cast_chain_folding(%mr: memref<f32, #ptr.generic_space>, %md: !p
    %res = ptr.from_ptr %ptr metadata %mda : !ptr.ptr<#ptr.generic_space> -> memref<f32, #ptr.generic_space>
    return %res : memref<f32, #ptr.generic_space>
 }
+
+/// Check that `ptr.masked_load` with an all-true mask folds to `ptr.load`.
+// CHECK-LABEL: @masked_load_all_true
+// CHECK-SAME: (%[[PTR:.*]]: !ptr.ptr<#ptr.generic_space>, %[[PT:.*]]: vector<4xf32>)
+func.func @masked_load_all_true(%ptr: !ptr.ptr<#ptr.generic_space>,
+                                %passthrough: vector<4xf32>) -> vector<4xf32> {
+  // CHECK-NOT: ptr.masked_load
+  // CHECK: %[[RES:.*]] = ptr.load %[[PTR]] : !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  // CHECK-NEXT: return %[[RES]]
+  %mask = arith.constant dense<true> : vector<4xi1>
+  %res = ptr.masked_load %ptr, %mask, %passthrough :
+      !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  return %res : vector<4xf32>
+}
+
+/// Check that `ptr.masked_load` with an all-false mask folds to the passthrough.
+// CHECK-LABEL: @masked_load_all_false
+// CHECK-SAME: (%[[PTR:.*]]: !ptr.ptr<#ptr.generic_space>, %[[PT:.*]]: vector<4xf32>)
+func.func @masked_load_all_false(%ptr: !ptr.ptr<#ptr.generic_space>,
+                                 %passthrough: vector<4xf32>) -> vector<4xf32> {
+  // CHECK-NOT: ptr.masked_load
+  // CHECK: return %[[PT]]
+  %mask = arith.constant dense<false> : vector<4xi1>
+  %res = ptr.masked_load %ptr, %mask, %passthrough :
+      !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  return %res : vector<4xf32>
+}
+
+/// Check that the alignment is forwarded when `ptr.masked_load` folds to `ptr.load`.
+// CHECK-LABEL: @masked_load_all_true_aligned
+func.func @masked_load_all_true_aligned(%ptr: !ptr.ptr<#ptr.generic_space>,
+                                        %passthrough: vector<4xf32>) -> vector<4xf32> {
+  // CHECK-NOT: ptr.masked_load
+  // CHECK: ptr.load %{{.*}} alignment = 16 : !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  %mask = arith.constant dense<true> : vector<4xi1>
+  %res = ptr.masked_load %ptr, %mask, %passthrough alignment = 16 :
+      !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  return %res : vector<4xf32>
+}
+
+/// Check that `ptr.masked_store` with an all-true mask folds to `ptr.store`.
+// CHECK-LABEL: @masked_store_all_true
+func.func @masked_store_all_true(%value: vector<4xf32>,
+                                 %ptr: !ptr.ptr<#ptr.generic_space>) {
+  // CHECK-NOT: ptr.masked_store
+  // CHECK: ptr.store %{{.*}}, %{{.*}} : vector<4xf32>, !ptr.ptr<#ptr.generic_space>
+  %mask = arith.constant dense<true> : vector<4xi1>
+  ptr.masked_store %value, %ptr, %mask :
+      vector<4xf32>, !ptr.ptr<#ptr.generic_space>
+  return
+}
+
+/// Check that `ptr.masked_store` with an all-false mask is erased.
+// CHECK-LABEL: @masked_store_all_false
+func.func @masked_store_all_false(%value: vector<4xf32>,
+                                  %ptr: !ptr.ptr<#ptr.generic_space>) {
+  // CHECK-NOT: ptr.masked_store
+  // CHECK-NOT: ptr.store
+  %mask = arith.constant dense<false> : vector<4xi1>
+  ptr.masked_store %value, %ptr, %mask :
+      vector<4xf32>, !ptr.ptr<#ptr.generic_space>
+  return
+}
+
+/// Check that `ptr.masked_load` with a dynamic mask is not simplified.
+// CHECK-LABEL: @masked_load_dynamic_mask
+func.func @masked_load_dynamic_mask(%ptr: !ptr.ptr<#ptr.generic_space>,
+                                    %mask: vector<4xi1>,
+                                    %passthrough: vector<4xf32>) -> vector<4xf32> {
+  // CHECK: ptr.masked_load
+  %res = ptr.masked_load %ptr, %mask, %passthrough :
+      !ptr.ptr<#ptr.generic_space> -> vector<4xf32>
+  return %res : vector<4xf32>
+}
+
+/// Check that `ptr.masked_store` with a dynamic mask is not simplified.
+// CHECK-LABEL: @masked_store_dynamic_mask
+func.func @masked_store_dynamic_mask(%value: vector<4xf32>,
+                                     %ptr: !ptr.ptr<#ptr.generic_space>,
+                                     %mask: vector<4xi1>) {
+  // CHECK: ptr.masked_store
+  ptr.masked_store %value, %ptr, %mask :
+      vector<4xf32>, !ptr.ptr<#ptr.generic_space>
+  return
+}
