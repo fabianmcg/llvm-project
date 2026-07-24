@@ -204,3 +204,90 @@ func.func @masked_store_dynamic_mask(%value: vector<4xf32>,
       vector<4xf32>, !ptr.ptr<#ptr.generic_space>
   return
 }
+
+/// Check that `ptr.wait` deduplicates fence types.
+// CHECK-LABEL: @wait_dedup_fences
+func.func @wait_dedup_fences() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  ptr.wait fences [!ptr.future<#ptr.generic_space>, !ptr.future<#ptr.generic_space>]
+  return
+}
+
+/// Check that `ptr.wait` promotes read/write fences to opaque fences.
+// CHECK-LABEL: @wait_promote_read_write_to_opaque
+func.func @wait_promote_read_write_to_opaque() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  ptr.wait fences [!ptr.future<write: #ptr.generic_space>, !ptr.future<read: #ptr.generic_space>]
+  return
+}
+
+/// Check that an opaque fence subsumes same-space non-opaque fences.
+// CHECK-LABEL: @wait_opaque_dominates
+func.func @wait_opaque_dominates() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  ptr.wait fences [!ptr.future<write: #ptr.generic_space>, !ptr.future<#ptr.generic_space>]
+  return
+}
+
+/// Check that an opaque fence subsumes all same-space read and write fences.
+// CHECK-LABEL: @wait_opaque_dominates_all
+func.func @wait_opaque_dominates_all() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  ptr.wait fences [!ptr.future<write: #ptr.generic_space>, !ptr.future<read: #ptr.generic_space>, !ptr.future<#ptr.generic_space>]
+  return
+}
+
+/// Check that unsorted fences across different memory spaces are reordered by kind.
+// CHECK-LABEL: @wait_sort_cross_space
+func.func @wait_sort_cross_space() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>, !ptr.future<write: #llvm.address_space<1>>]
+  ptr.wait fences [!ptr.future<write: #llvm.address_space<1>>, !ptr.future<#ptr.generic_space>]
+  return
+}
+
+/// Check that `ptr.wait` with no fences is not modified.
+// CHECK-LABEL: @wait_no_fences
+// CHECK-SAME: (%[[F:.*]]: !ptr.future<#ptr.generic_space>)
+func.func @wait_no_fences(%f: !ptr.future<#ptr.generic_space>) {
+  // CHECK-NOT: fences
+  // CHECK: ptr.wait %[[F]] : !ptr.future<#ptr.generic_space>
+  ptr.wait %f : !ptr.future<#ptr.generic_space>
+  return
+}
+
+/// Check that a single canonical fence is not modified.
+// CHECK-LABEL: @wait_single_fence_no_change
+func.func @wait_single_fence_no_change() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  ptr.wait fences [!ptr.future<#ptr.generic_space>]
+  return
+}
+
+/// Check that an opaque fence in one space does not subsume non-opaque fences in another space.
+// CHECK-LABEL: @wait_opaque_no_cross_space_domination
+func.func @wait_opaque_no_cross_space_domination() {
+  // CHECK: ptr.wait fences [!ptr.future<#ptr.generic_space>, !ptr.future<write: #llvm.address_space<1>>]
+  ptr.wait fences [!ptr.future<#ptr.generic_space>, !ptr.future<write: #llvm.address_space<1>>]
+  return
+}
+
+/// Check that `ptr.cast_to_opaque` on an already-opaque future is folded away.
+// CHECK-LABEL: @cast_to_opaque_already_opaque
+// CHECK-SAME: (%[[FUT:.*]]: !ptr.future<#ptr.generic_space, f32>)
+func.func @cast_to_opaque_already_opaque(
+    %fut: !ptr.future<#ptr.generic_space, f32>) -> !ptr.future<#ptr.generic_space, f32> {
+  // CHECK-NOT: ptr.cast_to_opaque
+  // CHECK: return %[[FUT]]
+  %opaque = ptr.cast_to_opaque %fut : !ptr.future<#ptr.generic_space, f32>
+  return %opaque : !ptr.future<#ptr.generic_space, f32>
+}
+
+/// Check that `ptr.cast_to_opaque` on a read-kinded future is not folded.
+// CHECK-LABEL: @cast_to_opaque_read
+// CHECK-SAME: (%[[FUT:.*]]: !ptr.future<read: #ptr.generic_space, f32>)
+func.func @cast_to_opaque_read(
+    %fut: !ptr.future<read : #ptr.generic_space, f32>) -> !ptr.future<#ptr.generic_space, f32> {
+  // CHECK: ptr.cast_to_opaque
+  %opaque = ptr.cast_to_opaque %fut : !ptr.future<read: #ptr.generic_space, f32>
+  return %opaque : !ptr.future<#ptr.generic_space, f32>
+}

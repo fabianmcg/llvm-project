@@ -9,6 +9,7 @@
 #ifndef PTR_DIALECT
 #define PTR_DIALECT
 
+include "mlir/Dialect/Ptr/IR/PtrEnums.td"
 include "mlir/Interfaces/DataLayoutInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
@@ -145,28 +146,37 @@ def Ptr_FutureType : Ptr_Type<"Future", "future", [
     Syntax:
 
     ```mlir
-    future-type ::= `future` `<` memory-space (`,` type)? `>`
+    future-type  ::= `future` `<` (kind `:`)? memory-space (`,` type)? `>`
+    kind         ::= `opaque` | `read` | `write`
     memory-space ::= attribute-value
     ```
 
     Examples:
 
     ```mlir
-    // A future carrying an f32 value.
+    // An opaque future carrying an f32 value.
     !ptr.future<#ptr.generic_space, f32>
 
-    // An empty future with no inner type.
-    !ptr.future<#ptr.generic_space>
+    // A read future (produced by a load).
+    !ptr.future<read: #ptr.generic_space, f32>
+
+    // A write future (produced by a store), no inner type.
+    !ptr.future<write: #ptr.generic_space>
     ```
   }];
   let parameters = (ins "MemorySpaceAttrInterface":$memorySpace,
+                        DefaultValuedParameter<
+                          "::mlir::ptr::FutureKind",
+                          "::mlir::ptr::FutureKind::opaque">:$kind,
                         OptionalParameter<"::mlir::Type", "element type">:$elementType);
-  let assemblyFormat = "`<` $memorySpace (`,` $elementType^ )? `>`";
+  let assemblyFormat = "`<` custom<FutureKind>($kind) `` $memorySpace (`,` $elementType^ )? `>`";
   let builders = [
     TypeBuilderWithInferredContext<(ins
         "MemorySpaceAttrInterface":$memorySpace,
+        CArg<"::mlir::ptr::FutureKind",
+             "::mlir::ptr::FutureKind::opaque">:$kind,
         CArg<"::mlir::Type", "::mlir::Type()">:$elementType), [{
-      return $_get(memorySpace.getContext(), memorySpace, elementType);
+      return $_get(memorySpace.getContext(), memorySpace, kind, elementType);
     }]>
   ];
 }

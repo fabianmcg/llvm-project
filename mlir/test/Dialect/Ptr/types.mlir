@@ -46,3 +46,19 @@ func.func @future_empty(%arg0: !ptr.future<#ptr.generic_space>) {
 func.func @future_ptr_inner(%arg0: !ptr.future<#ptr.generic_space, !ptr.ptr<#ptr.generic_space>>) {
   return
 }
+
+// -----
+
+// CHECK-LABEL: func @future_read_kind
+// CHECK-SAME: !ptr.future<read: #ptr.generic_space, f32>
+func.func @future_read_kind(%arg0: !ptr.future<read: #ptr.generic_space, f32>) {
+  return
+}
+
+// -----
+
+// CHECK-LABEL: func @future_write_kind_empty
+// CHECK-SAME: !ptr.future<write: #ptr.generic_space>
+func.func @future_write_kind_empty(%arg0: !ptr.future<write: #ptr.generic_space>) {
+  return
+}

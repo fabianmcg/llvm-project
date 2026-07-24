@@ -20,8 +20,10 @@ namespace mlir {
 
 namespace ptr::impl {
 /// Verifies that if `futureValue` is a `FutureType`, its memory space matches
-/// the memory space of `ptrType`. `futureValue` may be a null `Value`.
+/// `ptrType` and its kind matches `expectedKind` (opaque always matches).
+/// `futureValue` may be a null `Value`.
 LogicalResult verifyFutureTrait(Operation *op, ptr::PtrType ptrType,
+                                ptr::FutureKind expectedKind,
                                 Value futureValue);
 } // namespace ptr::impl
 
@@ -29,9 +31,11 @@ namespace OpTrait {
 /// Op trait for operations that associate a pointer with a future result.
 /// Requires the concrete op to expose:
 /// - `ptr::PtrType getPtrType()` — the pointer type driving the operation.
+/// - `ptr::FutureKind getFutureKind()` — the expected future kind.
 /// - `Value getFuture()` — the future value (may be null or non-future typed).
 /// Verifies that when the future value has a `ptr::FutureType`, its memory
-/// space matches the one in the pointer type.
+/// space matches the pointer type and its kind matches `getFutureKind()`
+/// (opaque futures are compatible with any kind).
 template <typename ConcreteOp>
 class FutureVerifierOpTrait
     : public TraitBase<ConcreteOp, FutureVerifierOpTrait> {
@@ -39,6 +43,7 @@ public:
   static LogicalResult verifyTrait(Operation *op) {
     auto concreteOp = cast<ConcreteOp>(op);
     return ptr::impl::verifyFutureTrait(op, concreteOp.getPtrType(),
+                                        concreteOp.getFutureKind(),
                                         concreteOp.getFuture());
   }
 };

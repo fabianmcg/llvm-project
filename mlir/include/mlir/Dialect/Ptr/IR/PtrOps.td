@@ -64,6 +64,56 @@ def Ptr_Ptr1DType :
   Ptr_ShapedValueType<[Ptr_PtrType], [HasAnyRankOfPred<[1]>]>;
 
 //===----------------------------------------------------------------------===//
+// Type property
+//===----------------------------------------------------------------------===//
+
+def Ptr_FutureTypeProp : Property<"::mlir::ptr::FutureType"> {
+  let summary = "A ptr::FutureType stored as a property";
+  let defaultValue = "::mlir::ptr::FutureType()";
+  let printer = [{ $_printer.printType($_storage) }];
+  let parser = [{
+    if (::mlir::failed($_parser.parseType<::mlir::ptr::FutureType>($_storage)))
+      return ::mlir::failure();
+  }];
+  let convertToAttribute = [{
+    return ::mlir::TypeAttr::get($_storage);
+  }];
+  let convertFromAttribute = [{
+    if (auto ta = ::mlir::dyn_cast<::mlir::TypeAttr>($_attr)) {
+      Type _tmp = ta.getValue();
+      $_storage = ::mlir::dyn_cast<::mlir::ptr::FutureType>(_tmp);
+      if (!$_storage)
+        return ::mlir::failure();
+      return ::mlir::success();
+    }
+    return ::mlir::failure();
+  }];
+  let readFromMlirBytecode = [{
+    ::mlir::Attribute attr;
+    if (::mlir::failed($_reader.readAttribute(attr)))
+      return ::mlir::failure();
+    auto ta = ::mlir::dyn_cast<::mlir::TypeAttr>(attr);
+    if (!ta)
+      return ::mlir::failure();
+    Type _tmp = ta.getValue();
+    $_storage = ::mlir::dyn_cast<::mlir::ptr::FutureType>(_tmp);
+    if (!$_storage)
+      return ::mlir::failure();
+  }];
+  let writeToMlirBytecode = [{
+    $_writer.writeAttribute(::mlir::TypeAttr::get($_storage));
+  }];
+  let hashProperty = [{
+    hash_value($_storage)
+  }];
+}
+
+def Ptr_FutureArrayTypeProp : ArrayProp<Ptr_FutureTypeProp> {
+  let defaultValue = "::llvm::ArrayRef<::mlir::ptr::FutureType>{}";
+  let storageTypeValueOverride = "::llvm::SmallVector<::mlir::ptr::FutureType>()";
+}
+
+//===----------------------------------------------------------------------===//
 // ConstantOp
 //===----------------------------------------------------------------------===//
 
@@ -86,6 +136,37 @@ def Ptr_ConstantOp : Pointer_Op<"constant", [
   let results = (outs Ptr_PtrType:$result);
   let assemblyFormat = "attr-dict $value";
   let hasFolder = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// CastToOpaqueOp
+//===----------------------------------------------------------------------===//
+
+def Ptr_CastToOpaqueOp : Pointer_Op<"cast_to_opaque", [
+    Pure,
+    DeclareOpInterfaceMethods<InferTypeOpInterface>
+  ]> {
+  let summary = "Cast a future to an opaque future";
+  let description = [{
+    The `cast_to_opaque` operation erases the kind of a future, producing an
+    opaque future with the same memory space and element type. This is useful
+    when crossing abstraction layers where the kind no longer carries meaning.
+
+    A canonicalizer eliminates this op when the input is already opaque.
+
+    Example:
+
+    ```mlir
+    %opaque = ptr.cast_to_opaque %read_future :
+      !ptr.future<read : #ptr.generic_space, f32>
+    ```
+  }];
+  let arguments = (ins Ptr_FutureType:$future);
+  let results = (outs Ptr_FutureType:$result);
+  let assemblyFormat = [{
+    $future attr-dict `:` qualified(type($future))
+  }];
+  let hasCanonicalizer = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -184,6 +265,8 @@ def Ptr_GatherOp : Pointer_Op<"gather", [
           ::mlir::cast<::mlir::ShapedType>(getPtrs().getType())
               .getElementType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::read; }
     /// Returns the result value for future-trait verification.
     ::mlir::Value getFuture() { return getResult(); }
   }];
@@ -284,6 +367,8 @@ def Ptr_LoadOp : Pointer_Op<"load", [
     ptr::PtrType getPtrType() {
       return ::mlir::cast<ptr::PtrType>(getPtr().getType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::read; }
     /// Returns the result value for future-trait verification.
     ::mlir::Value getFuture() { return getValue(); }
   }];
@@ -341,6 +426,8 @@ def Ptr_MaskedLoadOp : Pointer_Op<"masked_load", [
     ptr::PtrType getPtrType() {
       return ::mlir::cast<ptr::PtrType>(getPtr().getType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::read; }
     /// Returns the result value for future-trait verification.
     ::mlir::Value getFuture() { return getResult(); }
   }];
@@ -400,6 +487,8 @@ def Ptr_MaskedStoreOp : Pointer_Op<"masked_store", [
     ptr::PtrType getPtrType() {
       return ::mlir::cast<ptr::PtrType>(getPtr().getType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::write; }
   }];
   let hasVerifier = 1;
   let hasCanonicalizer = 1;
@@ -574,6 +663,8 @@ def Ptr_ScatterOp : Pointer_Op<"scatter", [
           ::mlir::cast<::mlir::ShapedType>(getPtrs().getType())
               .getElementType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::write; }
   }];
   let hasVerifier = 1;
 }
@@ -606,11 +697,14 @@ def Ptr_WaitOp : Pointer_Op<"wait", [
       !ptr.future<#ptr.generic_space, f32>, !ptr.future<#ptr.generic_space, i32>
     ```
   }];
-  let arguments = (ins Variadic<Ptr_FutureType>:$futures);
+  let arguments = (ins Variadic<Ptr_FutureType>:$futures,
+                       Ptr_FutureArrayTypeProp:$fences);
   let results = (outs Variadic<AnyType>:$results);
   let assemblyFormat = [{
-    $futures attr-dict `:` type($futures)
+    (`fences` $fences^)? $futures attr-dict (`:` type($futures)^)?
   }];
+  let hasVerifier = 1;
+  let hasCanonicalizeMethod = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -679,6 +773,8 @@ def Ptr_StoreOp : Pointer_Op<"store", [
     ptr::PtrType getPtrType() {
       return ::mlir::cast<ptr::PtrType>(getPtr().getType());
     }
+    /// Returns the expected future kind for this operation.
+    ptr::FutureKind getFutureKind() { return ptr::FutureKind::write; }
   }];
   let hasVerifier = 1;
 }

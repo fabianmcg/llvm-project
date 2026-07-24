@@ -98,3 +98,30 @@ func.func @load_future_memory_space_mismatch(
       -> !ptr.future<#test.const_memory_space, f32>
   return
 }
+
+// -----
+
+func.func @load_future_kind_mismatch(%arg0: !ptr.ptr<#ptr.generic_space>) {
+  // expected-error@+1 {{future kind does not match operation kind}}
+  %fut = ptr.load %arg0 : !ptr.ptr<#ptr.generic_space>
+      -> !ptr.future<write: #ptr.generic_space, f32>
+  return
+}
+
+// -----
+
+func.func @store_future_kind_mismatch(%arg0: !ptr.ptr<#ptr.generic_space>,
+                                      %arg1: f32) {
+  // expected-error@+1 {{future kind does not match operation kind}}
+  %fut = ptr.store %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space>
+      -> !ptr.future<read: #ptr.generic_space>
+  return
+}
+
+// -----
+
+func.func @wait_fences_typed_future() {
+  // expected-error@+1 {{fences must contain only empty future types}}
+  ptr.wait fences [!ptr.future<#ptr.generic_space, f32>]
+  return
+}

@@ -10,14 +10,19 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Dialect/Ptr/IR/MemorySpaceInterfaces.h"
 #include "mlir/Dialect/Ptr/IR/PtrOps.h"
+#include "mlir/Dialect/Ptr/IR/PtrTypes.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Interfaces/DataLayoutInterfaces.h"
+#include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/InliningUtils.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include <utility>
 
 using namespace mlir;
 using namespace mlir::ptr;
@@ -90,6 +95,7 @@ static MaskFormat getMaskFormat(Value mask) {
 //===----------------------------------------------------------------------===//
 
 LogicalResult ptr::impl::verifyFutureTrait(Operation *op, PtrType ptrType,
+                                           FutureKind expectedKind,
                                            Value futureValue) {
   if (!futureValue)
     return success();
@@ -99,6 +105,45 @@ LogicalResult ptr::impl::verifyFutureTrait(Operation *op, PtrType ptrType,
   if (futureType.getMemorySpace() != ptrType.getMemorySpace())
     return op->emitOpError(
         "future memory space does not match pointer memory space");
+  // Opaque futures are compatible with any expected kind.
+  if (futureType.getKind() == FutureKind::opaque)
+    return success();
+  if (futureType.getKind() != expectedKind)
+    return op->emitOpError("future kind does not match operation kind");
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
+// CastToOpaqueOp
+//===----------------------------------------------------------------------===//
+
+namespace {
+struct FoldCastToOpaqueOp : public OpRewritePattern<CastToOpaqueOp> {
+  using Base::Base;
+  LogicalResult matchAndRewrite(CastToOpaqueOp op,
+                                PatternRewriter &rewriter) const override {
+    if (cast<FutureType>(op.getFuture().getType()).getKind() !=
+        FutureKind::opaque)
+      return failure();
+    rewriter.replaceOp(op, op.getFuture());
+    return success();
+  }
+};
+} // namespace
+
+void CastToOpaqueOp::getCanonicalizationPatterns(RewritePatternSet &results,
+                                                 MLIRContext *context) {
+  results.add<FoldCastToOpaqueOp>(context);
+}
+
+LogicalResult CastToOpaqueOp::inferReturnTypes(
+    MLIRContext *context, std::optional<Location> location, ValueRange operands,
+    DictionaryAttr attributes, PropertyRef properties, RegionRange regions,
+    SmallVectorImpl<Type> &inferredReturnTypes) {
+  auto futureType = cast<FutureType>(operands[0].getType());
+  inferredReturnTypes.push_back(FutureType::get(futureType.getMemorySpace(),
+                                                FutureKind::opaque,
+                                                futureType.getElementType()));
   return success();
 }
 
@@ -332,11 +377,13 @@ void MaskedStoreOp::build(OpBuilder &builder, OperationState &state,
                           unsigned alignment, bool hasFuture) {
   Type futureType;
   if (hasFuture)
-    futureType = FutureType::get(cast<PtrType>(ptr.getType()).getMemorySpace());
+    futureType = FutureType::get(cast<PtrType>(ptr.getType()).getMemorySpace(),
+                                 FutureKind::write);
   build(builder, state, futureType, value, ptr, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
 
+namespace {
 struct MaskedStoreFolder : public OpRewritePattern<MaskedStoreOp> {
   using Base::Base;
   LogicalResult matchAndRewrite(MaskedStoreOp store,
@@ -364,6 +411,7 @@ struct MaskedStoreFolder : public OpRewritePattern<MaskedStoreOp> {
     llvm_unreachable("Unexpected MaskFormat on MaskedStore.");
   }
 };
+} // namespace
 
 void MaskedStoreOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                                 MLIRContext *context) {
@@ -404,7 +452,7 @@ void ScatterOp::build(OpBuilder &builder, OperationState &state, Value value,
     MemorySpaceAttrInterface ms =
         cast<PtrType>(cast<ShapedType>(ptrs.getType()).getElementType())
             .getMemorySpace();
-    futureType = FutureType::get(ms);
+    futureType = FutureType::get(ms, FutureKind::write);
   }
   build(builder, state, futureType, value, ptrs, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
@@ -424,6 +472,67 @@ WaitOp::inferReturnTypes(MLIRContext *context, std::optional<Location> location,
     if (elementType)
       inferredReturnTypes.push_back(elementType);
   }
+  return success();
+}
+
+LogicalResult WaitOp::verify() {
+  for (Type ty : getFences()) {
+    auto futureType = dyn_cast<FutureType>(ty);
+    if (!futureType || futureType.getElementType())
+      return emitError("fences must contain only empty future types");
+  }
+  return success();
+}
+
+LogicalResult WaitOp::canonicalize(WaitOp op,
+                                   ::mlir::PatternRewriter &rewriter) {
+  ArrayRef<FutureType> fences = op.getFences();
+  if (fences.empty())
+    return failure();
+  SmallVector<FutureType> newFences;
+
+  // Compute the unique fences in stable order, while also promoting read/write
+  // fences to opaque fences if they both appear.
+  {
+    DenseMap<MemorySpaceAttrInterface, int32_t> fenceKinds;
+    for (FutureType fence : fences) {
+      int32_t &kinds = fenceKinds[fence.getMemorySpace()];
+      switch (fence.getKind()) {
+      case FutureKind::opaque:
+        kinds |= 1;
+        break;
+      case FutureKind::read:
+        kinds |= 2;
+        break;
+      case FutureKind::write:
+        kinds |= 4;
+        break;
+      }
+    }
+
+    DenseSet<FutureType> uniqueFences;
+    for (FutureType fence : fences) {
+      int32_t kinds = fenceKinds[fence.getMemorySpace()];
+      if ((kinds & 1) == 1 || (kinds & 6) == 6)
+        fence = FutureType::get(fence.getMemorySpace(), FutureKind::opaque);
+      if (!uniqueFences.insert(fence).second)
+        continue;
+      newFences.push_back(fence);
+    }
+  }
+
+  // Sort the fences by kind, so that opaque fences are at the beginning of the
+  // list.
+  llvm::stable_sort(newFences, [](FutureType a, FutureType b) {
+    return a.getKind() < b.getKind();
+  });
+
+  // If the new fences are the same as the old fences, return.
+  if (fences == ArrayRef<FutureType>(newFences))
+    return failure();
+
+  rewriter.modifyOpInPlace(
+      op, [&]() { op.getProperties().fences = std::move(newFences); });
   return success();
 }
 
@@ -467,8 +576,8 @@ void StoreOp::build(OpBuilder &builder, OperationState &state, Value value,
                     bool hasFuture) {
   Type futureType;
   if (hasFuture)
-    futureType =
-        FutureType::get(cast<PtrType>(addr.getType()).getMemorySpace());
+    futureType = FutureType::get(cast<PtrType>(addr.getType()).getMemorySpace(),
+                                 FutureKind::write);
   build(builder, state, futureType, value, addr,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt,
         isVolatile, isNonTemporal, isInvariantGroup, ordering,
@@ -616,6 +725,31 @@ llvm::TypeSize TypeOffsetOp::getTypeSize(std::optional<DataLayout> layout) {
 #include "mlir/Dialect/Ptr/IR/PtrOpsAttrs.cpp.inc"
 
 #include "mlir/Dialect/Ptr/IR/PtrOpsEnums.cpp.inc"
+
+//===----------------------------------------------------------------------===//
+// FutureType custom assembly helpers.
+//===----------------------------------------------------------------------===//
+
+/// Parse an optional `<kind> ':'` prefix for `FutureType`. When no kind
+/// keyword is present the kind defaults to `opaque`.
+static ParseResult parseFutureKind(AsmParser &parser, FutureKind &kind) {
+  StringRef keyword;
+  if (succeeded(parser.parseOptionalKeyword(&keyword, {"read", "write"}))) {
+    if (parser.parseColon())
+      return failure();
+    kind = *symbolizeFutureKind(keyword);
+    return success();
+  }
+  kind = FutureKind::opaque;
+  return success();
+}
+
+/// Print the kind prefix (`read :` / `write :`) for `FutureType`. Nothing is
+/// printed for the default `opaque` kind.
+static void printFutureKind(AsmPrinter &printer, FutureKind kind) {
+  if (kind != FutureKind::opaque)
+    printer << stringifyFutureKind(kind) << ": ";
+}
 
 #define GET_TYPEDEF_CLASSES
 #include "mlir/Dialect/Ptr/IR/PtrOpsTypes.cpp.inc"

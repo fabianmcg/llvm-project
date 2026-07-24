@@ -89,4 +89,18 @@ def Ptr_PtrDiffFlags : I8BitEnum<"PtrDiffFlags", "Pointer difference flags", [
   let cppNamespace = "::mlir::ptr";
 }
 
+//===----------------------------------------------------------------------===//
+// Future kind enum.
+//===----------------------------------------------------------------------===//
+
+def FutureKindOpaque : I32EnumCase<"opaque", 0, "opaque">;
+def FutureKindRead   : I32EnumCase<"read",   1, "read">;
+def FutureKindWrite  : I32EnumCase<"write",  2, "write">;
+
+def FutureKind : I32Enum<"FutureKind", "Future kind", [
+    FutureKindOpaque, FutureKindRead, FutureKindWrite
+  ]> {
+  let cppNamespace = "::mlir::ptr";
+}
+
 #endif // PTR_ENUMS

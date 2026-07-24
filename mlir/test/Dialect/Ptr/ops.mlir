@@ -302,3 +302,34 @@ func.func @wait_load_future(%ptr: !ptr.ptr<#ptr.generic_space>) -> f32 {
   %val = ptr.wait %fut : !ptr.future<#ptr.generic_space, f32>
   return %val : f32
 }
+
+/// Test cast_to_opaque with a read-kinded future.
+func.func @cast_to_opaque_read(%fut: !ptr.future<read: #ptr.generic_space, f32>) -> !ptr.future<#ptr.generic_space, f32> {
+  %opaque = ptr.cast_to_opaque %fut : !ptr.future<read: #ptr.generic_space, f32>
+  return %opaque : !ptr.future<#ptr.generic_space, f32>
+}
+
+/// Test cast_to_opaque with a write-kinded empty future.
+func.func @cast_to_opaque_write(%fut: !ptr.future<write: #ptr.generic_space>) -> !ptr.future<#ptr.generic_space> {
+  %opaque = ptr.cast_to_opaque %fut : !ptr.future<write: #ptr.generic_space>
+  return %opaque : !ptr.future<#ptr.generic_space>
+}
+
+/// Test wait with fences (types only, no value futures).
+func.func @wait_fences_only() {
+  ptr.wait fences [!ptr.future<#ptr.generic_space>, !ptr.future<write: #ptr.generic_space>]
+  return
+}
+
+/// Test wait with fences and a value future.
+func.func @wait_with_fences(%typed: !ptr.future<#ptr.generic_space, f32>) -> f32 {
+  %val = ptr.wait fences [!ptr.future<write: #ptr.generic_space>] %typed :
+    !ptr.future<#ptr.generic_space, f32>
+  return %val : f32
+}
+
+/// Test store with write-kinded future result.
+func.func @store_with_write_kind(%val: f32, %ptr: !ptr.ptr<#ptr.generic_space>) {
+  %fut = ptr.store %val, %ptr : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future<write: #ptr.generic_space>
+  return
+}
