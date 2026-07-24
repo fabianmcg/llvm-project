@@ -86,6 +86,23 @@ static MaskFormat getMaskFormat(Value mask) {
 }
 
 //===----------------------------------------------------------------------===//
+// FutureVerifierOpTrait implementation
+//===----------------------------------------------------------------------===//
+
+LogicalResult ptr::impl::verifyFutureTrait(Operation *op, PtrType ptrType,
+                                           Value futureValue) {
+  if (!futureValue)
+    return success();
+  auto futureType = dyn_cast<FutureType>(futureValue.getType());
+  if (!futureType)
+    return success();
+  if (futureType.getMemorySpace() != ptrType.getMemorySpace())
+    return op->emitOpError(
+        "future memory space does not match pointer memory space");
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // ConstantOp
 //===----------------------------------------------------------------------===//
 
@@ -315,7 +332,7 @@ void MaskedStoreOp::build(OpBuilder &builder, OperationState &state,
                           unsigned alignment, bool hasFuture) {
   Type futureType;
   if (hasFuture)
-    futureType = FutureType::get(builder.getContext());
+    futureType = FutureType::get(cast<PtrType>(ptr.getType()).getMemorySpace());
   build(builder, state, futureType, value, ptr, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
@@ -383,8 +400,12 @@ void ScatterOp::build(OpBuilder &builder, OperationState &state, Value value,
                       Value ptrs, Value mask, unsigned alignment,
                       bool hasFuture) {
   Type futureType;
-  if (hasFuture)
-    futureType = FutureType::get(builder.getContext());
+  if (hasFuture) {
+    MemorySpaceAttrInterface ms =
+        cast<PtrType>(cast<ShapedType>(ptrs.getType()).getElementType())
+            .getMemorySpace();
+    futureType = FutureType::get(ms);
+  }
   build(builder, state, futureType, value, ptrs, mask,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt);
 }
@@ -446,7 +467,8 @@ void StoreOp::build(OpBuilder &builder, OperationState &state, Value value,
                     bool hasFuture) {
   Type futureType;
   if (hasFuture)
-    futureType = FutureType::get(builder.getContext());
+    futureType =
+        FutureType::get(cast<PtrType>(addr.getType()).getMemorySpace());
   build(builder, state, futureType, value, addr,
         alignment ? std::optional<int64_t>(alignment) : std::nullopt,
         isVolatile, isNonTemporal, isInvariantGroup, ordering,

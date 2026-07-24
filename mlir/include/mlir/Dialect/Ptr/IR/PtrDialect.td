@@ -131,41 +131,47 @@ def Ptr_PtrMetadata : Ptr_Type<"PtrMetadata", "ptr_metadata"> {
 // Future type definition.
 //===----------------------------------------------------------------------===//
 
-def Ptr_FutureType : Ptr_Type<"Future", "future"> {
+def Ptr_FutureType : Ptr_Type<"Future", "future", [
+    DeclareTypeInterfaceMethods<DataLayoutTypeInterface>
+  ]> {
   let summary = "future type";
   let description = [{
     The `future` type represents a handle to a potentially asynchronous memory
-    operation. The optional inner type indicates the kind of value the future
-    carries. An empty future (`!ptr.future`) carries no typed payload and is
-    used to track completion of store-like operations.
+    operation. The memory space parameter identifies the memory space of the
+    pointer operation that produced the future. The optional inner type indicates
+    the kind of value the future carries. An empty future carries no typed payload
+    and is used to track completion of store-like operations.
 
     Syntax:
 
     ```mlir
-    future-type ::= `future` (`<` type `>`)?
+    future-type ::= `future` `<` memory-space (`,` type)? `>`
+    memory-space ::= attribute-value
     ```
 
     Examples:
 
     ```mlir
     // A future carrying an f32 value.
-    !ptr.future<f32>
+    !ptr.future<#ptr.generic_space, f32>
 
     // An empty future with no inner type.
-    !ptr.future
+    !ptr.future<#ptr.generic_space>
     ```
   }];
-  let parameters = (ins OptionalParameter<"::mlir::Type", "element type">:$elementType);
-  let assemblyFormat = "(`<` $elementType^ `>`)?";
-  let skipDefaultBuilders = 1;
+  let parameters = (ins "MemorySpaceAttrInterface":$memorySpace,
+                        OptionalParameter<"::mlir::Type", "element type">:$elementType);
+  let assemblyFormat = "`<` $memorySpace (`,` $elementType^ )? `>`";
   let builders = [
-    TypeBuilder<(ins CArg<"::mlir::Type", "::mlir::Type()">:$elementType), [{
-      return $_get($_ctxt, elementType);
+    TypeBuilderWithInferredContext<(ins
+        "MemorySpaceAttrInterface":$memorySpace,
+        CArg<"::mlir::Type", "::mlir::Type()">:$elementType), [{
+      return $_get(memorySpace.getContext(), memorySpace, elementType);
     }]>
   ];
 }
 
-// A `!ptr.future` type (no inner element type).
+// A future type with no inner element type, e.g. `!ptr.future<#ptr.generic_space>`.
 def Ptr_EmptyFutureType : ConfinedType<Ptr_FutureType,
     [CPred<"!::llvm::cast<::mlir::ptr::FutureType>($_self).getElementType()">],
     "an empty future type">;

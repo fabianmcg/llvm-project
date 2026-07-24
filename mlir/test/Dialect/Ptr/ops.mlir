@@ -243,62 +243,62 @@ func.func @ptr_diff_tensor_2d_ops(%ptrs1: tensor<4x8x!ptr.ptr<#ptr.generic_space
 /// Test store ops with optional future result.
 func.func @store_ops_future(%arg0: !ptr.ptr<#ptr.generic_space>, %arg1: f32, %arg2: i64) {
   ptr.store %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space>
-  %fut0 = ptr.store %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future
-  %fut1 = ptr.store volatile %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future
-  %fut2 = ptr.store %arg2, %arg0 atomic monotonic alignment = 8 : i64, !ptr.ptr<#ptr.generic_space> -> !ptr.future
+  %fut0 = ptr.store %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
+  %fut1 = ptr.store volatile %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
+  %fut2 = ptr.store %arg2, %arg0 atomic monotonic alignment = 8 : i64, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
   return
 }
 
 /// Test masked_store ops with optional future result.
 func.func @masked_store_ops_future(%value: vector<4xf32>, %ptr: !ptr.ptr<#ptr.generic_space>, %mask: vector<4xi1>) {
   ptr.masked_store %value, %ptr, %mask : vector<4xf32>, !ptr.ptr<#ptr.generic_space>
-  %fut0 = ptr.masked_store %value, %ptr, %mask : vector<4xf32>, !ptr.ptr<#ptr.generic_space> -> !ptr.future
-  %fut1 = ptr.masked_store %value, %ptr, %mask alignment = 16 : vector<4xf32>, !ptr.ptr<#ptr.generic_space> -> !ptr.future
+  %fut0 = ptr.masked_store %value, %ptr, %mask : vector<4xf32>, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
+  %fut1 = ptr.masked_store %value, %ptr, %mask alignment = 16 : vector<4xf32>, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
   return
 }
 
 /// Test scatter ops with optional future result.
 func.func @scatter_ops_future(%value: vector<4xf32>, %ptrs: vector<4x!ptr.ptr<#ptr.generic_space>>, %mask: vector<4xi1>) {
   ptr.scatter %value, %ptrs, %mask : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>>
-  %fut0 = ptr.scatter %value, %ptrs, %mask : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>> -> !ptr.future
-  %fut1 = ptr.scatter %value, %ptrs, %mask alignment = 8 : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>> -> !ptr.future
+  %fut0 = ptr.scatter %value, %ptrs, %mask : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>> -> !ptr.future<#ptr.generic_space>
+  %fut1 = ptr.scatter %value, %ptrs, %mask alignment = 8 : vector<4xf32>, vector<4x!ptr.ptr<#ptr.generic_space>> -> !ptr.future<#ptr.generic_space>
   return
 }
 
 /// Test wait op with all-empty futures (no results).
-func.func @wait_empty_futures(%f0: !ptr.future, %f1: !ptr.future) {
-  ptr.wait %f0, %f1 : !ptr.future, !ptr.future
+func.func @wait_empty_futures(%f0: !ptr.future<#ptr.generic_space>, %f1: !ptr.future<#ptr.generic_space>) {
+  ptr.wait %f0, %f1 : !ptr.future<#ptr.generic_space>, !ptr.future<#ptr.generic_space>
   return
 }
 
 /// Test wait op with a single typed future.
-func.func @wait_single_typed(%fut: !ptr.future<f32>) -> f32 {
-  %val = ptr.wait %fut : !ptr.future<f32>
+func.func @wait_single_typed(%fut: !ptr.future<#ptr.generic_space, f32>) -> f32 {
+  %val = ptr.wait %fut : !ptr.future<#ptr.generic_space, f32>
   return %val : f32
 }
 
 /// Test wait op with mixed empty and typed futures.
-func.func @wait_mixed(%empty: !ptr.future, %typed: !ptr.future<i32>) -> i32 {
-  %val = ptr.wait %empty, %typed : !ptr.future, !ptr.future<i32>
+func.func @wait_mixed(%empty: !ptr.future<#ptr.generic_space>, %typed: !ptr.future<#ptr.generic_space, i32>) -> i32 {
+  %val = ptr.wait %empty, %typed : !ptr.future<#ptr.generic_space>, !ptr.future<#ptr.generic_space, i32>
   return %val : i32
 }
 
 /// Test wait op with multiple typed futures.
-func.func @wait_multiple_typed(%fa: !ptr.future<f32>, %fb: !ptr.future<i64>) -> (f32, i64) {
-  %a, %b = ptr.wait %fa, %fb : !ptr.future<f32>, !ptr.future<i64>
+func.func @wait_multiple_typed(%fa: !ptr.future<#ptr.generic_space, f32>, %fb: !ptr.future<#ptr.generic_space, i64>) -> (f32, i64) {
+  %a, %b = ptr.wait %fa, %fb : !ptr.future<#ptr.generic_space, f32>, !ptr.future<#ptr.generic_space, i64>
   return %a, %b : f32, i64
 }
 
 /// Test wait op chained with a store that returns a future.
 func.func @wait_store_future(%val: f32, %ptr: !ptr.ptr<#ptr.generic_space>) {
-  %fut = ptr.store %val, %ptr : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future
-  ptr.wait %fut : !ptr.future
+  %fut = ptr.store %val, %ptr : f32, !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space>
+  ptr.wait %fut : !ptr.future<#ptr.generic_space>
   return
 }
 
 /// Test wait unpacking a typed future produced by a load.
 func.func @wait_load_future(%ptr: !ptr.ptr<#ptr.generic_space>) -> f32 {
-  %fut = ptr.load %ptr : !ptr.ptr<#ptr.generic_space> -> !ptr.future<f32>
-  %val = ptr.wait %fut : !ptr.future<f32>
+  %fut = ptr.load %ptr : !ptr.ptr<#ptr.generic_space> -> !ptr.future<#ptr.generic_space, f32>
+  %val = ptr.wait %fut : !ptr.future<#ptr.generic_space, f32>
   return %val : f32
 }

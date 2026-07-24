@@ -152,6 +152,25 @@ LogicalResult PtrType::verifyEntries(DataLayoutEntryListRef entries,
 }
 
 //===----------------------------------------------------------------------===//
+// FutureType
+//===----------------------------------------------------------------------===//
+
+llvm::TypeSize
+FutureType::getTypeSizeInBits(const DataLayout &dataLayout,
+                              DataLayoutEntryListRef params) const {
+  if (!getElementType())
+    return llvm::TypeSize::getFixed(0);
+  return dataLayout.getTypeSizeInBits(getElementType());
+}
+
+uint64_t FutureType::getABIAlignment(const DataLayout &dataLayout,
+                                     DataLayoutEntryListRef params) const {
+  if (!getElementType())
+    return 1;
+  return dataLayout.getTypeABIAlignment(getElementType());
+}
+
+//===----------------------------------------------------------------------===//
 // Pointer metadata
 //===----------------------------------------------------------------------===//
 

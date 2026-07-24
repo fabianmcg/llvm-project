@@ -19,6 +19,12 @@ include "mlir/Interfaces/ViewLikeInterface.td"
 include "mlir/IR/OpAsmInterface.td"
 
 //===----------------------------------------------------------------------===//
+// Op traits
+//===----------------------------------------------------------------------===//
+
+def Ptr_FutureVerifierOpTrait : NativeOpTrait<"FutureVerifierOpTrait">;
+
+//===----------------------------------------------------------------------===//
 // Common props
 //===----------------------------------------------------------------------===//
 
@@ -134,7 +140,8 @@ def Ptr_GatherOp : Pointer_Op<"gather", [
     AllTypesMatch<["result", "passthrough"]>,
     // Check the shapes are compatible and both use the same shaped container
     // type.
-    AllShapesMatch<["result", "ptrs"]>, AllTypeIDsMatch<["result", "ptrs"]>
+    AllShapesMatch<["result", "ptrs"]>, AllTypeIDsMatch<["result", "ptrs"]>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let summary = "Gather operation";
   let description = [{
@@ -170,6 +177,16 @@ def Ptr_GatherOp : Pointer_Op<"gather", [
   OpBuilder<(ins "Type":$resultType, "Value":$ptrs, "Value":$mask,
       "Value":$passthrough, CArg<"unsigned", "0">:$alignment)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(
+          ::mlir::cast<::mlir::ShapedType>(getPtrs().getType())
+              .getElementType());
+    }
+    /// Returns the result value for future-trait verification.
+    ::mlir::Value getFuture() { return getResult(); }
+  }];
   let hasVerifier = 1;
 }
 
@@ -205,7 +222,8 @@ def Ptr_GetMetadataOp : Pointer_Op<"get_metadata", [
 //===----------------------------------------------------------------------===//
 
 def Ptr_LoadOp : Pointer_Op<"load", [
-    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>
+    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let description = [{
     The `load` operation is used to read from memory. A load may be marked as
@@ -261,6 +279,14 @@ def Ptr_LoadOp : Pointer_Op<"load", [
       CArg<"AtomicOrdering", "AtomicOrdering::not_atomic">:$ordering,
       CArg<"StringRef", "StringRef()">:$syncscope)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(getPtr().getType());
+    }
+    /// Returns the result value for future-trait verification.
+    ::mlir::Value getFuture() { return getValue(); }
+  }];
   let hasVerifier = 1;
 }
 
@@ -274,7 +300,8 @@ def Ptr_MaskedLoadOp : Pointer_Op<"masked_load", [
       ::llvm::cast<ShapedType>($_self).clone(
         IntegerType::get($_self.getContext(), 1))
     }]>,
-    AllTypesMatch<["result", "passthrough"]>
+    AllTypesMatch<["result", "passthrough"]>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let summary = "Masked load operation";
   let description = [{
@@ -309,6 +336,14 @@ def Ptr_MaskedLoadOp : Pointer_Op<"masked_load", [
     OpBuilder<(ins "Type":$resultType, "Value":$ptr, "Value":$mask,
       "Value":$passthrough, CArg<"unsigned", "0">:$alignment)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(getPtr().getType());
+    }
+    /// Returns the result value for future-trait verification.
+    ::mlir::Value getFuture() { return getResult(); }
+  }];
   let hasVerifier = 1;
   let hasCanonicalizer = 1;
 }
@@ -322,7 +357,8 @@ def Ptr_MaskedStoreOp : Pointer_Op<"masked_store", [
     TypesMatchWith<"value and mask must be compatible", "value", "mask", [{
       ::llvm::cast<ShapedType>($_self).clone(
         IntegerType::get($_self.getContext(), 1))
-    }]>
+    }]>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let summary = "Masked store operation";
   let description = [{
@@ -359,6 +395,12 @@ def Ptr_MaskedStoreOp : Pointer_Op<"masked_store", [
       CArg<"unsigned", "0">:$alignment,
       CArg<"bool", "false">:$hasFuture)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(getPtr().getType());
+    }
+  }];
   let hasVerifier = 1;
   let hasCanonicalizer = 1;
 }
@@ -488,7 +530,8 @@ def Ptr_ScatterOp : Pointer_Op<"scatter", [
     }]>,
     // Check the shapes are compatible and both use the same shaped container
     // type.
-    AllShapesMatch<["value", "ptrs"]>, AllTypeIDsMatch<["value", "ptrs"]>
+    AllShapesMatch<["value", "ptrs"]>, AllTypeIDsMatch<["value", "ptrs"]>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let summary = "Scatter operation";
   let description = [{
@@ -524,6 +567,14 @@ def Ptr_ScatterOp : Pointer_Op<"scatter", [
       CArg<"unsigned", "0">:$alignment,
       CArg<"bool", "false">:$hasFuture)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(
+          ::mlir::cast<::mlir::ShapedType>(getPtrs().getType())
+              .getElementType());
+    }
+  }];
   let hasVerifier = 1;
 }
 
@@ -537,20 +588,22 @@ def Ptr_WaitOp : Pointer_Op<"wait", [
   let summary = "Wait operation";
   let description = [{
     The `wait` operation synchronizes on a variadic number of `ptr.future`
-    values. For each typed future (`!ptr.future<T>`), one result of type `T`
-    is returned in order. Empty futures (`!ptr.future`) produce no result.
+    values. For each typed future (`!ptr.future<ms, T>`), one result of type
+    `T` is returned in order. Empty futures produce no result.
 
     Examples:
 
     ```mlir
     // Wait on a single empty future — no results.
-    ptr.wait %fut : !ptr.future
+    ptr.wait %fut : !ptr.future<#ptr.generic_space>
 
     // Wait on two futures; the typed one unpacks to f32.
-    %val = ptr.wait %empty_fut, %typed_fut : !ptr.future, !ptr.future<f32>
+    %val = ptr.wait %empty_fut, %typed_fut :
+      !ptr.future<#ptr.generic_space>, !ptr.future<#ptr.generic_space, f32>
 
     // Wait on multiple typed futures.
-    %a, %b = ptr.wait %fa, %fb : !ptr.future<f32>, !ptr.future<i32>
+    %a, %b = ptr.wait %fa, %fb :
+      !ptr.future<#ptr.generic_space, f32>, !ptr.future<#ptr.generic_space, i32>
     ```
   }];
   let arguments = (ins Variadic<Ptr_FutureType>:$futures);
@@ -565,7 +618,8 @@ def Ptr_WaitOp : Pointer_Op<"wait", [
 //===----------------------------------------------------------------------===//
 
 def Ptr_StoreOp : Pointer_Op<"store", [
-    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>
+    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+    Ptr_FutureVerifierOpTrait
   ]> {
   let description = [{
     The `store` operation is used to write to memory. A store may be marked as
@@ -620,6 +674,12 @@ def Ptr_StoreOp : Pointer_Op<"store", [
       CArg<"StringRef", "StringRef()">:$syncscope,
       CArg<"bool", "false">:$hasFuture)>
   ];
+  let extraClassDeclaration = [{
+    /// Returns the ptr type of the operation.
+    ptr::PtrType getPtrType() {
+      return ::mlir::cast<ptr::PtrType>(getPtr().getType());
+    }
+  }];
   let hasVerifier = 1;
 }
 

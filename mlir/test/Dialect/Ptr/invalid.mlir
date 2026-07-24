@@ -78,3 +78,23 @@ func.func @ptr_diff_mismatch(%lhs: tensor<8x!ptr.ptr<#ptr.generic_space>>, %rhs:
   %res = ptr.ptr_diff %lhs, %rhs : tensor<8x!ptr.ptr<#ptr.generic_space>> -> vector<8xi64>
   return %res : vector<8xi64>
 }
+
+// -----
+
+func.func @store_future_memory_space_mismatch(
+    %arg0: !ptr.ptr<#ptr.generic_space>, %arg1: f32) {
+  // expected-error@+1 {{future memory space does not match pointer memory space}}
+  %fut = ptr.store %arg1, %arg0 : f32, !ptr.ptr<#ptr.generic_space>
+      -> !ptr.future<#test.const_memory_space>
+  return
+}
+
+// -----
+
+func.func @load_future_memory_space_mismatch(
+    %arg0: !ptr.ptr<#ptr.generic_space>) {
+  // expected-error@+1 {{future memory space does not match pointer memory space}}
+  %fut = ptr.load %arg0 : !ptr.ptr<#ptr.generic_space>
+      -> !ptr.future<#test.const_memory_space, f32>
+  return
+}

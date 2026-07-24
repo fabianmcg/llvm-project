@@ -16,6 +16,7 @@
 #include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/Dialect/Ptr/IR/PtrAttrs.h"
 #include "mlir/Dialect/Ptr/IR/PtrDialect.h"
+#include "mlir/Dialect/Ptr/IR/PtrOpTraits.h"
 #include "mlir/Dialect/Ptr/IR/PtrTypes.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
